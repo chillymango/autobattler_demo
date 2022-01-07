@@ -1,0 +1,7 @@
+structlog
+IPython
+alembic
+flask-sqlalchemy
+psycopg2
+selenium
+pandas
