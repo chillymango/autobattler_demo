@@ -88,7 +88,7 @@ class Route:
 route1 = Route(
     "Route 1",
     ShopCard("rattata", 0.30),
-    ShopCard("pidgey", 0.70),
+    ShopCard("sandshrew", 0.70),
 )
 
 route2 = Route(
@@ -120,6 +120,11 @@ route4 = Route(
 )
 
 
+class Shop:
+    """
+    """
+
+
 class ShopManager(Component):
     """
     Advance the shop. Config for the shop is stored here.
@@ -131,21 +136,93 @@ class ShopManager(Component):
         """
         self.shop = {player: [None] * DEFAULT_SHOP_SIZE for player in self.state.players}
         self.route = {player: start for player in self.state.players}
-        # use a fixed progression for now, maybe add advanced logic later
-        self.progression = defaultdict(lambda: route4)
-        self.progression.update({
-            1: route1,
-            2: route2,
-            3: route3,
-            4: route4,
+        # load shop info
+        with open('engine/data/shop_tiers.txt', 'r') as shop_tiers_file:
+            shop_tiers_raw = shop_tiers_file.readlines()
+        tiers = [1, 2, 3, 4, 5, 6]
+        self.shop_tiers = defaultdict(lambda: [1, 2, 3, 4, 5, 6])
+        for idx, line in enumerate(shop_tiers_raw):
+            self.shop_tiers[idx] = [int(x.strip()) for x in line.split(',')]
+
+        # TODO: probably put this in a file somewhere
+        self.turn_to_stage_lookup = defaultdict(lambda: 0)
+        self.turn_to_stage_lookup.update({
+            0: 1,
+            1: 1,
+            2: 1,
+            3: 2,
+            4: 3,
+            5: 3,
+            6: 4,
+            7: 4,
+            8: 5,
+            9: 5,
+            10: 6,
+            11: 6,
+            12: 6,
+            13: 7,
+            14: 7,
+            15: 7,
+            16: 8,
+            17: 8,
+            18: 8,
+            19: 9,
+            19: 9,
+            19: 9,
         })
+
+        # load pokemon by tiers
+        with open('engine/data/movesets.txt', 'r') as movesets_file:
+            movesets_raw = movesets_file.readlines()
+
+        self.pokemon_by_tier = defaultdict(lambda: [])
+        for line in movesets_raw:
+            pokemon_tier, card = line.split()
+            pokemon_tier = int(pokemon_tier)
+            pokemon_name = card.split(',')[0]
+            self.pokemon_by_tier[pokemon_tier].append(pokemon_name)
+
+        # load shop distribution
+        with open('engine/data/shop_distribution.txt', 'r') as distribution_file:
+            distribution_raw = distribution_file.readlines()
+
+        # a 2d array where first index is stage and second index is tier
+        self.distribution = []
+        for row in distribution_raw:
+            self.distribution.append([int(x.strip()) for x in row.split()])
+
+        # HACK: what a lazy
+        tier = self.shop_tiers[self.state.turn.number]
+        self.route = {player: self.get_route_by_turn(self.state.turn.number) for player in self.state.players}
+
+    def get_route_by_turn(self, turn):
+        """
+        Generates a route given a stage number.
+        """
+        # determine the stage based on the turn
+        stage = self.turn_to_stage_lookup[turn]
+
+        # determine max tier with distributions in it
+        max_tier = max(self.shop_tiers[turn])
+
+        # construct shop starting from lowest tier
+        shop_cards = []
+        for lower in range(0, max_tier):
+            encounter_score = self.distribution[stage - 1][lower]  # holy shit indexing
+            if not encounter_score:
+                continue
+            shop_cards.extend(
+                [ShopCard(pokemon, encounter_score) for pokemon in self.pokemon_by_tier[lower + 1]]
+            )
+
+        return Route("Stage {}".format(stage), *shop_cards)
 
     def turn_setup(self):
         """
         Load a new route for players based on the turn.
         """
         turn = self.state.turn
-        self.route = {player: self.progression[turn] for player in self.state.players}
+        self.route = {player: self.routes_by_tier[turn] for player in self.state.players}
 
         # load new shop for players who are alive
         for player in self.state.players:

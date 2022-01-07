@@ -137,7 +137,10 @@ class Ui(QtWidgets.QMainWindow):
             if opponent is not None:
                 self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
                 for idx in range(6):
-                    self.opposingPokemon[idx].setText(opponent.party[idx])
+                    if opponent.party[idx] is not None:
+                        self.opposingPokemon[idx].setText(opponent.party[idx].name)
+                    else:
+                        self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
                 return
 
         self.opponentName.setText("No Match Scheduled")

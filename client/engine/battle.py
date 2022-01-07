@@ -1,6 +1,7 @@
 """
 Battle Manager
 """
+import re
 from engine.base import Component
 
 from selenium import webdriver
@@ -107,11 +108,28 @@ class BattleManager(Component):
         with open("engine/data/movesets.txt", 'r') as movesets_file:
             movesets_raw = movesets_file.readlines()
 
+        # TODO: figure out a better way to load creep rounds
+        with open('engine/data/creep_rounds.txt', 'r') as creep_rounds_file:
+            creep_rounds_raw = creep_rounds_file.readlines()
+
         # movesets should be a dict mapping lowercase pokemon name to the battle card
         self.movesets = {}
         for line in movesets_raw:
             _, pvpstr = line.split()
             card = BattleCard.from_string(pvpstr)
+            self.movesets[card.name.lower()] = card
+
+        # add creep round movesets
+        # the reason these are kept separate is to keep players from drawing creep round pokes
+        for line in creep_rounds_raw:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('#'):
+                continue
+            if re.match(r'^\d+$', line):
+                continue
+            card = BattleCard.from_string(line)
             self.movesets[card.name.lower()] = card
 
         # start selenium stuff
@@ -124,7 +142,8 @@ class BattleManager(Component):
         """
         Close the Selenium webdriver before exiting
         """
-        self.driver.close()
+        if getattr(self, 'driver', None):
+            self.driver.close()
 
     def player_battle(self, player1, player2):
         """
@@ -138,7 +157,7 @@ class BattleManager(Component):
         """
         Creates a set of battle cards from Pokemon names
         """
-        return [self.movesets[pokemon] for pokemon in team]
+        return [self.movesets[pokemon.name] for pokemon in team]
 
     def battle(self, team1_cards, team2_cards):
         # reduce cards to strings first
@@ -185,5 +204,3 @@ if __name__ == "__main__":
         print('team 1 wins')
     else:
         print('team 2 wins')
-
-    import IPython; IPython.embed()

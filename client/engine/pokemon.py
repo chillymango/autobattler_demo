@@ -12,3 +12,6 @@ class Pokemon:
     def __init__(self, pokemon_name, id=None):
         self.name = pokemon_name
         self.id = id or uuid4()
+
+    def __repr__(self):
+        return "{} ({})".format(self.name, self.id)

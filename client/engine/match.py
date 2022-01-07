@@ -10,6 +10,7 @@ from random import shuffle
 from engine.base import Component
 from engine.player import EntityType
 from engine.player import Player
+from engine.pokemon import Pokemon
 
 
 class Match:
@@ -80,7 +81,9 @@ class Matchmaker(Component):
             try:
                 round_num = int(line)
                 # load the next three lines with it
-                self.creep_round_pokemon[round_num] = creep_rounds_raw[idx + 1:idx + 4]
+                self.creep_round_pokemon[round_num] = [
+                    x.strip() for x in creep_rounds_raw[idx + 1:idx + 4]
+                ]
             except ValueError:
                 pass
 
@@ -189,7 +192,11 @@ class Matchmaker(Component):
             raise ValueError("More than one player left over. What the hell happened!")
         elif len(remaining_players) == 1:
             creep_player = Player("Creep Round", type_=EntityType.CREEP)
-            creep_player.team = self.creep_round_pokemon[self.turn]
+            for idx, cardstr in enumerate(self.creep_round_pokemon[self.turn]):
+                pokemon = Pokemon(cardstr.split(',')[0])
+                creep_player.add_to_party(pokemon)
+                creep_player.add_party_to_team(idx)
+            print('Adding creep player with team: {}'.format(creep_player.team))
             match = Match(remaining_players[0], creep_player)
             determined_matches.append(match)
 
@@ -212,6 +219,7 @@ class Matchmaker(Component):
         for player_group in self.players.values():
             for player in player_group:
                 creep_player = Player("Creep Round", type_=EntityType.CREEP)
+                creep_player.team = self.creep_round_pokemon[self.turn]
                 match = Match(player, creep_player)
                 matches.append(match)
 

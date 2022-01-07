@@ -92,3 +92,4 @@
 1	sandshrew_alolan,METAL_CLAW,BLIZZARD,none,3,5,5,5
 1	metapod,BUG_BITE,STRUGGLE,none,4,10,10,10
 1	kakuna,POISON_STING,STRUGGLE,none,8,0,0,0
+1   rattata,QUICK_ATTACK,CRUNCH,none,5,5,5,5
