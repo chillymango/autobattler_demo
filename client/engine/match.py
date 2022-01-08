@@ -5,7 +5,7 @@ The class in this module is responsible for creating pairs for matches.
 """
 from collections import defaultdict
 from itertools import combinations
-from random import shuffle
+from random import shuffle, sample
 
 from engine.base import Component
 from engine.player import EntityType
@@ -78,8 +78,9 @@ class CreepRoundManager(Component):
                 round_num = int(line)
                 # load the next three lines with it
                 pokemon_names = [
-                    pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 4]
+                    pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 7]
                 ]
+                pokemon_names = sample(pokemon_names, 3)
                 team = [
                     pokemon_factory.create_pokemon_by_name(pokemon) for pokemon in pokemon_names
                 ]

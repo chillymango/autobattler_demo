@@ -176,6 +176,10 @@ class BattleCard:
         hp_iv,
         tm_flag=False,
         shiny=False,
+        health= 0,
+        energy = 0,
+        bonus_shield = 0,
+        status = 1
     ):
         """
         Battle Card representation for a Pokemon.
@@ -193,6 +197,11 @@ class BattleCard:
         self.hp_iv = int(hp_iv)
         self.tm_flag = tm_flag
         self.shiny = shiny
+        self.health = health
+        self.energy = energy
+        self.bonus_shield = bonus_shield
+        self.status = status  
+
 
     def make_shiny(self):
         """
@@ -203,8 +212,8 @@ class BattleCard:
         if self.shiny:
             return False
         self.shiny = True
-        self.a_iv *= self.SHINY_POWER_FACTOR
-        self.d_iv *= self.SHINY_POWER_FACTOR
+        #self.a_iv *= self.SHINY_POWER_FACTOR
+        #self.d_iv *= self.SHINY_POWER_FACTOR
         return True
 
     def set_tm_move(self, move):

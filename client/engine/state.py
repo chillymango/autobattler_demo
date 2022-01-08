@@ -5,7 +5,7 @@ import time
 import typing as T
 from enum import Enum
 from engine.base import Component
-from engine.battle import BattleManager
+from engine.battle_seq import BattleManager
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import EntityType
