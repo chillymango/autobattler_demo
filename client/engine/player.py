@@ -77,6 +77,18 @@ class Player:
 
         self.party[idx] = None
 
+    def add_to_team(self, pokemon):
+        """
+        Add a Pokemon to the team.
+
+        Pokemon needs to be a member of the party first.
+        """
+        if pokemon not in self.party:
+            print('Pokemon {} needs to be in the party first'.format(pokemon))
+            return
+        idx = self.party.index(pokemon)
+        self.add_party_to_team(idx)
+
     def add_party_to_team(self, idx):
         """
         Add a Pokemon from the party to the team.

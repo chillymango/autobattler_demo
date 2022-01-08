@@ -1,15 +1,11 @@
 """
 Battle Manager
 """
-import re
 from engine.base import Component
 from engine.match import Matchmaker
 
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webdriver import By
 import random
-import pandas as pd
 import copy
 
 
@@ -37,12 +33,29 @@ class BattleManager(Component):
         if getattr(self, 'driver', None):
             self.driver.close()
 
+    def get_battle_cards_for_player(self, player):
+        """
+        Get a list of battle cards from a players team.
+
+        If the team is incomplete, attempt to load party members into team.
+        """
+        battle_cards = [x.battle_card for x in player.team]
+        if len(battle_cards) > 3:
+            raise ValueError("Cannot submit a team of size > 3")
+        if len(battle_cards) < 3:
+            # populate cards from party if possible
+            unassigned = [x for x in player.party if x not in player.team and x is not None]
+            for idx in range(min(3 - len(battle_cards), len(unassigned))):
+                player.add_to_team(unassigned[idx])
+                battle_cards.append(unassigned[idx].battle_card)
+        return battle_cards
+
     def player_battle(self, player1, player2):
         """
         Orchestrate a battle between two players
         """
-        team1_battle_cards = [x.battle_card for x in player1.team]
-        team2_battle_cards = [x.battle_card for x in player2.team]
+        team1_battle_cards = self.get_battle_cards_for_player(player1)
+        team2_battle_cards = self.get_battle_cards_for_player(player2)
         return self.battle(team1_battle_cards, team2_battle_cards)
 
     def oneVone(self,battler1, battler2):
