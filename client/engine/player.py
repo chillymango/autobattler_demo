@@ -101,9 +101,18 @@ class Player:
 
         self.team.remove(self.team[idx])
 
+    def add_to_storage(self, pokemon):
+        """
+        Add Pokemon to Storage
+        """
+        if len(self.storage) < MAX_STORAGE_SIZE:
+            self.storage.append(pokemon)
+        else:
+            print('No room to add {} to team'.format(pokemon))
+
     def release_from_storage(self, idx):
         """
-        Release pokemon by index in storage
+        Release pokemon by index in storage.
         """
         self.storage.remove(self.storage[idx])
 
@@ -118,10 +127,10 @@ class Player:
         If storage is filled, get mad.
         """
         if not self.add_to_party(pokemon):
-            if len(self.storage) < MAX_STORAGE_SIZE:
-                self.storage.append(pokemon)
-            else:
-                raise IndexError("No room to add to team")
+            if not self.add_to_storage(pokemon):
+                print("No room to add to roster")
+                return False
+        return True
 
     @classmethod
     def create_from_user(cls, user):

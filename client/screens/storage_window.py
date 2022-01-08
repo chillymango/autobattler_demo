@@ -72,8 +72,9 @@ class Ui(QtWidgets.QDialog):
         party_selected = self.partyView.selectedIndexes()
         for party_member in party_selected:
             row = party_member.row()
+            pokemon = self.current_player.party[row]
             self.current_player.party[row] = None
-            self.current_player.storage.append(party_member.data())
+            self.current_player.storage.append(pokemon)
         self.render_party()
         self.render_storage()
 
@@ -84,8 +85,9 @@ class Ui(QtWidgets.QDialog):
             if self.current_player.party_is_full:
                 print("Out of space in party")
                 break
+
             row = storage_member.row()
-            pokemon = storage_member.data()
+            pokemon = self.current_player.storage[row]
             self.current_player.storage.remove(pokemon)
             self.current_player.add_to_party(pokemon)
         self.render_party()

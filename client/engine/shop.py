@@ -151,7 +151,7 @@ class ShopManager(Component):
         Turn number is unit indexed, and so the index is shifted down 1.
         """
         if not turn_number:
-            raise KeyError("Invalid turn number {}".format(turn_number))
+            print("Invalid turn number {}".format(turn_number))
         stage = self.state.turn.stage
         return self.shop_distribution[stage.stage - 1]
 
@@ -231,5 +231,5 @@ class ShopManager(Component):
         if player.energy > 0:
             player.energy -= 1
             self.shop[player] = self.route[player].roll_shop()
-            return
-        print("Cannot roll shop with no energy")
+        else:
+            print("Cannot roll shop with no energy")

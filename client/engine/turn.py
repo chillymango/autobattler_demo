@@ -20,7 +20,7 @@ class Turn(Component):
         if self._number > 0:
             self._number -= 1
         else:
-            raise ValueError("Cannot go beyond turn 0")
+            print("Cannot go beyond turn 0")
 
     @property
     def stage(self):
