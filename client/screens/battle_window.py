@@ -134,7 +134,7 @@ class Ui(QtWidgets.QMainWindow):
         if state.phase not in [
             GamePhase.TURN_DECLARE_TEAM,
             GamePhase.TURN_PREPARE_TEAM,
-            GamePhase.TURN_CLEANUP,
+            GamePhase.TURN_COMPLETE,
         ]:
             text = ""
             self.timeToNextStage.setFormat(text)
@@ -146,7 +146,7 @@ class Ui(QtWidgets.QMainWindow):
             text = "Party Declaration"
         elif state.phase == GamePhase.TURN_PREPARE_TEAM:
             text = "Team Preparation"
-        elif state.phase == GamePhase.TURN_CLEANUP:
+        elif state.phase == GamePhase.TURN_COMPLETE:
             text = "Match Complete"        
 
         stage_duration_ms = int(1E3 * state.stage_duration)

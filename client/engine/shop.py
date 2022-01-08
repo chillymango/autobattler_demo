@@ -227,4 +227,8 @@ class ShopManager(Component):
         """
         Load a new shop for a player based on their route
         """
-        self.shop[player] = self.route[player].roll_shop()
+        if player.energy > 0:
+            player.energy -= 1
+            self.shop[player] = self.route[player].roll_shop()
+            return
+        raise ValueError("Cannot roll shop with no energy")

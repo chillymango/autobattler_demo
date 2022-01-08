@@ -11,7 +11,7 @@ from engine.match import Matchmaker
 from engine.player import EntityType
 from engine.player import Player
 from engine.player import PlayerManager
-from engine.pokemon import PokemonFactory
+from engine.pokemon import EvolutionManager, PokemonFactory
 from engine.pokemon import TmManager
 from engine.shop import ShopManager
 from engine.turn import Turn
@@ -38,9 +38,10 @@ class GamePhase(Enum):
     TURN_PREP = 4
     TURN_EXECUTE = 5
     TURN_CLEANUP = 6
-    CLEANUP = 7
-    COMPLETED = 8
-    ERROR = 9
+    TURN_COMPLETE = 7
+    CLEANUP = 8
+    COMPLETED = 9
+    ERROR = 10
 
 
 class GameState:
@@ -62,6 +63,7 @@ class GameState:
             CreepRoundManager,
             ShopManager,
             BattleManager,
+            EvolutionManager,
         ]
 
     def __init__(self, players: T.List[Player]):
@@ -97,8 +99,8 @@ class GameState:
         if self.phase == GamePhase.TURN_DECLARE_TEAM:
             # this is just a UI phase, don't do anything
             if self.time_to_next_stage is None:
-                self.time_to_next_stage = 30.0
-                self.stage_duration = 30.0
+                self.time_to_next_stage = 15.0
+                self.stage_duration = 15.0
             elif self.time_to_next_stage < 0.0:
                 self.time_to_next_stage = None
                 self.phase = GamePhase.TURN_PREPARE_TEAM
@@ -109,8 +111,8 @@ class GameState:
         if self.phase == GamePhase.TURN_PREPARE_TEAM:
             # this is just a UI phase, don't do anything
             if self.time_to_next_stage is None:
-                self.time_to_next_stage = 30.0
-                self.stage_duration = 30.0
+                self.time_to_next_stage = 15.0
+                self.stage_duration = 15.0
             elif self.time_to_next_stage < 0.0:
                 self.time_to_next_stage = None
                 self.phase = GamePhase.TURN_EXECUTE
@@ -126,10 +128,12 @@ class GameState:
         if self.phase == GamePhase.TURN_CLEANUP:
             for component in self.components:
                 component.turn_cleanup()
+            self.phase = GamePhase.TURN_COMPLETE
+        if self.phase == GamePhase.TURN_COMPLETE:
             # TODO: this probably blocks, fix with event loop
             if self.time_to_next_stage is None:
-                self.time_to_next_stage = 10.0
-                self.stage_duration = 10.0
+                self.time_to_next_stage = 5.0
+                self.stage_duration = 5.0
             elif self.time_to_next_stage < 0.0:
                 self.time_to_next_stage = None
                 self.phase = GamePhase.TURN_SETUP

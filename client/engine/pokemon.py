@@ -115,17 +115,51 @@ class EvolutionManager(Component):
         """
         Look up the evolution of a Pokemon by name
         """
+        if pokemon_name not in self.evolution_config:
+            return None
         return self.evolution_config[pokemon_name].evolved_form
 
+    def get_threshold(self, pokemon_name):
+        """
+        Look up the evolution XP threshold of a Pokemon by name
+        """
+        if pokemon_name not in self.evolution_config:
+            return None
+        return self.evolution_config[pokemon_name].turns_to_evolve * self.XP_PER_TURN
+
     def turn_cleanup(self):
+        """
+        After combat runs, update party Pokemon XP and initiate evolutions
+        """
+        print('1')
         for player in self.state.players:
+            print('2')
             if not player.is_alive:
                 continue
-            for idx, party_member in enumerate(player.party):
+            for party_member in player.party:
+                print('3')
+                if party_member.name not in self.evolution_config:
+                    continue
                 party_member.add_xp(self.XP_PER_TURN)
-                if party_member.xp > threshold:
+                threshold = self.get_threshold(party_member.name)
+                if party_member.xp >= threshold:
+                    print(
+                        'Party member {} XP exceeds threshold ({} > {})'
+                        .format(party_member.name, party_member.xp, threshold)
+                    )
+                    # reset XP
+                    party_member.xp = 0
+
                     # look up the evolution of a pokemon
                     evolved_form = self.get_evolution(party_member.name)
+                    pokemon_factory: PokemonFactory = self.state.pokemon_factory
+                    evolved_card = pokemon_factory.get_evolved_battle_card(
+                        evolved_form, party_member.battle_card
+                    )
+
+                    # update pokemon
+                    party_member.name = evolved_form
+                    party_member.battle_card = evolved_card
 
 
 class Pokemon:
