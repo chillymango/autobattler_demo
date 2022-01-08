@@ -370,7 +370,7 @@ var InterfaceMaster = (function () {
 					}
 
 					$(".continue-container").show();
-					$(".continue-container .name").html(winner.pokemon.speciesName + " (" + winner.hp + " HP, " + winner.energy + " energy, " + winner.shields + " shields)");
+					$(".continue-container .name").html( " (" + winner.hp + " HP, " + winner.energy + " energy, " + winner.shields + " shields)");
 				} else{
 					$(".battle-results .summary").html("Simultaneous knockout in <span class=\"time\">"+durationSeconds+"s</span>");
 					$(".continue-container").hide();
