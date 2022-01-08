@@ -4,8 +4,8 @@
 1
 rattata,TACKLE,BODY_SLAM,none,3,0,0,0
 pidgey,QUICK_ATTACK,TWISTER,none,3,0,0,0
-rattata_shadow-shadow,QUICK_ATTACK,HYPER_FANG,none,3,15,15,15
-pidgey_shadow-shadow,TACKLE,DRILL_PECK,none,3,0,0,0
+rattata_alolan,QUICK_ATTACK,HYPER_FANG,none,3,15,15,15
+spearow,TACKLE,DRILL_PECK,none,3,0,0,0
 nidoran_female,BITE,SLUDGE_BOMB,none,3,0,0,0
 nidoran_male,POISON_STING,HORN_ATTACK,none,3,0,0,0
 

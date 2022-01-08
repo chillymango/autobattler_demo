@@ -5,7 +5,7 @@ import threading
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from engine.battle import BattleManager
+from engine.battle_seq import BattleManager
 from engine.match import Matchmaker
 
 from engine.state import GamePhase
@@ -95,7 +95,7 @@ class Ui(QtWidgets.QDialog):
         matchmaker: Matchmaker = self.game_state.matchmaker
         opponent = matchmaker.get_player_opponent_in_round(player, matchmaker.current_matches)
         result = battle_manager.player_battle(player, opponent)
-        if sum(result) > 4:
+        if (result == 1):
             print('player victory')
         else:
             print('creep victory')

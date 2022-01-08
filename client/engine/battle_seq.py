@@ -30,7 +30,7 @@ class BattleManager(Component):
         """
         # start selenium stuff
         self.driver = webdriver.Firefox()
-        self.driver.get('http://localhost/pvpoke/src/battle/matrix')
+        #self.driver.get('http://localhost/pvpoke/src/battle/matrix')
 
     def __del__(self):
         """
@@ -47,68 +47,59 @@ class BattleManager(Component):
         team2_battle_cards = [x.battle_card for x in player2.team]
         return self.battle(team1_battle_cards, team2_battle_cards)
 
-    def oneVone(battler1, battler2):
-
-    if battler1.shiny == 1:
-        BUFF1 = 5
-    else:
-        BUFF1 = 4
-
-    if battler2.shiny == 1:
-        BUFF2 = 5
-    else:
-        BUFF2 = 4
-    SHIELD1 = 1+battler1.bonus_shield
-    SHIELD2 = 1+battler2.bonus_shield
-
-    if battler1.tm_flag == 0:
-        TM1 = 0
-    else:
-        TM1 = battler1.move_tm
-
-    if battler2.tm_flag == 0:
-        TM2 = 0
-    else:
-        TM2 = battler2.move_tm
-
-
-
-    url = f'http://localhost/pvpoke/src/battle/10000/{battler1.name}-{battler1.level}-{battler1.a_iv}-{battler1.d_iv}-{battler1.hp_iv}-{BUFF1}-{BUFF1}-1-0/{battler2.name}-{battler2.level}-{battler2.a_iv}-{battler2.d_iv}-{battler2.hp_iv}-{BUFF2}-{BUFF2}-1-0/{SHIELD1}{SHIELD2}/{battler1.move_f}-{battler1.move_ch}-{TM1}/{battler2.move_f}-{battler2.move_ch}-{TM2}/{battler1.health}-{battler2.health}/{battler1.energy}-{battler2.energy}/'
-
-    driver.get(url)
-
-
-    result = driver.find_element_by_xpath("//div[@class='summary section white']").text.split()
-    while len(result) == 0:
-        result = driver.find_element_by_xpath("//div[@class='summary section white']").text.split()
-
-    if result[0] == 'Simultaneous':
-        winner = 0
-        survivorhp = None
-        survivorenergy = None
-    else:
-        battle_score = int(driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[3]").text)
-        survivor = driver.find_element_by_xpath("/html/body/div/div/div[4]/div[3]/div[2]/p/span").text.split()
-        survivorhp = int(survivor[0][1:])
-        survivorenergy = int(survivor[2])
-        survivorshields = int(survivor[4])
-
-        if battle_score > 500:
-            winner = 1
+    def oneVone(self,battler1, battler2):
+        if battler1.shiny == 1:
+            BUFF1 = 5
         else:
-            winner = 2
+            BUFF1 = 4
+        if battler2.shiny == 1:
+            BUFF2 = 5
+        else:
+            BUFF2 = 4
+        SHIELD1 = 1+battler1.bonus_shield
+        SHIELD2 = 1+battler2.bonus_shield
+        if battler1.tm_flag == 0:
+            TM1 = 0
+        else:
+            TM1 = battler1.move_tm
+        if battler2.tm_flag == 0:
+            TM2 = 0
+        else:
+            TM2 = battler2.move_tm
+        url = f'http://localhost/pvpoke/src/battle/10000/{battler1.name}-{battler1.level}-{battler1.a_iv}-{battler1.d_iv}-{battler1.hp_iv}-{BUFF1}-{BUFF1}-1-0/{battler2.name}-{battler2.level}-{battler2.a_iv}-{battler2.d_iv}-{battler2.hp_iv}-{BUFF2}-{BUFF2}-1-0/{SHIELD1}{SHIELD2}/{battler1.move_f}-{battler1.move_ch}-{TM1}/{battler2.move_f}-{battler2.move_ch}-{TM2}/{battler1.health}-{battler2.health}/{battler1.energy}-{battler2.energy}/'
+        self.driver.get(url)
+        result = self.driver.find_element_by_xpath("//div[@class='summary section white']").text.split()
+        while len(result) == 0:
+            result = self.driver.find_element_by_xpath("//div[@class='summary section white']").text.split()
+
+        if result[0] == 'Simultaneous':
+            winner = 0
+            survivorhp = None
+            survivorenergy = None
+            survivorshields = None
+        else:
+            battle_score = int(self.driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[3]").text)
+            survivor = self.driver.find_element_by_xpath("/html/body/div/div/div[4]/div[3]/div[2]/p/span").text.split()
+            survivorhp = int(survivor[0][1:])
+            survivorenergy = int(survivor[2])
+            survivorshields = int(survivor[4])
+
+            if battle_score > 500:
+                winner = 1
+            else:
+                winner = 2
 
 
-    return([winner, survivorhp, survivorenergy,survivorshields])
+        return([winner, survivorhp, survivorenergy,survivorshields])
 
     def battle(self, team1_cards, team2_cards):
-        team1_live = copy.deepcopy(team1)
-        team2_live = copy.deepcopy(team2)
+        team1_live = copy.deepcopy(team1_cards)
+        team2_live = copy.deepcopy(team2_cards)
         current_team1 = next((x for x in team1_live if x.status == 1), None)
         current_team2 = next((x for x in team2_live if x.status == 1), None)
 
         while (current_team1 != None ) & (current_team2 != None):
-            battle_result = oneVone(current_team1,current_team2)
+            battle_result = self.oneVone(current_team1,current_team2)
             if battle_result[0] == 0:
                 print("Simultaneous KO by " +current_team1.name +" and " + current_team2.name)
                 current_team1.status = 0
@@ -192,11 +183,3 @@ if __name__ == "__main__":
     state = GameState([player])
     battle_manager = BattleManager(state)
 
-    team1 = battle_manager.create_team_battle_cards(['charizard', 'mewtwo', 'dragonite'])
-    team2 = battle_manager.create_team_battle_cards(['magikarp', 'butterfree', 'blastoise'])
-
-    result = battle_manager.battle(team1, team2)
-    if sum(result) > 4:
-        print('team 1 wins')
-    else:
-        print('team 2 wins')
