@@ -82,10 +82,10 @@ class CreepRoundManager(Component):
                 ]
                 pokemon_names = sample(pokemon_names, 3)
                 team = [
-                    pokemon_factory.create_pokemon_by_name(pokemon) for pokemon in pokemon_names
+                    pokemon_factory.create_PVEpokemon_by_name(pokemon) for pokemon in pokemon_names
                 ]
                 for pokemon in pokemon_names:
-                    team.append(pokemon_factory.create_pokemon_by_name(pokemon))
+                    team.append(pokemon_factory.create_PVEpokemon_by_name(pokemon))
                 self.creep_round_pokemon[round_num] = team
             except ValueError:
                 pass

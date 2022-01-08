@@ -47,6 +47,7 @@ class PokemonFactory(Component):
     """
 
     CONFIG_PATH = 'engine/data/default_movesets.txt'
+    CONFIG_PATH_PVE = 'engine/data/PVE_movesets.txt'
 
     def initialize(self):
         """
@@ -60,6 +61,20 @@ class PokemonFactory(Component):
         for line in default_movesets_raw:
             pokemon_name = line.split(',')[0]
             self.default_movesets[pokemon_name] = line
+
+        with open(self.CONFIG_PATH_PVE, 'r') as PVE_movesets_file:
+            PVE_movesets_raw = PVE_movesets_file.readlines()
+
+        self.PVE_movesets = {}  # maps pokemon name to default BattleCard
+        for line in PVE_movesets_raw:
+            pokemon_name = line.split(',')[0]
+            self.PVE_movesets[pokemon_name] = line
+
+    def get_PVE_battle_card(self, pokemon_name):
+        """
+        Load the default battle card for a Pokemon
+        """
+        return BattleCard.from_string(self.PVE_movesets[pokemon_name])
 
     def get_default_battle_card(self, pokemon_name):
         """
@@ -92,6 +107,14 @@ class PokemonFactory(Component):
         battle_card = self.get_default_battle_card(pokemon_name)
         return Pokemon(pokemon_name, battle_card)
 
+    def create_PVEpokemon_by_name(self, pokemon_name):
+        """
+        Create a new Pokemon by pokemon name.
+
+        Example, pass in `pikachu` to create a default Pikachu.
+        """
+        battle_card = self.get_PVE_battle_card(pokemon_name)
+        return Pokemon(pokemon_name, battle_card)
 
 class EvolutionManager(Component):
     """
