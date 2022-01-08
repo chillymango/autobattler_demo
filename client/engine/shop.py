@@ -215,7 +215,8 @@ class ShopManager(Component):
         card = self.shop[player][idx]
         cost = self.pokemon_tier_lookup[card]
         if cost > player.balls:
-            raise ValueError("Not enough Poke Balls to catch this Pokemon")
+            print("Not enough Poke Balls to catch this Pokemon")
+            return
 
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
         caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
@@ -231,4 +232,4 @@ class ShopManager(Component):
             player.energy -= 1
             self.shop[player] = self.route[player].roll_shop()
             return
-        raise ValueError("Cannot roll shop with no energy")
+        print("Cannot roll shop with no energy")

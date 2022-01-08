@@ -131,13 +131,10 @@ class EvolutionManager(Component):
         """
         After combat runs, update party Pokemon XP and initiate evolutions
         """
-        print('1')
         for player in self.state.players:
-            print('2')
             if not player.is_alive:
                 continue
             for party_member in player.party:
-                print('3')
                 if party_member.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)

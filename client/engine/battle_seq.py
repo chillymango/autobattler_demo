@@ -4,12 +4,10 @@ Battle Manager
 import re
 from engine.base import Component
 from engine.match import Matchmaker
-from engine.pokemon import BattleCard
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import By
-from selenium.webdriver.support.ui import Select
 import random
 import pandas as pd
 import copy
