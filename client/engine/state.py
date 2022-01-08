@@ -7,6 +7,8 @@ from engine.match import Matchmaker
 from engine.player import EntityType
 from engine.player import Player
 from engine.player import PlayerManager
+from engine.pokemon import PokemonFactory
+from engine.pokemon import TmManager
 from engine.shop import ShopManager
 from engine.turn import Turn
 
@@ -50,6 +52,8 @@ class GameState:
         return [
             Turn,
             PlayerManager,
+            TmManager,
+            PokemonFactory,
             Matchmaker,
             ShopManager,
             BattleManager,

@@ -10,7 +10,7 @@ from random import shuffle
 from engine.base import Component
 from engine.player import EntityType
 from engine.player import Player
-from engine.pokemon import Pokemon
+from engine.pokemon import Pokemon, PokemonFactory
 
 
 class Match:
@@ -52,6 +52,71 @@ class Match:
         return "Match - ({}) vs ({}) ({})".format(self.players[0], self.players[1], resultstr)
 
 
+class CreepRoundManager(Component):
+    """
+    Responsible for creating Creep Rounds
+
+    Creates creep players and assigns Pokemon as required.
+
+    Creep Pokemon do not have spare party members -- i.e they will run three units in both
+    party and team for a predetermined matchup.
+    """
+
+    CONFIG_PATH = "engine/data/creep_rounds.txt"
+
+    def initialize(self):
+        self.creep_round_pokemon = defaultdict(lambda: [])
+        with open(self.CONFIG_PATH, 'r') as creep_rounds_file:
+            creep_rounds_raw = creep_rounds_file.readlines()
+
+        pokemon_factory: PokemonFactory = self.state.pokemon_factory
+
+        for idx, line in enumerate(creep_rounds_raw):
+            if line.startswith('#'):
+                continue
+            try:
+                round_num = int(line)
+                # load the next three lines with it
+                team = [
+                    pokemon_factory.create_pokemon_by_name(pokemon.strip())
+                    for pokemon in creep_rounds_raw[idx + 1: idx + 4]
+                ]
+                for pokemon in creep_rounds_raw[idx + 1: idx + 4]:
+                    team.append(pokemon_factory.create_pokemon_by_name(pokemon))
+                self.creep_round_pokemon[round_num] = team
+            except ValueError:
+                pass
+
+    def create_creep_player(self):
+        # do a lookup based on the current run
+        creep_player = Player("Creep Round",type_=EntityType.CREEP)
+        turn = self.state.turn.number
+        creep_pokemon = self.creep_round_pokemon[turn]
+        for idx, pokemon in enumerate(creep_pokemon):
+            creep_player.add_to_party(pokemon)
+            creep_player.add_party_to_team(idx)
+        return creep_player
+
+    def organize_creep_round(self):
+        """
+        Organize a round with 'creep' players. All humans and computers that are still alive
+        will play against creep opponents.
+        """
+        matches = []
+        for player in self.state.players:
+            creep_player = self.create_creep_player()
+            match = Match(player, creep_player)
+            matches.append(match)
+
+        return matches
+
+    def organize_clone_round(self):
+        """
+        TODO: should be able to also create random clones of other teams.
+        """
+        return self.create_creep_player()
+
+
 class Matchmaker(Component):
     """
     Takes a list of players. Stores previous match history and uses this in priority
@@ -70,22 +135,6 @@ class Matchmaker(Component):
         self.matches = [[]]
         self.opponents_by_player = defaultdict(lambda: [])
 
-        # load creep round information here
-        self.creep_round_pokemon = defaultdict(lambda: [])
-        with open("engine/data/creep_rounds.txt", 'r') as creep_rounds_file:
-            creep_rounds_raw = creep_rounds_file.readlines()
-
-        for idx, line in enumerate(creep_rounds_raw):
-            if line.startswith('#'):
-                continue
-            try:
-                round_num = int(line)
-                # load the next three lines with it
-                self.creep_round_pokemon[round_num] = [
-                    x.strip() for x in creep_rounds_raw[idx + 1:idx + 4]
-                ]
-            except ValueError:
-                pass
 
     @staticmethod
     def get_player_opponent_in_round(player, matches):
@@ -191,12 +240,8 @@ class Matchmaker(Component):
         if len(remaining_players) > 1:
             raise ValueError("More than one player left over. What the hell happened!")
         elif len(remaining_players) == 1:
-            creep_player = Player("Creep Round", type_=EntityType.CREEP)
-            for idx, cardstr in enumerate(self.creep_round_pokemon[self.turn]):
-                pokemon = Pokemon(cardstr.split(',')[0])
-                creep_player.add_to_party(pokemon)
-                creep_player.add_party_to_team(idx)
-            print('Adding creep player with team: {}'.format(creep_player.team))
+            # organize a creep round for this player
+            creep_player = self.state.creep_round_manager.create_creep_player()
             match = Match(remaining_players[0], creep_player)
             determined_matches.append(match)
 
@@ -205,24 +250,4 @@ class Matchmaker(Component):
             self.opponents_by_player[match.players[0]].append(match.players[1])
             self.opponents_by_player[match.players[1]].append(match.players[0])
 
-        # update match history
-        #self.matches.append(determined_matches)
-
         return determined_matches
-
-    def organize_creep_round(self):
-        """
-        Organize a round with 'creep' players. All humans and computers that are still alive
-        will play against creep opponents.
-        """
-        matches = []
-        for player_group in self.players.values():
-            for player in player_group:
-                creep_player = Player("Creep Round", type_=EntityType.CREEP)
-                creep_player.team = self.creep_round_pokemon[self.turn]
-                match = Match(player, creep_player)
-                matches.append(match)
-
-        self.matches.append(matches)
-
-        return matches

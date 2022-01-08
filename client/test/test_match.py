@@ -5,6 +5,7 @@ import mock
 import random
 import unittest
 
+from engine.match import CreepRoundManager
 from engine.match import Match
 from engine.match import Matchmaker
 from engine.player import EntityType
@@ -185,13 +186,44 @@ class TestMatchmaker(unittest.TestCase):
             # always set the player back to alive after this test
             self.humans[0].is_alive = True
 
+
+class TestCreepRoundManager(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        humans = [
+            Player('Ashe Ketchum', type_=EntityType.HUMAN),
+            Player('Red Dawn', type_=EntityType.HUMAN),
+            Player('Blue Steel', type_=EntityType.HUMAN),
+            Player('Yellow Fever', type_=EntityType.HUMAN),
+            Player('Gold Digger', type_=EntityType.HUMAN),
+            Player('Crystal Meth', type_=EntityType.HUMAN),
+        ]
+        computers = [
+            Player('Skynet'),
+            Player('HAL')
+        ]
+
+        cls.humans = humans
+        cls.computers = computers
+        cls.players = humans + computers
+
+        for player in cls.players:
+            player.is_alive = True
+
+        cls.state = mock.MagicMock()
+        cls.state.players = cls.players
+
+    def setUp(self):
+        self.creep_round_manager = CreepRoundManager(self.state)
+
     def test_organize_creep_round(self):
         """
         Organize a creep round. Make sure that all alive players get a creep round matchup
         """
-        matchmaker = Matchmaker(self.state)
-        round = matchmaker.organize_creep_round()
-        for match in round:
+        human_creep_round = self.creep_round_manager.organize_creep_round()
+        for match in human_creep_round:
             if not match.is_creep_match:
                 raise ValueError("Creep round has PvP matchups")
 
