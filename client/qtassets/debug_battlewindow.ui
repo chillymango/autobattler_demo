@@ -16,7 +16,7 @@
   <widget class="QPushButton" name="runBattle">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>100</y>
      <width>171</width>
      <height>51</height>
@@ -29,7 +29,7 @@
   <widget class="QPushButton" name="makeNewMatches">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>30</y>
      <width>171</width>
      <height>51</height>
@@ -42,7 +42,7 @@
   <widget class="QPushButton" name="stepTurnForward">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>170</y>
      <width>171</width>
      <height>51</height>
@@ -55,7 +55,7 @@
   <widget class="QPushButton" name="stepTurnBackward">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>240</y>
      <width>171</width>
      <height>51</height>
@@ -68,7 +68,7 @@
   <widget class="QPushButton" name="addPokeBalls">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>310</y>
      <width>171</width>
      <height>51</height>
@@ -76,6 +76,54 @@
    </property>
    <property name="text">
     <string>Add 100 Poke Balls</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="startGame">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>170</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Start Game</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="gamePhase">
+   <property name="geometry">
+    <rect>
+     <x>22</x>
+     <y>270</y>
+     <width>141</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>250</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Game Phase</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
  </widget>

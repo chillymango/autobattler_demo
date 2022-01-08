@@ -150,6 +150,8 @@ class PlayerManager(Component):
         self.players = self.state.players
         for player in self.players:
             player.is_alive = True
+            player.hitpoints = 20
+            player.balls = 5
 
     def turn_setup(self):
         """

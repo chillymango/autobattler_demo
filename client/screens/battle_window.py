@@ -8,7 +8,7 @@ from PyQt5 import uic
 
 from engine.player import EntityType
 from engine.player import Player
-from engine.state import GameState
+from engine.state import GamePhase, GameState
 from screens.debug_battle_window import Ui as DebugWindow
 from screens.storage_window import Ui as StorageWindow
 
@@ -17,10 +17,16 @@ class Ui(QtWidgets.QMainWindow):
 
     DEBUG = True
 
-    def __init__(self):
+    def __init__(self, state: GameState = None):
         super(Ui, self).__init__()
-        self.player = Player("Albert Yang", type_=EntityType.HUMAN)
-        self.state = GameState([self.player])
+
+        if state is None:
+            self.player = Player("Albert Yang", type_=EntityType.HUMAN)
+            self.state = GameState([self.player])
+        else:
+            self.player = self.state.current_player
+            self.state = state
+
         uic.loadUi('qtassets/battlewindow.ui', self)
 
         if self.DEBUG:
@@ -105,6 +111,9 @@ class Ui(QtWidgets.QMainWindow):
         self.energyCount = self.findChild(QtWidgets.QLineEdit, "energyCount")
         self.hitPoints = self.findChild(QtWidgets.QLineEdit, "hitPoints")
 
+        # time to next stage
+        self.timeToNextStage = self.findChild(QtWidgets.QProgressBar, "timeToNextStage")
+
         # TODO: do something smarter than this
         for callback in [
             self.render_party,
@@ -112,12 +121,39 @@ class Ui(QtWidgets.QMainWindow):
             self.render_team,
             self.render_player_stats,
             self.render_opponent_party,
+            self.render_time_to_next_stage,
         ]:
             timer = QtCore.QTimer(self)
             timer.timeout.connect(callback)
             timer.start(100)
 
         self.show()
+
+    def render_time_to_next_stage(self):
+        state: GameState = self.state
+        if state.phase not in [
+            GamePhase.TURN_DECLARE_TEAM,
+            GamePhase.TURN_PREPARE_TEAM,
+            GamePhase.TURN_CLEANUP,
+        ]:
+            text = ""
+            self.timeToNextStage.setFormat(text)
+            self.timeToNextStage.setMaximum(1)
+            self.timeToNextStage.setValue(0)
+            return
+
+        if state.phase == GamePhase.TURN_DECLARE_TEAM:
+            text = "Party Declaration"
+        elif state.phase == GamePhase.TURN_PREPARE_TEAM:
+            text = "Team Preparation"
+        elif state.phase == GamePhase.TURN_CLEANUP:
+            text = "Match Complete"        
+
+        stage_duration_ms = int(1E3 * state.stage_duration)
+        stage_time_ms = int(1E3 * state.time_to_next_stage)
+        self.timeToNextStage.setFormat(text)
+        self.timeToNextStage.setMaximum(stage_duration_ms)
+        self.timeToNextStage.setValue(stage_time_ms)
 
     def open_storage_window(self):
         self.storage_window = StorageWindow(game_state=self.state)

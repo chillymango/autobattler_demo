@@ -6,9 +6,6 @@ Steps:
 * initialize the game state
 * run turn setup
 """
-from threading import Thread
+import threading
 
-class GameRunner(Thread):
-    """
-    Run the game loop or something
-    """
+from engine.state import GameState

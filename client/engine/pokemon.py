@@ -5,7 +5,6 @@ from collections import defaultdict
 from uuid import uuid4
 
 from engine.base import Component
-from engine.battle import BattleManager
 
 DEFAULT_XP_GAIN = 50.0
 
