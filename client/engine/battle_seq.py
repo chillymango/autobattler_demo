@@ -20,7 +20,7 @@ class BattleManager(Component):
     Will make HP deductions as well.
     """
 
-    REPORT_DIALOG = True
+    REPORT_DIALOG = False
 
     def initialize(self):
         """
