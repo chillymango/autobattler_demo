@@ -80,7 +80,7 @@ class CreepRoundManager(Component):
                 pokemon_names = [
                     pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 7]
                 ]
-                pokemon_names = random.sample(pokemon_names, 3)
+                pokemon_names = sample(pokemon_names, 3)
                 team = [
                     pokemon_factory.create_pokemon_by_name(pokemon) for pokemon in pokemon_names
                 ]
