@@ -114,6 +114,7 @@ class PokemonFactory(Component):
         Example, pass in `pikachu` to create a default Pikachu.
         """
         battle_card = self.get_PVE_battle_card(pokemon_name)
+        battle_card.bonus_shield = -1
         return Pokemon(pokemon_name, battle_card)
 
 class EvolutionManager(Component):
