@@ -199,9 +199,6 @@ class ShopManager(Component):
         """
         Load a new route for players based on the turn.
         """
-        turn = self.state.turn
-        self.route = {player: self.routes_by_tier[turn] for player in self.state.players}
-
         # load new shop for players who are alive
         for player in self.state.players:
             if player.is_alive:

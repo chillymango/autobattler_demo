@@ -134,10 +134,13 @@ Wilds
      </rect>
     </property>
     <property name="value">
-     <number>24</number>
+     <number>100</number>
     </property>
     <property name="textVisible">
-     <bool>false</bool>
+     <bool>true</bool>
+    </property>
+    <property name="format">
+     <string/>
     </property>
    </widget>
    <widget class="QPushButton" name="teamMember0">

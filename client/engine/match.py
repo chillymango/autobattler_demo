@@ -10,7 +10,7 @@ from random import shuffle
 from engine.base import Component
 from engine.player import EntityType
 from engine.player import Player
-from engine.pokemon import Pokemon, PokemonFactory
+from engine.pokemon import PokemonFactory
 
 
 class Match:
@@ -253,3 +253,16 @@ class Matchmaker(Component):
             self.opponents_by_player[match.players[1]].append(match.players[0])
 
         return determined_matches
+
+    def turn_setup(self):
+        """
+        If a creep round is determined for everyone, do nothing. The creep round
+        manager should have organized a creep round.
+        If there is no creep round, organize a player round.
+        """
+        creep_round_manager: CreepRoundManager = self.state.creep_round_manager
+        creeps = creep_round_manager.creep_round_pokemon[self.state.turn.number]
+        if not any(creeps):
+            self.matches.append(self.organize_round())
+        else:
+            self.matches.append(creep_round_manager.organize_creep_round())
