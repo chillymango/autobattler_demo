@@ -105,33 +105,6 @@ class BattleManager(Component):
         """
         Load movesets from data file
         """
-        with open("engine/data/movesets.txt", 'r') as movesets_file:
-            movesets_raw = movesets_file.readlines()
-
-        # TODO: figure out a better way to load creep rounds
-        with open('engine/data/creep_rounds.txt', 'r') as creep_rounds_file:
-            creep_rounds_raw = creep_rounds_file.readlines()
-
-        # movesets should be a dict mapping lowercase pokemon name to the battle card
-        self.movesets = {}
-        for line in movesets_raw:
-            _, pvpstr = line.split()
-            card = BattleCard.from_string(pvpstr)
-            self.movesets[card.name.lower()] = card
-
-        # add creep round movesets
-        # the reason these are kept separate is to keep players from drawing creep round pokes
-        for line in creep_rounds_raw:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith('#'):
-                continue
-            if re.match(r'^\d+$', line):
-                continue
-            card = BattleCard.from_string(line)
-            self.movesets[card.name.lower()] = card
-
         # start selenium stuff
         self.driver = webdriver.Firefox()
         self.driver.get('http://localhost/pvpoke/src/battle/matrix')
@@ -149,15 +122,9 @@ class BattleManager(Component):
         """
         Orchestrate a battle between two players
         """
-        team1_battle_cards = self.create_team_battle_cards(player1.team)
-        team2_battle_cards = self.create_team_battle_cards(player2.team)
+        team1_battle_cards = [x.battle_card for x in player1.team]
+        team2_battle_cards = [x.battle_card for x in player2.team]
         return self.battle(team1_battle_cards, team2_battle_cards)
-
-    def create_team_battle_cards(self, team):
-        """
-        Creates a set of battle cards from Pokemon names
-        """
-        return [self.movesets[pokemon.name] for pokemon in team]
 
     def battle(self, team1_cards, team2_cards):
         # reduce cards to strings first

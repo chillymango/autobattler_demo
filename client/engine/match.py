@@ -77,11 +77,13 @@ class CreepRoundManager(Component):
             try:
                 round_num = int(line)
                 # load the next three lines with it
-                team = [
-                    pokemon_factory.create_pokemon_by_name(pokemon.strip())
-                    for pokemon in creep_rounds_raw[idx + 1: idx + 4]
+                pokemon_names = [
+                    pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 4]
                 ]
-                for pokemon in creep_rounds_raw[idx + 1: idx + 4]:
+                team = [
+                    pokemon_factory.create_pokemon_by_name(pokemon) for pokemon in pokemon_names
+                ]
+                for pokemon in pokemon_names:
                     team.append(pokemon_factory.create_pokemon_by_name(pokemon))
                 self.creep_round_pokemon[round_num] = team
             except ValueError:

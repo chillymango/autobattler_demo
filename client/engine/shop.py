@@ -9,7 +9,8 @@ from collections import namedtuple
 from uuid import uuid4
 
 from engine.base import Component
-from engine.pokemon import Pokemon
+from engine.pokemon import Pokemon, PokemonFactory
+from engine.turn import Turn
 
 # for debugging
 SEED = os.environ.get("SHOP_RANDOM_SEED", 0)
@@ -17,15 +18,7 @@ random.seed(SEED)
 DEFAULT_SHOP_SIZE = 5
 
 
-ShopCard = namedtuple("ShopCard", ["name", "encounter_score"])
-
-COST_LOOKUP = defaultdict(
-    lambda: 5
-)
-COST_LOOKUP.update(dict(
-    pidgey=1,
-    rattata=1,
-))
+ShopCard = namedtuple("ShopCard", ["name", "tier", "encounter_score"])
 
 
 class Interval:
@@ -43,9 +36,9 @@ class Interval:
         return val >= self.lower and val <= self.upper
 
 
-class Route:
+class Shop:
     """
-    A Route should have a list of Pokemon that can be encountered, as well as
+    A Shop should have a list of Pokemon that can be encountered, as well as
     their probabilities.
     """
 
@@ -85,115 +78,100 @@ class Route:
         return shop
 
 
-route1 = Route(
-    "Route 1",
-    ShopCard("rattata", 0.30),
-    ShopCard("sandshrew", 0.70),
-)
-
-route2 = Route(
-    "Route 2",
-    ShopCard("pidgey", 0.34),
-    ShopCard("rattata", 0.35),
-    ShopCard("nidoranf", 0.15),
-    ShopCard("nidoranm", 0.15),
-    ShopCard("mrmime", 0.01)
-)
-
-route3 = Route(
-    "Route 3",
-    ShopCard("rattata", 0.15),
-    ShopCard("spearow", 0.55),
-    ShopCard("sandshrew", 0.15),
-    ShopCard("mankey", 0.15)
-)
-
-route4 = Route(
-    "Route 4",
-    ShopCard("rattata", 0.10),
-    ShopCard("spearow", 0.45),
-    ShopCard("sandshrew", 0.05),
-    ShopCard("mankey", 0.05),
-    ShopCard("magikarp", 0.15),
-    ShopCard("psyduck", 0.10),
-    ShopCard("goldeen", 0.10),
-)
-
-
-class Shop:
-    """
-    """
-
-
 class ShopManager(Component):
     """
     Advance the shop. Config for the shop is stored here.
     """
 
-    def initialize(self, start=route1):
+    SHOP_TIERS_PATH = 'engine/data/shop_tiers.txt'
+    SHOP_DISTRIBUTION_PATH = 'engine/data/shop_distribution.txt'
+    SHOP_PROGRESSION_PATH = 'engine/data/shop_progression.txt'
+
+    def initialize(self):
         """
         Initialize shop manager and establish route
         """
         self.shop = {player: [None] * DEFAULT_SHOP_SIZE for player in self.state.players}
-        self.route = {player: start for player in self.state.players}
+
         # load shop info
-        with open('engine/data/shop_tiers.txt', 'r') as shop_tiers_file:
+        with open(self.SHOP_TIERS_PATH, 'r') as shop_tiers_file:
             shop_tiers_raw = shop_tiers_file.readlines()
-        tiers = [1, 2, 3, 4, 5, 6]
-        self.shop_tiers = defaultdict(lambda: [1, 2, 3, 4, 5, 6])
-        for idx, line in enumerate(shop_tiers_raw):
-            self.shop_tiers[idx] = [int(x.strip()) for x in line.split(',')]
-
-        # TODO: probably put this in a file somewhere
-        self.turn_to_stage_lookup = defaultdict(lambda: 0)
-        self.turn_to_stage_lookup.update({
-            0: 1,
-            1: 1,
-            2: 1,
-            3: 2,
-            4: 3,
-            5: 3,
-            6: 4,
-            7: 4,
-            8: 5,
-            9: 5,
-            10: 6,
-            11: 6,
-            12: 6,
-            13: 7,
-            14: 7,
-            15: 7,
-            16: 8,
-            17: 8,
-            18: 8,
-            19: 9,
-            19: 9,
-            19: 9,
-        })
-
-        # load pokemon by tiers
-        with open('engine/data/movesets.txt', 'r') as movesets_file:
-            movesets_raw = movesets_file.readlines()
-
-        self.pokemon_by_tier = defaultdict(lambda: [])
-        for line in movesets_raw:
-            pokemon_tier, card = line.split()
-            pokemon_tier = int(pokemon_tier)
-            pokemon_name = card.split(',')[0]
-            self.pokemon_by_tier[pokemon_tier].append(pokemon_name)
+        self.pokemon_tier_lookup = {}
+        for line in shop_tiers_raw:
+            if not line:
+                continue
+            if line.startswith('#'):
+                continue
+            split = line.split()
+            tier = int(split[0].strip())
+            pokemon = split[1].strip()
+            self.pokemon_tier_lookup[pokemon] = tier
 
         # load shop distribution
-        with open('engine/data/shop_distribution.txt', 'r') as distribution_file:
-            distribution_raw = distribution_file.readlines()
+        with open(self.SHOP_DISTRIBUTION_PATH, 'r') as shop_distribution_file:
+            shop_distribution_raw = shop_distribution_file.readlines()
+        self.shop_distribution = []
+        for line in shop_distribution_raw:
+            self.shop_distribution.append([int(x) for x in line.split()])
 
-        # a 2d array where first index is stage and second index is tier
-        self.distribution = []
-        for row in distribution_raw:
-            self.distribution.append([int(x.strip()) for x in row.split()])
+        # load shop progression
+        with open(self.SHOP_PROGRESSION_PATH, 'r') as shop_progression_file:
+            shop_progression_raw = shop_progression_file.readlines()
+        self.shop_progression = []
+        for line in shop_progression_raw:
+            if not line:
+                continue
+            if line.startswith('#'):
+                continue
+            self.shop_progression.append([int(x) for x in line.split(',')])
 
-        # HACK: what a lazy
-        tier = self.shop_tiers[self.state.turn.number]
-        self.route = {player: self.get_route_by_turn(self.state.turn.number) for player in self.state.players}
+    @property
+    def route(self):
+        """
+        Dynamically load shop object based on the current turn
+        """
+        return {
+            player: self.get_shop_by_turn_number(self.state.turn.number)
+            for player in self.state.players
+        }
+
+    def get_pokemon_by_tier(self, tier):
+        """
+        Given a tier, return the Pokemon in that tier.
+        """
+        return [
+            pokemon for pokemon, tier_ in self.pokemon_tier_lookup.items()
+            if tier == tier_
+        ]
+
+    def get_distribution_by_turn_number(self, turn_number):
+        """
+        Given a turn number, generate the appropriate shop distribution
+
+        Turn number is unit indexed, and so the index is shifted down 1.
+        """
+        if not turn_number:
+            raise KeyError("Invalid turn number {}".format(turn_number))
+        stage = self.state.turn.stage
+        return self.shop_distribution[stage.stage - 1]
+
+    def get_shop_by_turn_number(self, turn_number):
+        """
+        Given a turn number, generate the appropriate shop
+        """
+        tiers = self.shop_progression[turn_number]
+        distribution = self.get_distribution_by_turn_number(turn_number)
+        shop_cards = []
+        for tier in tiers:
+            tier_idx = tier - 1
+            pokemon = self.get_pokemon_by_tier(tier)
+            shop_cards.extend(
+                [ShopCard(name, tier, distribution[tier_idx]) for name in pokemon]
+            )
+
+        turn: Turn = self.state.turn
+        stage = turn.get_stage_for_turn(turn_number)
+        return Shop(stage.location, *shop_cards)
 
     def get_route_by_turn(self, turn):
         """
@@ -215,7 +193,7 @@ class ShopManager(Component):
                 [ShopCard(pokemon, encounter_score) for pokemon in self.pokemon_by_tier[lower + 1]]
             )
 
-        return Route("Stage {}".format(stage), *shop_cards)
+        return Shop("Stage {}".format(stage), *shop_cards)
 
     def turn_setup(self):
         """
@@ -238,11 +216,12 @@ class ShopManager(Component):
         Do not refresh shop entry (leave as None).
         """
         card = self.shop[player][idx]
-        cost = COST_LOOKUP[card]
+        cost = self.pokemon_tier_lookup[card]
         if cost > player.balls:
             raise ValueError("Not enough Poke Balls to catch this Pokemon")
 
-        caught = Pokemon(self.shop[player][idx])
+        pokemon_factory: PokemonFactory = self.state.pokemon_factory
+        caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
         player.add_to_roster(caught)
         player.balls -= cost
         self.shop[player][idx] = None
@@ -252,11 +231,3 @@ class ShopManager(Component):
         Load a new shop for a player based on their route
         """
         self.shop[player] = self.route[player].roll_shop()
-
-
-if __name__ == "__main__":
-    print("Welcome to the shop (route 4)")
-    print("Press Enter to roll new values")
-    while True:
-        input("\n")
-        print(route4.roll_shop())

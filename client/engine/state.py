@@ -3,6 +3,7 @@ Game state should be stored here or something
 """
 import typing as T
 from engine.battle import BattleManager
+from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import EntityType
 from engine.player import Player
@@ -55,6 +56,7 @@ class GameState:
             TmManager,
             PokemonFactory,
             Matchmaker,
+            CreepRoundManager,
             ShopManager,
             BattleManager,
         ]

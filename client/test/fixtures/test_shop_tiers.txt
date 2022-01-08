@@ -1,0 +1,10 @@
+6	articuno
+5	dragonite
+6	mew
+4	kangaskhan
+3	dugtrio
+3	electabuzz
+2	oddish
+2	vulpix_alolan
+1	spearow
+1	sandshrew_alolan
