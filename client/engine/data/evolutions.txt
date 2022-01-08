@@ -1,0 +1,94 @@
+charizard	0	
+blastoise	0	
+venusaur	0	
+snorlax	0	
+lapras	0	
+arcanine	0	
+exeggutor	0	
+rhydon	0	
+gyarados	0	
+mewtwo	0	
+zapdos	0	
+moltres	0	
+articuno	0	
+dragonite	0	
+mew	0	
+marowak_alolan	0	
+ninetales_alolan	0	
+vileplume	0	
+slowbro	0	
+flareon	0	
+jolteon	0	
+vaporeon	0	
+tentacruel	0	
+chansey	0	
+pinsir	0	
+clefable	0	
+wigglytuff	0	
+magneton	0	
+golem	0	
+alakazam	0	
+machamp	0	
+tauros	0	
+rapidash	0	
+aerodactyl	0	
+kangaskhan	0	
+gengar	0	
+charmeleon	4	charizard
+wartortle	4	blastoise
+ivysaur	4	venusaur
+dragonair	6	dragonite
+machoke	trade	
+graveler	trade	
+kadabra	trade	
+haunter	trade	
+golbat	0	
+dugtrio	0	
+persian_alolan	0	
+sandslash_alolan	0	
+parasect	0	
+fearow	0	
+ponyta	4	rapidash
+gloom	4	vileplume
+porygon	0	
+raichu	0	
+tangela	0	
+hitmonchan	0	
+hitmonlee	0	
+tentacool	0	
+magmar	0	
+jynx	0	
+electabuzz	0	
+scyther	0	
+eevee	0	
+magnemite	4	magneton
+clefairy	0	
+growlithe	6	arcanine
+rhyhorn	6	rhydon
+paras	2	parasect
+oddish	2	gloom
+vulpix_alolan	4	ninetales_alolan
+raticate_alolan	0	
+slowpoke	6	slowbro
+cubone	4	marowak_alolan
+exeggcute	6	exeggutor
+butterfree	0	
+beedrill	0	
+onix	0	
+pikachu	4	raichu
+charmander	4	charmeleon
+squirtle	4	wartortle
+bulbasaur	4	ivysaur
+dratini	6	dragonair
+weedle	2	kakuna
+caterpie	2	metapod
+magikarp	10	gyarados
+jigglypuff	6	wigglytuff
+diglett	4	dugtrio
+zubat	4	golbat
+meowth_alolan	4	persian_alolan
+rattata_alolan	2	raticate_alolan
+spearow	4	fearow
+sandshrew_alolan	4	sandslash_alolan
+metapod	2	butterfree
+kakuna	2	beedrill

@@ -1,12 +1,17 @@
 """
 Pokemon Object Representation
 """
+import typing as T
 from collections import defaultdict
+from collections import namedtuple
 from uuid import uuid4
 
 from engine.base import Component
 
 DEFAULT_XP_GAIN = 50.0
+
+
+EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolve"])
 
 
 class TmManager(Component):
@@ -93,21 +98,31 @@ class EvolutionManager(Component):
     Pokemon Evolution Manager
     """
 
+    XP_PER_TURN = 50.0
+
+    CONFIG_PATH = "engine/data/evolutions_list.txt"
+
     def initialize(self):
-        pass
+        with open(self.CONFIG_PATH, 'r') as evolution_list_file:
+            evolutions_raw = evolution_list_file.readlines()
+        self.evolution_config: T.Dict[str, EvolutionConfig] = defaultdict(lambda: None)
+        for line in evolutions_raw:
+            base, turns, evolved = line.split()
+            turns = int(turns)
+            self.evolution_config[base] = EvolutionConfig(evolved, turns)
 
     def get_evolution(self, pokemon_name):
         """
         Look up the evolution of a Pokemon by name
         """
-        pass
+        return self.evolution_config[pokemon_name].evolved_form
 
     def turn_cleanup(self):
         for player in self.state.players:
             if not player.is_alive:
                 continue
             for idx, party_member in enumerate(player.party):
-                party_member.add_xp()
+                party_member.add_xp(self.XP_PER_TURN)
                 if party_member.xp > threshold:
                     # look up the evolution of a pokemon
                     evolved_form = self.get_evolution(party_member.name)
