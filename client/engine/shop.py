@@ -6,7 +6,6 @@ import os
 import random
 from collections import defaultdict
 from collections import namedtuple
-from uuid import uuid4
 
 from engine.base import Component
 from engine.pokemon import Pokemon, PokemonFactory
@@ -124,6 +123,12 @@ class ShopManager(Component):
             if line.startswith('#'):
                 continue
             self.shop_progression.append([int(x) for x in line.split(',')])
+
+        # load shop tier colors
+        self.tier_colors = defaultdict(lambda: "white")
+        self.tier_colors.update(
+            {1: "grey", 2: "green", 3: "blue", 4: "purple", 5: "orange", 6: "red"}
+        )
 
     @property
     def route(self):

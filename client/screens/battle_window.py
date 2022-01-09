@@ -8,9 +8,12 @@ from PyQt5 import uic
 
 from engine.player import EntityType
 from engine.player import Player
+from engine.shop import ShopManager
 from engine.state import GamePhase, GameState
 from screens.debug_battle_window import Ui as DebugWindow
 from screens.storage_window import Ui as StorageWindow
+from utils.buttons import set_border_color, set_border_color_and_image, set_button_image
+from utils.buttons import clear_button_image
 
 
 class Ui(QtWidgets.QMainWindow):
@@ -34,6 +37,7 @@ class Ui(QtWidgets.QMainWindow):
 
         # shop buttons
         self.update_shop_signal = QtCore.pyqtSignal()
+        self.shopLocationLabel = self.findChild(QtWidgets.QLabel, "shopLocationLabel")
         self.exploreWilds = self.findChild(QtWidgets.QPushButton, "exploreWilds")
         self.shopPokemon = [
             self.findChild(QtWidgets.QPushButton, "shopPokemon{}".format(idx))
@@ -70,6 +74,7 @@ class Ui(QtWidgets.QMainWindow):
             add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
         self.render_party()
 
+        # TODO: create a pokemon rendering button
         # team buttons
         self.teamMember = [
             self.findChild(QtWidgets.QPushButton, "teamMember{}".format(idx))
@@ -173,9 +178,16 @@ class Ui(QtWidgets.QMainWindow):
             if opponent is not None:
                 self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
                 for idx in range(6):
+                    pokemon = opponent.party[idx]
                     if opponent.party[idx] is not None:
-                        self.opposingPokemon[idx].setText(opponent.party[idx].name)
+                        sprite = self.state.sprite_manager.get_normie_sprite(pokemon.name)
+                        if sprite is not None:
+                            self.opposingPokemon[idx].setText("")
+                            set_button_image(self.opposingPokemon[idx], sprite, "white")
+                        else:
+                            self.opposingPokemon[idx].setText(pokemon.name)
                     else:
+                        clear_button_image(self.opposingPokemon[idx])
                         self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
                 return
 
@@ -197,11 +209,17 @@ class Ui(QtWidgets.QMainWindow):
                 party_button.setText('Team Pokemon {}'.format(idx + 1))
                 release_button.setDisabled(True)
                 item_button.setDisabled(True)
+                clear_button_image(party_button)
             else:
-                party_button.setText(party_member.name)
                 party_button.setDisabled(False)
                 release_button.setDisabled(False)
                 item_button.setDisabled(False)
+                sprite = self.state.sprite_manager.get_normie_sprite(party_member.name)
+                if sprite is not None:
+                    party_button.setText("")
+                    set_button_image(party_button, sprite, "white")
+                else:
+                    party_button.setText(party_member.name)
 
     def render_team(self):
         player = self.state.current_player
@@ -220,21 +238,35 @@ class Ui(QtWidgets.QMainWindow):
                 remove_team_member.setDisabled(True)
                 shift_team_up.setDisabled(True)
                 shift_team_down.setDisabled(True)
+                clear_button_image(team_member_button)
             else:
+                sprite = self.state.sprite_manager.get_normie_sprite(team_member.name)
                 team_member_button.setDisabled(False)
-                team_member_button.setText(str(team_member))
-                remove_team_member.setDisabled(False)
                 shift_team_up.setDisabled(False)
                 shift_team_down.setDisabled(False)
+                remove_team_member.setDisabled(False)
+                if sprite is not None:
+                    team_member_button.setText("")
+                    set_button_image(team_member_button, sprite, "white")
+                else:
+                    team_member_button.setText(str(team_member))
 
     def render_shop(self):
+        shop_manager: ShopManager = self.state.shop_manager
         for idx, shop_button in enumerate(self.shopPokemon):
-            text = self.state.shop_manager.shop[self.player][idx]
-            shop_button.setText(text)
+            text = shop_manager.shop[self.player][idx]
             if not text:
                 shop_button.setDisabled(True)
+                clear_button_image(shop_button)
             else:
                 shop_button.setDisabled(False)
+                sprite = self.state.sprite_manager.get_normie_sprite(text)
+                tier = shop_manager.pokemon_tier_lookup[text]
+                color = shop_manager.tier_colors[tier]
+                set_button_image(shop_button, sprite, color)
+        # update shop location
+        route = shop_manager.route[self.state.current_player]
+        self.shopLocationLabel.setText(route.name)
 
     def roll_shop_callback(self):
         print("Rolling shop")

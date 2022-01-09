@@ -42,6 +42,9 @@ class Ui(QtWidgets.QDialog):
         self.startGame = self.findChild(QtWidgets.QPushButton, "startGame")
         self.startGame.clicked.connect(self.start_game_callback)
 
+        self.devConsole = self.findChild(QtWidgets.QPushButton, "devConsole")
+        self.devConsole.clicked.connect(self.dev_console_callback)
+
         for callback in [
             self.update_game_phase
         ]:
@@ -50,6 +53,10 @@ class Ui(QtWidgets.QDialog):
             timer.start(100)
 
         self.show()
+
+    def dev_console_callback(self):
+        state: GameState = self.game_state
+        import IPython; IPython.embed()
 
     def start_game_callback(self):
         """
