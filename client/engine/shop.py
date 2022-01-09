@@ -10,6 +10,7 @@ from collections import namedtuple
 from engine.base import Component
 from engine.pokemon import Pokemon, PokemonFactory
 from engine.turn import Turn
+from operator import attrgetter
 
 # for debugging
 SEED = os.environ.get("SHOP_RANDOM_SEED", 0)
@@ -223,17 +224,45 @@ class ShopManager(Component):
             print("Not enough Poke Balls to catch this Pokemon")
             return
 
-        # shiny logic:
-        # if there are three copies of a pokemon, combine them into a superset and mark it
-        # as shiny
-        # check here if there are already two non-shiny copies of a pokemon in a players
-        # combined inventory
 
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
         caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
         player.add_to_roster(caught)
         player.balls -= cost
         self.shop[player][idx] = None
+
+        # shiny logic:
+        # if there are three copies of a pokemon, combine them into a superset and mark it
+        # as shiny
+        # check here if there are already two non-shiny copies of a pokemon in a players
+        # combined inventory
+        roster_pokes = player.roster
+        matching_pokes = []
+        for poke in roster_pokes:
+            if (poke.battle_card.shiny != True) & (poke.name == card):
+                matching_pokes.append(poke)
+        if len(matching_pokes) == 3: 
+            max_xp = 0
+            max_tm_flag = 0
+            max_bonus_shield = 0
+            for mp in matching_pokes:
+                if mp.xp > max_xp:
+                    max_xp = mp.xp
+                if mp.battle_card.tm_flag > max_tm_flag:
+                    max_tm_flag = mp.battle_card.tm_flag
+                if mp.battle_card.bonus_shield > max_bonus_shield:
+                    max_bonus_shield=mp.battle_card.bonus_shield
+
+                player.release_by_id(mp.id)
+            shiny_poke = pokemon_factory.create_pokemon_by_name(card)
+            shiny_poke.battle_card.shiny = True
+            shiny_poke.xp = max_xp
+            shiny_poke.battle_card.tm_flag = max_tm_flag
+            shiny_poke.battle_card.bonus_shield = max_bonus_shield
+            player.add_to_roster(shiny_poke)
+    
+
+
 
     def roll(self, player):
         """
