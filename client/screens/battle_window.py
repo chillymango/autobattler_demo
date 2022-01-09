@@ -56,6 +56,10 @@ class Ui(QtWidgets.QMainWindow):
         # party buttons
         self.manageStorage = self.findChild(QtWidgets.QPushButton, "manageStorage")
         self.manageStorage.clicked.connect(self.open_storage_window)
+        self.partyLabel = [
+            self.findChild(QtWidgets.QLabel, "party{}Label".format(idx))
+            for idx in range(6)
+        ]
         self.partyPokemon = [
             self.findChild(QtWidgets.QPushButton, "partyPokemon{}".format(idx))
             for idx in range(6)
@@ -209,14 +213,17 @@ class Ui(QtWidgets.QMainWindow):
             party_button = self.party_pokemon_buttons[idx]
             release_button = self.addParty[idx]
             item_button = self.partyItems[idx]
+            party_label = self.partyLabel[idx]
             party_button.render_pokemon_card(party_member)
 
             if party_member is None:
                 release_button.setDisabled(True)
                 item_button.setDisabled(True)
+                party_label.setText("")
             else:
                 release_button.setDisabled(False)
                 item_button.setDisabled(False)
+                party_label.setText(str(party_member))
 
     def render_team(self):
         player = self.state.current_player
