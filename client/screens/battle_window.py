@@ -261,9 +261,13 @@ class Ui(QtWidgets.QMainWindow):
             else:
                 shop_button.setDisabled(False)
                 sprite = self.state.sprite_manager.get_normie_sprite(text)
-                tier = shop_manager.pokemon_tier_lookup[text]
-                color = shop_manager.tier_colors[tier]
-                set_button_image(shop_button, sprite, color)
+                if sprite is not None:
+                    tier = shop_manager.pokemon_tier_lookup[text]
+                    color = shop_manager.tier_colors[tier]
+                    set_button_image(shop_button, sprite, color)
+                else:
+                    clear_button_image(shop_button)
+                    shop_button.setText(text)
         # update shop location
         if self.state.turn.number:
             route = shop_manager.route[self.state.current_player]
