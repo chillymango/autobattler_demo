@@ -117,6 +117,7 @@ class PokemonFactory(Component):
         battle_card.bonus_shield = -1
         return Pokemon(pokemon_name, battle_card)
 
+
 class EvolutionManager(Component):
     """
     Pokemon Evolution Manager
@@ -200,6 +201,9 @@ class Pokemon:
         self.item = None
         self.xp = 0
 
+    def __str__(self):
+        return ("Shiny" * self.battle_card.shiny + " {}".format(self.name)).strip()
+
     def __repr__(self):
         return "{} ({})".format(self.name, self.id)
 
@@ -256,7 +260,6 @@ class BattleCard:
         self.energy = energy
         self.bonus_shield = bonus_shield
         self.status = status  
-
 
     def make_shiny(self):
         """

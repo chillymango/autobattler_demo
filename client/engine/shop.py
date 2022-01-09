@@ -218,6 +218,12 @@ class ShopManager(Component):
             print("Not enough Poke Balls to catch this Pokemon")
             return
 
+        # shiny logic:
+        # if there are three copies of a pokemon, combine them into a superset and mark it
+        # as shiny
+        # check here if there are already two non-shiny copies of a pokemon in a players
+        # combined inventory
+
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
         caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
         player.add_to_roster(caught)

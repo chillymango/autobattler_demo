@@ -222,7 +222,7 @@ class Ui(QtWidgets.QMainWindow):
                 shift_team_down.setDisabled(True)
             else:
                 team_member_button.setDisabled(False)
-                team_member_button.setText(team_member.name)
+                team_member_button.setText(str(team_member))
                 remove_team_member.setDisabled(False)
                 shift_team_up.setDisabled(False)
                 shift_team_down.setDisabled(False)
