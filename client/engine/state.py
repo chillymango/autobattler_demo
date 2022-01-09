@@ -14,6 +14,7 @@ from engine.player import PlayerManager
 from engine.pokemon import EvolutionManager, PokemonFactory
 from engine.pokemon import TmManager
 from engine.shop import ShopManager
+from engine.sprites import SpriteManager
 from engine.turn import Turn
 
 
@@ -57,6 +58,7 @@ class GameState:
         return [
             Turn,
             PlayerManager,
+            SpriteManager,
             TmManager,
             PokemonFactory,
             Matchmaker,

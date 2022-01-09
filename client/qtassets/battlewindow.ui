@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>834</height>
+    <width>1021</width>
+    <height>855</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -146,22 +146,22 @@ Wilds
    <widget class="QPushButton" name="teamMember0">
     <property name="geometry">
      <rect>
-      <x>520</x>
-      <y>70</y>
-      <width>171</width>
-      <height>51</height>
+      <x>540</x>
+      <y>60</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
-     <string>Your Battle Pokemon 1</string>
+     <string>Battle Pokemon 1</string>
     </property>
    </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>510</x>
+      <x>540</x>
       <y>10</y>
-      <width>481</width>
+      <width>451</width>
       <height>31</height>
      </rect>
     </property>
@@ -182,9 +182,9 @@ Wilds
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>310</y>
-      <width>491</width>
+      <x>540</x>
+      <y>260</y>
+      <width>451</width>
       <height>31</height>
      </rect>
     </property>
@@ -205,10 +205,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon1">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>460</y>
-      <width>171</width>
-      <height>51</height>
+      <x>540</x>
+      <y>450</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -218,10 +218,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon2">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>520</y>
-      <width>171</width>
-      <height>51</height>
+      <x>700</x>
+      <y>330</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -231,10 +231,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon3">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>400</y>
-      <width>171</width>
-      <height>51</height>
+      <x>700</x>
+      <y>450</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -244,10 +244,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon4">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>460</y>
-      <width>171</width>
-      <height>51</height>
+      <x>860</x>
+      <y>330</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -257,10 +257,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon5">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>520</y>
-      <width>171</width>
-      <height>51</height>
+      <x>860</x>
+      <y>450</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -270,36 +270,36 @@ Wilds
    <widget class="QPushButton" name="teamMember1">
     <property name="geometry">
      <rect>
-      <x>520</x>
-      <y>140</y>
-      <width>171</width>
-      <height>51</height>
+      <x>700</x>
+      <y>60</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
-     <string>Your Battle Pokemon 2</string>
+     <string>Battle Pokemon 2</string>
     </property>
    </widget>
    <widget class="QPushButton" name="teamMember2">
     <property name="geometry">
      <rect>
-      <x>520</x>
-      <y>210</y>
-      <width>171</width>
-      <height>51</height>
+      <x>860</x>
+      <y>60</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
-     <string>Your Battle Pokemon 3</string>
+     <string>Battle Pokemon 3</string>
     </property>
    </widget>
    <widget class="QPushButton" name="removeTeamMember0">
     <property name="geometry">
      <rect>
-      <x>730</x>
-      <y>70</y>
-      <width>61</width>
-      <height>51</height>
+      <x>540</x>
+      <y>220</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -309,10 +309,10 @@ Wilds
    <widget class="QPushButton" name="removeTeamMember1">
     <property name="geometry">
      <rect>
-      <x>730</x>
-      <y>140</y>
-      <width>61</width>
-      <height>51</height>
+      <x>700</x>
+      <y>220</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -322,10 +322,10 @@ Wilds
    <widget class="QPushButton" name="removeTeamMember2">
     <property name="geometry">
      <rect>
-      <x>730</x>
-      <y>210</y>
-      <width>61</width>
-      <height>51</height>
+      <x>860</x>
+      <y>220</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -335,79 +335,79 @@ Wilds
    <widget class="QPushButton" name="shiftTeam0Up">
     <property name="geometry">
      <rect>
-      <x>830</x>
-      <y>70</y>
+      <x>540</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Up</string>
+     <string>Left</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftTeam1Up">
     <property name="geometry">
      <rect>
-      <x>830</x>
-      <y>140</y>
+      <x>700</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Up</string>
+     <string>Left</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftTeam2Up">
     <property name="geometry">
      <rect>
-      <x>830</x>
-      <y>210</y>
+      <x>860</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Up</string>
+     <string>Left</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftTeam0Down">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>70</y>
+      <x>610</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Down</string>
+     <string>Right</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftTeam1Down">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>140</y>
+      <x>770</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Down</string>
+     <string>Right</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftTeam2Down">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>210</y>
+      <x>930</x>
+      <y>180</y>
       <width>61</width>
-      <height>51</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Down</string>
+     <string>Right</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_3">
@@ -436,10 +436,10 @@ Wilds
    <widget class="QPushButton" name="opposingPokemon0">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>400</y>
-      <width>171</width>
-      <height>51</height>
+      <x>540</x>
+      <y>330</y>
+      <width>131</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="text">
@@ -449,9 +449,9 @@ Wilds
    <widget class="QLabel" name="opponentName">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>350</y>
-      <width>491</width>
+      <x>540</x>
+      <y>290</y>
+      <width>451</width>
       <height>31</height>
      </rect>
     </property>
@@ -495,7 +495,7 @@ Wilds
    <widget class="QPushButton" name="partyItems1">
     <property name="geometry">
      <rect>
-      <x>400</x>
+      <x>410</x>
       <y>120</y>
       <width>71</width>
       <height>51</height>
@@ -508,10 +508,10 @@ Wilds
    <widget class="QPushButton" name="partyPokemon5">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>360</y>
-      <width>251</width>
-      <height>51</height>
+      <x>260</x>
+      <y>330</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -521,7 +521,7 @@ Wilds
    <widget class="QPushButton" name="addParty0">
     <property name="geometry">
      <rect>
-      <x>310</x>
+      <x>160</x>
       <y>60</y>
       <width>71</width>
       <height>51</height>
@@ -535,8 +535,8 @@ Team</string>
    <widget class="QPushButton" name="partyItems5">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>360</y>
+      <x>410</x>
+      <y>380</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -548,8 +548,8 @@ Team</string>
    <widget class="QPushButton" name="partyItems3">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>240</y>
+      <x>410</x>
+      <y>250</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -561,8 +561,8 @@ Team</string>
    <widget class="QPushButton" name="addParty2">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>180</y>
+      <x>160</x>
+      <y>190</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -575,10 +575,10 @@ Team</string>
    <widget class="QPushButton" name="partyPokemon0">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>60</y>
-      <width>251</width>
-      <height>51</height>
+      <x>10</x>
+      <y>70</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -588,8 +588,8 @@ Team</string>
    <widget class="QPushButton" name="partyItems0">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>60</y>
+      <x>160</x>
+      <y>120</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -601,10 +601,10 @@ Team</string>
    <widget class="QPushButton" name="partyPokemon2">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>180</y>
-      <width>251</width>
-      <height>51</height>
+      <x>10</x>
+      <y>200</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -614,8 +614,8 @@ Team</string>
    <widget class="QPushButton" name="partyItems4">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>300</y>
+      <x>160</x>
+      <y>380</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -627,8 +627,8 @@ Team</string>
    <widget class="QPushButton" name="addParty4">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>300</y>
+      <x>160</x>
+      <y>320</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -641,10 +641,10 @@ Team</string>
    <widget class="QPushButton" name="partyPokemon3">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>240</y>
-      <width>251</width>
-      <height>51</height>
+      <x>260</x>
+      <y>200</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -654,8 +654,8 @@ Team</string>
    <widget class="QPushButton" name="addParty3">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>240</y>
+      <x>410</x>
+      <y>190</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -668,8 +668,8 @@ Team</string>
    <widget class="QPushButton" name="partyItems2">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>180</y>
+      <x>160</x>
+      <y>250</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -681,10 +681,10 @@ Team</string>
    <widget class="QPushButton" name="partyPokemon4">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>300</y>
-      <width>251</width>
-      <height>51</height>
+      <x>10</x>
+      <y>330</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -694,10 +694,10 @@ Team</string>
    <widget class="QPushButton" name="partyPokemon1">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>120</y>
-      <width>251</width>
-      <height>51</height>
+      <x>260</x>
+      <y>70</y>
+      <width>131</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
@@ -707,8 +707,8 @@ Team</string>
    <widget class="QPushButton" name="addParty1">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>120</y>
+      <x>410</x>
+      <y>60</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -721,8 +721,8 @@ Team</string>
    <widget class="QPushButton" name="addParty5">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>360</y>
+      <x>410</x>
+      <y>320</y>
       <width>71</width>
       <height>51</height>
      </rect>
@@ -736,7 +736,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>130</x>
-      <y>430</y>
+      <y>450</y>
       <width>251</width>
       <height>51</height>
      </rect>
@@ -749,7 +749,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>510</y>
+      <y>530</y>
       <width>113</width>
       <height>23</height>
      </rect>
@@ -767,7 +767,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>511</y>
+      <y>531</y>
       <width>121</width>
       <height>20</height>
      </rect>
@@ -790,7 +790,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>549</y>
+      <y>569</y>
       <width>113</width>
       <height>23</height>
      </rect>
@@ -803,7 +803,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>550</y>
+      <y>570</y>
       <width>121</width>
       <height>20</height>
      </rect>
@@ -826,7 +826,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>400</x>
-      <y>529</y>
+      <y>549</y>
       <width>113</width>
       <height>23</height>
      </rect>
@@ -844,7 +844,7 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>280</x>
-      <y>530</y>
+      <y>550</y>
       <width>121</width>
       <height>20</height>
      </rect>
@@ -863,13 +863,145 @@ Team</string>
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QLabel" name="party0Label">
+    <property name="geometry">
+     <rect>
+      <x>16</x>
+      <y>50</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="party1Label">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>50</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party1</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="party2Label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>180</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party2</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="party3Label">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>180</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party3</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="party4Label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>310</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party4</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="party5Label">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>310</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>party5</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1024</width>
+     <width>1021</width>
      <height>20</height>
     </rect>
    </property>

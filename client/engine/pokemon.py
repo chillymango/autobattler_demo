@@ -160,7 +160,7 @@ class EvolutionManager(Component):
             if not player.is_alive:
                 continue
             for party_member in player.party:
-                if party_member.name not in self.evolution_config:
+                if party_member is None or party_member.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)
                 threshold = self.get_threshold(party_member.name)
