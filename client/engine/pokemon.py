@@ -195,15 +195,12 @@ class Pokemon:
     Instantiate unique object based on name
     """
 
-    
     def __init__(
         self,
         pokemon_name,
         battle_card,
         nickname,
         id=None, 
-        
-        
     ):
         self.name = pokemon_name
         self.battle_card = battle_card

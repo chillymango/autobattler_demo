@@ -265,8 +265,9 @@ class Ui(QtWidgets.QMainWindow):
                 color = shop_manager.tier_colors[tier]
                 set_button_image(shop_button, sprite, color)
         # update shop location
-        route = shop_manager.route[self.state.current_player]
-        self.shopLocationLabel.setText(route.name)
+        if self.state.turn.number:
+            route = shop_manager.route[self.state.current_player]
+            self.shopLocationLabel.setText(route.name)
 
     def roll_shop_callback(self):
         print("Rolling shop")
