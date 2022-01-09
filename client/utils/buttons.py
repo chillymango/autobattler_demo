@@ -1,7 +1,7 @@
 """
 Helpers for buttons
 """
-from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QLabel, QPushButton
 
 from engine.pokemon import Pokemon
 from engine.shop import ShopManager
@@ -61,15 +61,21 @@ class PokemonButton:
     Renders a Pokemon sprite or text or blank, depending on configuration.
     """
 
-    def __init__(self, button, state, default_text=""):
+    def __init__(self, button, state, default_text="", label=None):
         self.button: QPushButton = button
+        self.label: QLabel = label
         self.state = state
         self.default_text = default_text
         # TODO: add some more config options here probably
 
     def clear(self):
         clear_button_image(self.button)
+        self.set_label('')
         self.button.setText(self.default_text)
+
+    def set_label(self, text):
+        if self.label:
+            self.label.setText(text)
 
     def render_shop_card(self, pokemon_name: str):
         """
@@ -121,6 +127,8 @@ class PokemonButton:
             # set text to pokemon name
             clear_button_image(self.button)
             self.button.setText(pokemon.nickname)
+            self.set_label('')
         else:
             set_button_image(self.button, sprite, "transparent")
             self.button.setText('')
+            self.set_label(pokemon.nickname)

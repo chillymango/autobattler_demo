@@ -72,30 +72,30 @@ class CreepRoundManager(Component):
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
 
         for idx, line in enumerate(creep_rounds_raw):
+            round_num = None
             if line.startswith('#'):
                 continue
             try:
                 round_num = int(line)
-                # load the next three lines with it
+                # load the next six lines with it
                 pokemon_names = [
                     pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 7]
                 ]
-                pokemon_names = sample(pokemon_names, 3)
                 team = [
                     pokemon_factory.create_PVEpokemon_by_name(pokemon) for pokemon in pokemon_names
                 ]
-                for pokemon in pokemon_names:
-                    team.append(pokemon_factory.create_PVEpokemon_by_name(pokemon))
                 self.creep_round_pokemon[round_num] = team
             except ValueError:
-                pass
+                # re-raise exception if a line number was parseable
+                if round_num is not None:
+                    print('Error parsing creep round {}'.format(round_num))
+                    raise
 
     def create_creep_player(self):
         # do a lookup based on the current run
         creep_player = Player("Creep Round",type_=EntityType.CREEP)
         turn = self.state.turn.number
-        creep_pokemon = self.creep_round_pokemon[turn]
-        for idx, pokemon in enumerate(creep_pokemon):
+        for idx, pokemon in enumerate(self.creep_round_pokemon[turn]):
             creep_player.add_to_party(pokemon)
             creep_player.add_party_to_team(idx)
         return creep_player

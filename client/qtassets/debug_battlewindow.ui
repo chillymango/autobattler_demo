@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>604</width>
-    <height>393</height>
+    <height>460</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -94,9 +94,9 @@
   <widget class="QLineEdit" name="gamePhase">
    <property name="geometry">
     <rect>
-     <x>22</x>
-     <y>270</y>
-     <width>141</width>
+     <x>12</x>
+     <y>280</y>
+     <width>171</width>
      <height>23</height>
     </rect>
    </property>
@@ -163,6 +163,19 @@
    </property>
    <property name="text">
     <string>Enable Sprites</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="addEnergy">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>380</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Add 100 Energy</string>
    </property>
   </widget>
  </widget>

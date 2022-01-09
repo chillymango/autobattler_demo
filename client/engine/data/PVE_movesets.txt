@@ -4,7 +4,7 @@ rattata_alolan,QUICK_ATTACK,HYPER_FANG,none,3,15,15,15
 spearow,TACKLE,DRILL_PECK,none,3,0,0,0
 nidoran_female,BITE,SLUDGE_BOMB,none,3,0,0,0
 nidoran_male,POISON_STING,HORN_ATTACK,none,3,0,0,0
-pidgeotto,STEEL_WING,AIR_CUTTER,none,2.5,0,0,0
+pidgeotto,STEEL_WING,AIR_CUTTER,none,3,0,0,0
 metapod,BUG_BITE,STRUGGLE,none,4,0,0,0
 pikachu,PRESENT,DISCHARGE,none,4,0,0,0
 kakuna,BUG_BITE,STRUGGLE,none,4,0,0,0

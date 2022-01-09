@@ -36,6 +36,7 @@ class Component:
         classname = self.__class__.__name__
         snakecase = camel_case_to_snake_case(classname)
         setattr(self.state, snakecase, self)
+        self.log = self.state.logger.log
 
     def initialize(self):
         pass
