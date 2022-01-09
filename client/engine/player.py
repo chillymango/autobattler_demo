@@ -50,6 +50,17 @@ class Player:
     def team_is_full(self):
         return len(self.team) >= 3
 
+    @property
+    def roster(self):
+        """
+        Party + Storage
+
+        Team is a subset of party. Party and storage are distinct containers.
+
+        List order is always party pokemon first and then storage pokemon.
+        """
+
+
     def add_to_party(self, pokemon):
         """
         Add Pokemon to first free party spot
