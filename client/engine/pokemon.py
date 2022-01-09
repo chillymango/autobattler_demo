@@ -103,8 +103,6 @@ class BattleCard:
         if self.shiny:
             return False
         self.shiny = True
-        #self.a_iv *= self.SHINY_POWER_FACTOR
-        #self.d_iv *= self.SHINY_POWER_FACTOR
         return True
 
     def set_tm_move(self, move):
