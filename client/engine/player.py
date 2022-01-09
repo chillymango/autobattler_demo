@@ -59,7 +59,7 @@ class Player:
 
         List order is always party pokemon first and then storage pokemon.
         """
-
+        return [x for x in self.party if x is not None] + self.storage
 
     def add_to_party(self, pokemon):
         """
