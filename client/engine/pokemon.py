@@ -202,11 +202,11 @@ class Pokemon:
         nickname,
         id=None, 
     ):
-        self.name = pokemon_name
-        self.battle_card = battle_card
+        self.name: str = pokemon_name
+        self.battle_card: BattleCard = battle_card
         self.id = id or uuid4()
         self.item = None
-        self.xp = 0
+        self.xp: float = 0
         self.nickname = nickname
         
 
