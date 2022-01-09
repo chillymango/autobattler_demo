@@ -4,14 +4,14 @@ Load Sprites for Pokemon
 import os
 from collections import defaultdict
 
-from traitlets.traitlets import default
-
 from engine.base import Component
 
 
 class SpriteManager(Component):
 
     ASSETS_DIR = 'qtassets'
+
+    DISABLED = False
 
     def initialize(self):
         super().initialize()
@@ -30,7 +30,11 @@ class SpriteManager(Component):
             self.shiny_sprites[pokemon] = os.path.join(self.shiny_base, filename)
 
     def get_normie_sprite(self, pokemon_name):
-        return self.normie_sprites[pokemon_name]
+        if not self.disabled:
+            return self.normie_sprites[pokemon_name]
+        return None
 
     def get_shiny_sprite(self, pokemon_name):
-        return self.shiny_sprites[pokemon_name]
+        if not self.disabled:
+            return self.shiny_sprites[pokemon_name]
+        return None
