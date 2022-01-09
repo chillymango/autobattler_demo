@@ -75,6 +75,9 @@ class Ui(QtWidgets.QDialog):
             pokemon = self.current_player.party[row]
             self.current_player.party[row] = None
             self.current_player.storage.append(pokemon)
+            # if pokemon was on the team, remove it from the team
+            if pokemon in self.current_player.team:
+                self.current_player.team.remove(pokemon)
         self.render_party()
         self.render_storage()
 

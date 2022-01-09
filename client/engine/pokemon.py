@@ -208,7 +208,6 @@ class Pokemon:
         self.item = None
         self.xp: float = 0
         self.nickname = nickname
-        
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()
