@@ -7,6 +7,7 @@ from collections import namedtuple
 from uuid import uuid4
 
 from engine.base import Component
+import pandas as pd
 
 DEFAULT_XP_GAIN = 50.0
 
@@ -48,6 +49,7 @@ class PokemonFactory(Component):
 
     CONFIG_PATH = 'engine/data/default_movesets.txt'
     CONFIG_PATH_PVE = 'engine/data/PVE_movesets.txt'
+    NAME_PATH = "qtassets/sanitized_names.csv"
 
     def initialize(self):
         """
@@ -69,6 +71,8 @@ class PokemonFactory(Component):
         for line in PVE_movesets_raw:
             pokemon_name = line.split(',')[0]
             self.PVE_movesets[pokemon_name] = line
+        self.nickname_map = pd.read_csv(self.NAME_PATH)
+
 
     def get_PVE_battle_card(self, pokemon_name):
         """
@@ -105,7 +109,8 @@ class PokemonFactory(Component):
         Example, pass in `pikachu` to create a default Pikachu.
         """
         battle_card = self.get_default_battle_card(pokemon_name)
-        return Pokemon(pokemon_name, battle_card)
+        nickname = self.nickname_map[self.nickname_map.name == pokemon_name].sanitized_name.iloc[0]
+        return Pokemon(pokemon_name, battle_card, nickname)
 
     def create_PVEpokemon_by_name(self, pokemon_name):
         """
@@ -115,7 +120,8 @@ class PokemonFactory(Component):
         """
         battle_card = self.get_PVE_battle_card(pokemon_name)
         battle_card.bonus_shield = -1
-        return Pokemon(pokemon_name, battle_card)
+        nickname = self.nickname_map[self.nickname_map.name == pokemon_name].sanitized_name.iloc[0]
+        return Pokemon(pokemon_name, battle_card, nickname)
 
 
 class EvolutionManager(Component):
@@ -189,20 +195,26 @@ class Pokemon:
     Instantiate unique object based on name
     """
 
+    
     def __init__(
         self,
         pokemon_name,
         battle_card,
-        id=None,
+        nickname,
+        id=None, 
+        
+        
     ):
         self.name = pokemon_name
         self.battle_card = battle_card
         self.id = id or uuid4()
         self.item = None
         self.xp = 0
+        self.nickname = nickname
+        
 
     def __str__(self):
-        return ("Shiny" * self.battle_card.shiny + " {}".format(self.name)).strip()
+        return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()
 
     def __repr__(self):
         return "{} ({})".format(self.name, self.id)
