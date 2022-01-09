@@ -30,3 +30,4 @@ spearow	4	fearow
 sandshrew_alolan	4	sandslash_alolan
 metapod	2	butterfree
 kakuna	2	beedrill
+tentacool	4	tentacruel

@@ -55,7 +55,7 @@ raichu	0
 tangela	0	
 hitmonchan	0	
 hitmonlee	0	
-tentacool	0	
+tentacool	4	tentacruel
 magmar	0	
 jynx	0	
 electabuzz	0	
