@@ -119,6 +119,7 @@ class Player:
         """
         if len(self.storage) < MAX_STORAGE_SIZE:
             self.storage.append(pokemon)
+            return True
         else:
             print('No room to add {} to team'.format(pokemon))
 
