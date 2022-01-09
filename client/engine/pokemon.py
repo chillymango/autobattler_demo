@@ -155,6 +155,9 @@ class BattleCard:
             self.hp_iv,
         ])
 
+    def __repr__(self):
+        return "BattleCard({}): {}".format(self.name, self.to_string())
+
 
 class TmManager(Component):
     """
