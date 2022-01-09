@@ -78,10 +78,7 @@ class BattleManager(Component):
         else:
             TM2 = battler2.move_tm
 
-        poke1_lv =  random.randint(battler1.level-1, battler1.level+1)   
-        poke2_lv =  random.randint(battler1.level-1, battler1.level+1)   
-
-        url = f'http://localhost/pvpoke/src/battle/10000/{battler1.name}-{poke1_lv}-{battler1.a_iv}-{battler1.d_iv}-{battler1.hp_iv}-{BUFF1}-{BUFF1}-1-0/{battler2.name}-{poke2_lv}-{battler2.a_iv}-{battler2.d_iv}-{battler2.hp_iv}-{BUFF2}-{BUFF2}-1-0/{SHIELD1}{SHIELD2}/{battler1.move_f}-{battler1.move_ch}-{TM1}/{battler2.move_f}-{battler2.move_ch}-{TM2}/{battler1.health}-{battler2.health}/{battler1.energy}-{battler2.energy}/'
+        url = f'http://localhost/pvpoke/src/battle/10000/{battler1.name}-{battler1.levelpoke1_lv}-{battler1.a_iv}-{battler1.d_iv}-{battler1.hp_iv}-{BUFF1}-{BUFF1}-1-0/{battler2.name}-{battler2.level}-{battler2.a_iv}-{battler2.d_iv}-{battler2.hp_iv}-{BUFF2}-{BUFF2}-1-0/{SHIELD1}{SHIELD2}/{battler1.move_f}-{battler1.move_ch}-{TM1}/{battler2.move_f}-{battler2.move_ch}-{TM2}/{battler1.health}-{battler2.health}/{battler1.energy}-{battler2.energy}/'
         self.driver.get(url)
         result = self.driver.find_element_by_xpath("//div[@class='summary section white']").text.split()
         while len(result) == 0:
@@ -110,6 +107,13 @@ class BattleManager(Component):
     def battle(self, team1_cards, team2_cards):
         team1_live = copy.deepcopy(team1_cards)
         team2_live = copy.deepcopy(team2_cards)
+
+        for i in team1_live:
+            i.level = random.randint(i.level-1, i.level+1)   
+
+        for i in team2_live:
+            i.level = random.randint(i.level-1, i.level+1)   
+
         current_team1 = next((x for x in team1_live if x.status == 1), None)
         current_team2 = next((x for x in team2_live if x.status == 1), None)
 
