@@ -139,6 +139,32 @@
     <string>Developer Console</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="disableSprites">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>170</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Disable Sprites</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="enableSprites">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>240</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable Sprites</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

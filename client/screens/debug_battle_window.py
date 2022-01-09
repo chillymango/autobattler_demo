@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from engine.battle_seq import BattleManager
 from engine.match import Matchmaker
-
+from engine.sprites import SpriteManager
 from engine.state import GamePhase
 from engine.state import GameState
 from utils.error_window import error_window
@@ -45,6 +45,12 @@ class Ui(QtWidgets.QDialog):
         self.devConsole = self.findChild(QtWidgets.QPushButton, "devConsole")
         self.devConsole.clicked.connect(self.dev_console_callback)
 
+        self.disableSprites = self.findChild(QtWidgets.QPushButton, "disableSprites")
+        self.disableSprites.clicked.connect(self.disable_sprites)
+
+        self.enableSprites = self.findChild(QtWidgets.QPushButton, "enableSprites")
+        self.enableSprites.clicked.connect(self.enable_sprites)
+
         for callback in [
             self.update_game_phase
         ]:
@@ -53,6 +59,14 @@ class Ui(QtWidgets.QDialog):
             timer.start(100)
 
         self.show()
+
+    def disable_sprites(self):
+        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager.DISABLED = True
+
+    def enable_sprites(self):
+        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager.DISABLED = False
 
     def dev_console_callback(self):
         state: GameState = self.game_state
