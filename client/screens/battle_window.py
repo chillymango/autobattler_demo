@@ -122,7 +122,7 @@ class Ui(QtWidgets.QMainWindow):
         # TODO: do something smarter than this
         for callback in [
             self.render_party,
-          #  self.render_shop,
+            self.render_shop,
             self.render_team,
             self.render_player_stats,
             self.render_opponent_party,
@@ -249,6 +249,7 @@ class Ui(QtWidgets.QMainWindow):
                     team_member_button.setText("")
                     set_button_image(team_member_button, sprite, "white")
                 else:
+                    clear_button_image(team_member_button)
                     team_member_button.setText(str(team_member))
 
     def render_shop(self):
