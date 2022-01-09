@@ -90,6 +90,10 @@ class Ui(QtWidgets.QMainWindow):
             PokemonButton(self.teamMember[idx], self.state, default_text="Team {}".format(idx))
             for idx in range(len(self.teamMember))
         ]
+        self.teamLabel = [
+            self.findChild(QtWidgets.QPushButton, "teamLabel{}".format(idx))
+            for idx in range(3)
+        ]
         self.removeTeamMember = [
             self.findChild(QtWidgets.QPushButton, "removeTeamMember{}".format(idx))
             for idx in range(3)
@@ -119,6 +123,10 @@ class Ui(QtWidgets.QMainWindow):
         self.opposingPokemon = [
             self.findChild(QtWidgets.QPushButton, "opposingPokemon{}".format(idx))
             for idx in range(6)
+        ]
+        self.opposingLabel = [
+            self.findChild(QtWidgets.QPushButton, "opposingLabel{}".format(idx))
+            for label in range(6)
         ]
 
         # player stats
