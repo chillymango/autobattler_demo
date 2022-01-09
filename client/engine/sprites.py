@@ -30,11 +30,11 @@ class SpriteManager(Component):
             self.shiny_sprites[pokemon] = os.path.join(self.shiny_base, filename)
 
     def get_normie_sprite(self, pokemon_name):
-        if not self.disabled:
+        if not self.DISABLED:
             return self.normie_sprites[pokemon_name]
         return None
 
     def get_shiny_sprite(self, pokemon_name):
-        if not self.disabled:
+        if not self.DISABLED:
             return self.shiny_sprites[pokemon_name]
         return None
