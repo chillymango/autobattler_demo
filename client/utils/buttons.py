@@ -126,9 +126,9 @@ class PokemonButton:
         if sprite is None:
             # set text to pokemon name
             clear_button_image(self.button)
-            self.button.setText(pokemon.nickname)
+            self.button.setText(str(pokemon))
             self.set_label('')
         else:
             set_button_image(self.button, sprite, "transparent")
             self.button.setText('')
-            self.set_label(pokemon.nickname)
+            self.set_label(str(pokemon))
