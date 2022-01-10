@@ -46,8 +46,18 @@ class GamePhase(Enum):
     ERROR = 10
 
 
-class GameState:
+# i need some class here that contains only the raw information about the game and its state
+# and does not include things like factories
+# this split needs to happen now so i can make the state be fully transmitted over the wire
+
+# maybe we just do a `mutate` function or something
+
+
+class Environment:
     """
+    TODO: rename this to Environment
+    and create a `State` object that's actually just game data
+
     Overarching object that covers all game data.
 
     Probably want to put stuff here that will load state from pubsub messages when doing
@@ -165,6 +175,6 @@ if __name__ == "__main__":
         Player('HAL')
     ]
     players = humans + computers
-    state = GameState(players)
+    state = Environment(players)
 
     import IPython; IPython.embed()

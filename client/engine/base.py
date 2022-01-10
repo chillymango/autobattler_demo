@@ -12,7 +12,7 @@ import typing as T
 from utils.string import camel_case_to_snake_case
 
 if T.TYPE_CHECKING:
-    from engine.state import GameState
+    from engine.state import Environment
 
 
 class GuiArray:
@@ -30,7 +30,7 @@ class Component:
     The default action will be no-op.
     """
 
-    def __init__(self, state: "GameState"):
+    def __init__(self, state: "Environment"):
         self.state = state
         self.initialize()
         classname = self.__class__.__name__

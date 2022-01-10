@@ -8,4 +8,4 @@ Steps:
 """
 import threading
 
-from engine.state import GameState
+from engine.state import Environment

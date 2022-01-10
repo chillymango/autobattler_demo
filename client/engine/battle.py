@@ -134,9 +134,9 @@ class BattleManager(Component):
 
 if __name__ == "__main__":
     from engine.player import Player, EntityType
-    from engine.state import GameState
+    from engine.state import Environment
     player = Player('Albert Yang', type_=EntityType.HUMAN)
-    state = GameState([player])
+    state = Environment([player])
     battle_manager = BattleManager(state)
 
     team1 = battle_manager.create_team_battle_cards(['charizard', 'mewtwo', 'dragonite'])

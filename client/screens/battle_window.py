@@ -8,7 +8,7 @@ from PyQt5 import uic
 from engine.player import EntityType
 from engine.player import Player
 from engine.shop import ShopManager
-from engine.state import GamePhase, GameState
+from engine.state import GamePhase, Environment
 from screens.debug_battle_window import Ui as DebugWindow
 from screens.storage_window import Ui as StorageWindow
 from utils.buttons import set_border_color, set_border_color_and_image, set_button_image
@@ -20,21 +20,21 @@ class Ui(QtWidgets.QMainWindow):
 
     DEBUG = True
 
-    def __init__(self, state: GameState = None):
+    def __init__(self, env: Environment = None):
         super(Ui, self).__init__()
 
-        if state is None:
+        if env is None:
             self.player = Player("Albert Yang", type_=EntityType.HUMAN)
-            self.state = GameState([self.player])
+            self.env = Environment([self.player])
         else:
-            self.player = self.state.current_player
-            self.state = state
+            self.player = self.env.current_player
+            self.env = env
 
         uic.loadUi('qtassets/battlewindow.ui', self)
 
         if self.DEBUG:
-            self.state.logger.DEBUG = True
-            self.window = DebugWindow(self.state)
+            self.env.logger.DEBUG = True
+            self.window = DebugWindow(self.env)
             self.window.battle_window = self
 
         # shop buttons
@@ -46,11 +46,11 @@ class Ui(QtWidgets.QMainWindow):
             for idx in range(5)
         ]
         self.shop_pokemon_buttons = [
-            PokemonButton(qbutton, self.state, "") for idx, qbutton in enumerate(self.shopPokemon)
+            PokemonButton(qbutton, self.env, "") for idx, qbutton in enumerate(self.shopPokemon)
         ]
         # initialize from current shop offerings
         for idx, shop_button in enumerate(self.shop_pokemon_buttons):
-            text = self.state.shop_manager.shop[self.player][idx]
+            text = self.env.shop_manager.shop[self.player][idx]
             shop_button.render_shop_card(text)
             shop_button.button.clicked.connect(functools.partial(self.catch_pokemon_callback, idx))
 
@@ -70,7 +70,7 @@ class Ui(QtWidgets.QMainWindow):
         self.party_pokemon_buttons = [
             PokemonButton(
                 self.partyPokemon[idx],
-                self.state,
+                self.env,
                 "Party Pokemon {}".format(idx + 1),
                 label=self.partyLabel[idx]
             )
@@ -100,7 +100,7 @@ class Ui(QtWidgets.QMainWindow):
         self.team_member_button = [
             PokemonButton(
                 self.teamMember[idx],
-                self.state,
+                self.env,
                 default_text="Team {}".format(idx),
                 label=self.teamLabel[idx]
             )
@@ -143,7 +143,7 @@ class Ui(QtWidgets.QMainWindow):
         self.opposing_pokemon_buttons = [
             PokemonButton(
                 self.opposingPokemon[idx],
-                self.state,
+                self.env,
                 "Opponent {}".format(idx + 1),
                 label=self.opposingLabel[idx]
             )
@@ -161,6 +161,8 @@ class Ui(QtWidgets.QMainWindow):
         # update log messages
         self.logMessages = self.findChild(QtWidgets.QTextBrowser, "logMessages")
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
+
+        #self.websocket_driver = WebSocketDriver()
 
         # TODO: do something smarter than this
         for callback in [
@@ -184,12 +186,12 @@ class Ui(QtWidgets.QMainWindow):
 
         TODO: this is going to change a lot in multiplayer but get something working for now
         """
-        self.logMessages.setText(self.state.logger.content)
+        self.logMessages.setText(self.env.logger.content)
         #self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
     def render_time_to_next_stage(self):
-        state: GameState = self.state
-        if state.phase not in [
+        env: Environment = self.env
+        if env.phase not in [
             GamePhase.TURN_DECLARE_TEAM,
             GamePhase.TURN_PREPARE_TEAM,
             GamePhase.TURN_COMPLETE,
@@ -200,33 +202,33 @@ class Ui(QtWidgets.QMainWindow):
             self.timeToNextStage.setValue(0)
             return
 
-        if state.phase == GamePhase.TURN_DECLARE_TEAM:
+        if env.phase == GamePhase.TURN_DECLARE_TEAM:
             text = "Party Declaration"
-        elif state.phase == GamePhase.TURN_PREPARE_TEAM:
+        elif env.phase == GamePhase.TURN_PREPARE_TEAM:
             text = "Team Preparation"
-        elif state.phase == GamePhase.TURN_COMPLETE:
+        elif env.phase == GamePhase.TURN_COMPLETE:
             text = "Match Complete"        
 
-        stage_duration_ms = int(1E3 * state.stage_duration)
-        stage_time_ms = int(1E3 * state.time_to_next_stage)
+        stage_duration_ms = int(1E3 * env.stage_duration)
+        stage_time_ms = int(1E3 * env.time_to_next_stage)
         self.timeToNextStage.setFormat(text)
         self.timeToNextStage.setMaximum(stage_duration_ms)
         self.timeToNextStage.setValue(stage_time_ms)
 
     def open_storage_window(self):
-        self.storage_window = StorageWindow(game_state=self.state)
+        self.storage_window = StorageWindow(game_env=self.env)
 
     def render_player_stats(self):
-        player = self.state.current_player
+        player = self.env.current_player
         self.pokeBallCount.setText(str(player.balls))
         self.energyCount.setText(str(player.energy))
         self.hitPoints.setText(str(player.hitpoints))
 
     def render_opponent_party(self):
-        player = self.state.current_player
-        if self.state.matchmaker.current_matches is not None:
-            opponent = self.state.matchmaker.get_player_opponent_in_round(
-                player, self.state.matchmaker.current_matches
+        player = self.env.current_player
+        if self.env.matchmaker.current_matches is not None:
+            opponent = self.env.matchmaker.get_player_opponent_in_round(
+                player, self.env.matchmaker.current_matches
             )
             if opponent is not None:
                 self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
@@ -242,7 +244,7 @@ class Ui(QtWidgets.QMainWindow):
             self.opposingPokemon[idx].setDisabled(True)
 
     def render_party(self):
-        player = self.state.current_player
+        player = self.env.current_player
         party = player.party
         for idx, party_member in enumerate(party):
             party_button = self.party_pokemon_buttons[idx]
@@ -258,7 +260,7 @@ class Ui(QtWidgets.QMainWindow):
                 item_button.setDisabled(False)
 
     def render_team(self):
-        player = self.state.current_player
+        player = self.env.current_player
         team = player.team
         arr = [x for x in team]
         if len(arr) < 3:
@@ -279,48 +281,48 @@ class Ui(QtWidgets.QMainWindow):
                 remove_team_member.setDisabled(False)
 
     def render_shop(self):
-        shop_manager: ShopManager = self.state.shop_manager
+        shop_manager: ShopManager = self.env.shop_manager
         for idx, pokemon_name in enumerate(shop_manager.shop[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
             shop_button.render_shop_card(pokemon_name)
 
         # update shop location
-        if self.state.turn.number:
-            route = shop_manager.route[self.state.current_player]
+        if self.env.turn.number:
+            route = shop_manager.route[self.env.current_player]
             self.shopLocationLabel.setText(route.name)
 
     def roll_shop_callback(self):
         print("Rolling shop")
-        self.state.shop_manager.roll(self.player)
+        self.env.shop_manager.roll(self.player)
         self.render_shop()
 
     def catch_pokemon_callback(self, idx):
         print("Acquiring Pokemon at index {}".format(idx))
-        self.state.shop_manager.catch(self.player, idx)
+        self.env.shop_manager.catch(self.player, idx)
         self.render_shop()
         self.render_party()
 
     def add_to_team_callback(self, idx):
         print("Adding pokemon at index {} to team".format(idx))
-        self.state.current_player.add_party_to_team(idx)
+        self.env.current_player.add_party_to_team(idx)
 
     def remove_team_member_callback(self, idx):
         print("Removing team member at idx {} from team".format(idx))
-        self.state.current_player.remove_from_team(idx)
+        self.env.current_player.remove_from_team(idx)
 
     def shift_up_callback(self, idx):
         print("Shifting team member at {} up".format(idx))
         if idx == 0:
             return
-        self.state.current_player.team[idx], self.state.current_player.team[idx - 1] =\
-            self.state.current_player.team[idx - 1], self.state.current_player.team[idx]
+        self.env.current_player.team[idx], self.env.current_player.team[idx - 1] =\
+            self.env.current_player.team[idx - 1], self.env.current_player.team[idx]
 
     def shift_down_callback(self, idx):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        self.state.current_player.team[idx], self.state.current_player.team[idx + 1] =\
-            self.state.current_player.team[idx + 1], self.state.current_player.team[idx]
+        self.env.current_player.team[idx], self.env.current_player.team[idx + 1] =\
+            self.env.current_player.team[idx + 1], self.env.current_player.team[idx]
 
 
 if __name__ == "__main__":

@@ -10,16 +10,16 @@ from engine.logger import Logger
 from engine.match import Matchmaker
 from engine.sprites import SpriteManager
 from engine.state import GamePhase
-from engine.state import GameState
+from engine.state import Environment
 from utils.error_window import error_window
 
 
 class Ui(QtWidgets.QDialog):
 
-    def __init__(self, game_state=None):
+    def __init__(self, env=None):
         super(Ui, self).__init__()
-        self.game_state = game_state
-        logger: Logger = self.game_state.logger
+        self.env = env
+        logger: Logger = self.env.logger
         self.log = logger.log
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
@@ -73,45 +73,45 @@ class Ui(QtWidgets.QDialog):
         self.show()
 
     def disable_log_timestamps(self):
-        logger: Logger = self.game_state.logger
+        logger: Logger = self.env.logger
         logger.TIMESTAMPS = False
 
     def enable_log_timestamps(self):
-        logger: Logger = self.game_state.logger
+        logger: Logger = self.env.logger
         logger.TIMESTAMPS = True
 
     def disable_sprites(self):
-        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager: SpriteManager = self.env.sprite_manager
         sprite_manager.DISABLED = True
 
     def enable_sprites(self):
-        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager: SpriteManager = self.env.sprite_manager
         sprite_manager.DISABLED = False
 
     def add_energy_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
         
         print("Adding 100 energy")
-        self.game_state.current_player.energy += 100
+        self.env.current_player.energy += 100
 
     def dev_console_callback(self):
-        state: GameState = self.game_state
+        env: Environment = self.env
         import IPython; IPython.embed()
 
     def start_game_callback(self):
         """
         Initiate the game.
         """
-        state: GameState = self.game_state
-        state.start_game()
+        env: Environment = self.env
+        env.start_game()
 
         self.stop_game.clear()
 
         def run_loop():
             while not self.stop_game.is_set():
-                state.step_loop()
+                env.step_loop()
 
         self.runner = threading.Thread(target=run_loop)
         self.runner.daemon = True
@@ -121,27 +121,27 @@ class Ui(QtWidgets.QDialog):
         """
         Print the current game state phase
         """
-        state: GameState = self.game_state
-        self.gamePhase.setText(state.phase.name)
+        env: Environment = self.env
+        self.gamePhase.setText(env.phase.name)
 
     def make_new_matches_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
 
         print("Making new matches")
-        round = self.game_state.matchmaker.organize_round()
-        self.game_state.matchmaker.matches.append(round)
+        round = self.env.matchmaker.organize_round()
+        self.env.matchmaker.matches.append(round)
 
     def run_battle_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
 
         print("Running battle callback")
-        player = self.game_state.current_player
-        battle_manager: BattleManager = self.game_state.battle_manager
-        matchmaker: Matchmaker = self.game_state.matchmaker
+        player = self.env.current_player
+        battle_manager: BattleManager = self.env.battle_manager
+        matchmaker: Matchmaker = self.env.matchmaker
         opponent = matchmaker.get_player_opponent_in_round(player, matchmaker.current_matches)
         result = battle_manager.player_battle(player, opponent)
         if (result == 1):
@@ -150,27 +150,27 @@ class Ui(QtWidgets.QDialog):
             print('creep victory')
 
     def step_turn_forward_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
 
         print("Stepping turn forward one.")
-        self.game_state.turn.advance()
-        print("Turn number is now {}".format(self.game_state.turn.number))
+        self.env.turn.advance()
+        print("Turn number is now {}".format(self.env.turn.number))
 
     def step_turn_backward_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
 
         print("Stepping turn backward one.")
-        self.game_state.turn.retract()
-        print("Turn number is now {}".format(self.game_state.turn.number))
+        self.env.turn.retract()
+        print("Turn number is now {}".format(self.env.turn.number))
 
     def add_pokeballs_callback(self):
-        if self.game_state is None:
+        if self.env is None:
             error_window("No active game")
             return
         
         print("Adding 100 pokeballs")
-        self.game_state.current_player.balls += 100
+        self.env.current_player.balls += 100
