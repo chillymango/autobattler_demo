@@ -3,6 +3,8 @@ Battle Manager
 """
 from engine.base import Component
 from engine.match import Matchmaker
+from engine.player import EntityType
+from engine.player import Player
 
 from selenium import webdriver
 import random
@@ -24,7 +26,6 @@ class BattleManager(Component):
         """
         # start selenium stuff
         self.driver = webdriver.Firefox()
-        #self.driver.get('http://localhost/pvpoke/src/battle/matrix')
 
     def __del__(self):
         """
@@ -33,7 +34,7 @@ class BattleManager(Component):
         if getattr(self, 'driver', None):
             self.driver.close()
 
-    def get_battle_cards_for_player(self, player):
+    def get_battle_cards_for_player(self, player: Player):
         """
         Get a list of battle cards from a players team.
 
@@ -43,8 +44,10 @@ class BattleManager(Component):
         if len(battle_cards) > 3:
             raise ValueError("Cannot submit a team of size > 3")
         if len(battle_cards) < 3:
-            # populate cards from party if possible
             unassigned = [x for x in player.party if x not in player.team and x is not None]
+            if player.type == EntityType.CREEP:
+                # randomize for creep rounds
+                unassigned = random.sample(unassigned, len(unassigned))
             for idx in range(min(3 - len(battle_cards), len(unassigned))):
                 player.add_to_team(unassigned[idx])
                 battle_cards.append(unassigned[idx].battle_card)

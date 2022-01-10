@@ -33,6 +33,7 @@ class Ui(QtWidgets.QMainWindow):
 
         if self.DEBUG:
             self.window = DebugWindow(self.state)
+            self.window.battle_window = self
 
         # shop buttons
         self.update_shop_signal = QtCore.pyqtSignal()
@@ -65,8 +66,13 @@ class Ui(QtWidgets.QMainWindow):
             for idx in range(6)
         ]
         self.party_pokemon_buttons = [
-            PokemonButton(qbutton, self.state, "Party Pokemon {}".format(idx))
-            for idx, qbutton in enumerate(self.partyPokemon)
+            PokemonButton(
+                self.partyPokemon[idx],
+                self.state,
+                "Party Pokemon {}".format(idx + 1),
+                label=self.partyLabel[idx]
+            )
+            for idx in range(len(self.partyPokemon))
         ]
         self.addParty = [
             self.findChild(QtWidgets.QPushButton, "addParty{}".format(idx))
@@ -86,8 +92,17 @@ class Ui(QtWidgets.QMainWindow):
             self.findChild(QtWidgets.QPushButton, "teamMember{}".format(idx))
             for idx in range(3)
         ]
+        self.teamLabel = [
+            self.findChild(QtWidgets.QLabel, "teamLabel{}".format(idx))
+            for idx in range(3)
+        ]
         self.team_member_button = [
-            PokemonButton(self.teamMember[idx], self.state, default_text="Team {}".format(idx))
+            PokemonButton(
+                self.teamMember[idx],
+                self.state,
+                default_text="Team {}".format(idx),
+                label=self.teamLabel[idx]
+            )
             for idx in range(len(self.teamMember))
         ]
         self.removeTeamMember = [
@@ -118,6 +133,19 @@ class Ui(QtWidgets.QMainWindow):
         self.opponentName = self.findChild(QtWidgets.QLabel, "opponentName")
         self.opposingPokemon = [
             self.findChild(QtWidgets.QPushButton, "opposingPokemon{}".format(idx))
+            for idx in range(6)
+        ]
+        self.opposingLabel = [
+            self.findChild(QtWidgets.QLabel, "opposingLabel{}".format(idx))
+            for idx in range(6)
+        ]
+        self.opposing_pokemon_buttons = [
+            PokemonButton(
+                self.opposingPokemon[idx],
+                self.state,
+                "Opponent {}".format(idx + 1),
+                label=self.opposingLabel[idx]
+            )
             for idx in range(6)
         ]
 
@@ -188,17 +216,9 @@ class Ui(QtWidgets.QMainWindow):
             if opponent is not None:
                 self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
                 for idx in range(6):
+                    button = self.opposing_pokemon_buttons[idx]
                     pokemon = opponent.party[idx]
-                    if opponent.party[idx] is not None:
-                        sprite = self.state.sprite_manager.get_normie_sprite(pokemon.name)
-                        if sprite is not None:
-                            self.opposingPokemon[idx].setText("")
-                            set_button_image(self.opposingPokemon[idx], sprite, "white")
-                        else:
-                            self.opposingPokemon[idx].setText(pokemon.name)
-                    else:
-                        clear_button_image(self.opposingPokemon[idx])
-                        self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
+                    button.render_pokemon_card(pokemon)
                 return
 
         self.opponentName.setText("No Match Scheduled")
@@ -213,17 +233,14 @@ class Ui(QtWidgets.QMainWindow):
             party_button = self.party_pokemon_buttons[idx]
             release_button = self.addParty[idx]
             item_button = self.partyItems[idx]
-            party_label = self.partyLabel[idx]
             party_button.render_pokemon_card(party_member)
 
             if party_member is None:
                 release_button.setDisabled(True)
                 item_button.setDisabled(True)
-                party_label.setText("")
             else:
                 release_button.setDisabled(False)
                 item_button.setDisabled(False)
-                party_label.setText(str(party_member))
 
     def render_team(self):
         player = self.state.current_player

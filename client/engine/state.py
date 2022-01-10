@@ -6,6 +6,7 @@ import typing as T
 from enum import Enum
 from engine.base import Component
 from engine.battle_seq import BattleManager
+from engine.logger import Logger
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import EntityType
@@ -56,6 +57,7 @@ class GameState:
     @property
     def component_classes(self):
         return [
+            Logger,
             Turn,
             PlayerManager,
             SpriteManager,

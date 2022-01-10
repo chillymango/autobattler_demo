@@ -52,7 +52,7 @@ class Ui(QtWidgets.QDialog):
         for pokemon in self.current_player.party:
             # TODO: fix this, what a horrible pattern of potentially accepting nulls
             if pokemon is not None:
-                item = QtGui.QStandardItem(pokemon.name)
+                item = QtGui.QStandardItem(str(pokemon))
             else:
                 item = QtGui.QStandardItem(pokemon)
             self.party_model.appendRow(item)
@@ -62,7 +62,7 @@ class Ui(QtWidgets.QDialog):
         self.storage_model = QtGui.QStandardItemModel()
         for pokemon in self.current_player.storage:
             if pokemon is not None:
-                item = QtGui.QStandardItem(pokemon.name)
+                item = QtGui.QStandardItem(str(pokemon))
             else:
                 item = QtGui.QStandardItem(pokemon)
             self.storage_model.appendRow(item)

@@ -37,6 +37,9 @@ class Ui(QtWidgets.QDialog):
         self.addPokeBalls = self.findChild(QtWidgets.QPushButton, "addPokeBalls")
         self.addPokeBalls.clicked.connect(self.add_pokeballs_callback)
 
+        self.addEnergy = self.findChild(QtWidgets.QPushButton, "addEnergy")
+        self.addEnergy.clicked.connect(self.add_energy_callback)
+
         self.gamePhase = self.findChild(QtWidgets.QLineEdit, "gamePhase")
 
         self.startGame = self.findChild(QtWidgets.QPushButton, "startGame")
@@ -67,6 +70,15 @@ class Ui(QtWidgets.QDialog):
     def enable_sprites(self):
         sprite_manager: SpriteManager = self.game_state.sprite_manager
         sprite_manager.DISABLED = False
+
+    def add_energy_callback(self):
+        if self.game_state is None:
+            error_window("No active game")
+            return
+        
+        print("Adding 100 energy")
+        self.game_state.current_player.energy += 100
+
 
     def dev_console_callback(self):
         state: GameState = self.game_state

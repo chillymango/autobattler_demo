@@ -140,6 +140,24 @@ class Player:
         """
         self.storage.remove(self.storage[idx])
 
+    def release_by_id(self, id):
+        """
+        search both storage and party for a specific poke and remove it
+        """
+
+        if len(self.storage) >0:
+            for index, poke in enumerate(self.storage):
+                if poke.id == id:
+                    self.release_from_storage(index)
+                    break
+        for index, poke in enumerate(self.party):
+            if poke is None:
+                continue
+            if poke.id == id:
+                self.release_from_party(index)
+                break
+
+
     def add_to_roster(self, pokemon):
         """
         Add Pokemon
