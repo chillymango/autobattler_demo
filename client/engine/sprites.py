@@ -30,6 +30,13 @@ class SpriteManager(Component):
             pokemon, _ = filename.split('.')
             self.shiny_sprites[pokemon] = '/'.join([self.shiny_base, filename])
 
+        # load type sprites
+        self.type_sprites = defaultdict(lambda: None)
+        self.type_base = '/'.join([self.ASSETS_DIR, 'sprites', 'typeicons'])
+        for filename in os.listdir(self.type_base):
+            typename, _ = filename.split('.')
+            self.type_sprites[typename] = '/'.join([self.type_base, filename])
+
     def get_normie_sprite(self, pokemon_name):
         if not self.DISABLED:
             return self.normie_sprites[pokemon_name]
@@ -38,4 +45,9 @@ class SpriteManager(Component):
     def get_shiny_sprite(self, pokemon_name):
         if not self.DISABLED:
             return self.shiny_sprites[pokemon_name]
+        return None
+
+    def get_type_sprite(self, type_name):
+        if not self.DISABLED:
+            return self.shiny_sprites[type_name]
         return None
