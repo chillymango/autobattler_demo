@@ -94,7 +94,8 @@
 92,92,metapod,Metapod,Bug,No Type
 93,93,kakuna,Kakuna,Bug,No Type
 94,94,rattata,Rattata,Normal,No Type
-95,95,pidgey,Pidgey,Normal,No Type
+95,95,pidgey,Pidgey,Normal,Flying
+
 96,96,rattata_alolan,Alolan Rattata,Dark,Normal
 97,97,spearow,Spearow,Normal,No Type
 98,98,nidoran_female,Nidoran♀,Poison,No Type
@@ -134,3 +135,4 @@
 132,132,ninetales,Ninetales,Fire,No Type
 133,133,golem_alolan,Alolan Golem,Rock,Electric
 134,134,exeggutor_alolan,Alolan Exeggutor,Grass,Dragon
+135,135,pidgeotto,Pidgeotto,Normal,Flying

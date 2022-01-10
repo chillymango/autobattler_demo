@@ -28520,6 +28520,11 @@
 			"resistances": ["fighting", "bug", "dark"],
             "weaknesses": ["poison", "steel"],
           	"immunities": ["dragon"]
-		}
+		},
+        "none": {
+            "resistances": [],
+            "weaknesses": [],
+            "immunities": []
+        }
     }
 }

@@ -5,7 +5,7 @@ import typing as T
 from collections import defaultdict
 from collections import namedtuple
 from uuid import uuid4
-
+import random
 from engine.base import Component
 import pandas as pd
 
@@ -55,7 +55,9 @@ class BattleCard:
     """
 
     SHINY_POWER_FACTOR = 1.3  # multiply attack and defense by this number
-
+    MOVE_REFERENCE_PATH = "qtassets/move_types.csv"
+    TYPE_REFERENCE_PATH = "qtassets/pokemon_types.csv"
+    
     def __init__(
         self,
         name,
@@ -71,7 +73,8 @@ class BattleCard:
         health= 0,
         energy = 0,
         bonus_shield = 0,
-        status = 1
+        status = 1,
+
     ):
         """
         Battle Card representation for a Pokemon.
@@ -93,6 +96,16 @@ class BattleCard:
         self.energy = energy
         self.bonus_shield = bonus_shield
         self.status = status  
+        
+        move_reference = pd.read_csv(self.MOVE_REFERENCE_PATH)
+        type_reference = pd.read_csv(self.TYPE_REFERENCE_PATH)
+
+
+        self.poke_type1 = type_reference[type_reference.name == name].type1.iloc[0]
+        self.poke_type2 = type_reference[type_reference.name == name].type1.iloc[0]
+        self.f_move_type = move_reference[move_reference.move == move_f].type.iloc[0]
+        self.ch_move_type = move_reference[move_reference.move == move_ch].type.iloc[0]
+        self.tm_move_type = move_reference[move_reference.move == move_tm].type.iloc[0]
 
     def make_shiny(self):
         """
@@ -214,7 +227,24 @@ class PokemonFactory(Component):
             pokemon_name = line.split(',')[0]
             self.PVE_movesets[pokemon_name] = line
         self.nickname_map = pd.read_csv(self.NAME_PATH)
-
+        self.mew_m_fast = ['SNARL', 'DRAGON_TAIL', 'VOLT_SWITCH', 'INFESTATION', 'SHADOW_CLAW', 'POUND', 'STEEL_WING', 'POISON_JAB', 'CHARGE_BEAM', 'FROST_BREATH', 'DRAGON_TAIL', 'ROCK_SMASH', 'WATERFALL']
+        self.mew_m_charged = ['ANCIENT_POWER','DRAGON_CLAW','ICE_BEAM','HYPER_BEAM','SOLAR_BEAM','THUNDER_BOLT','FLAME_CHARGE','LOW_SWEEP','ENERGY_BALL','STONE_EDGE','GYRO_BALL','DARK_PULSE','DAZZLING_GLEAM','SURF']
+        self.porygon_m_fast = ["HIDDEN_POWER_BUG",
+                "HIDDEN_POWER_DARK",
+                "HIDDEN_POWER_DRAGON",
+                "HIDDEN_POWER_ELECTRIC",
+                "HIDDEN_POWER_FIGHTING",
+            "HIDDEN_POWER_FIRE",
+            "HIDDEN_POWER_FLYING",
+            "HIDDEN_POWER_GHOST",
+            "HIDDEN_POWER_GRASS",
+            "HIDDEN_POWER_GROUND",
+            "HIDDEN_POWER_ICE",
+            "HIDDEN_POWER_POISON",
+            "HIDDEN_POWER_PSYCHIC",
+            "HIDDEN_POWER_ROCK",
+            "HIDDEN_POWER_STEEL",
+            "HIDDEN_POWER_WATER"   ]
     def get_PVE_battle_card(self, pokemon_name):
         """
         Load the default battle card for a Pokemon
@@ -253,6 +283,13 @@ class PokemonFactory(Component):
         Example, pass in `pikachu` to create a default Pikachu.
         """
         battle_card = self.get_default_battle_card(pokemon_name)
+        if pokemon_name == 'mew':
+            battle_card.move_f = random.choice(self.mew_m_fast)
+            battle_card.move_ch = random.choice(self.mew_m_charged)
+        if pokemon_name == 'porygon':
+            battle_card.move_f = random.choice(self.porygon_m_fast)
+
+
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         return Pokemon(pokemon_name, battle_card, nickname)
 
@@ -266,6 +303,32 @@ class PokemonFactory(Component):
         battle_card.bonus_shield = -1
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         return Pokemon(pokemon_name, battle_card, nickname)
+
+    def shiny_checker(self, player, card):
+        roster_pokes = player.roster
+        matching_pokes = []
+        for poke in roster_pokes:
+            if (poke.battle_card.shiny != True) & (poke.name == card):
+                matching_pokes.append(poke)
+        if len(matching_pokes) == 3: 
+            max_xp = 0
+            max_tm_flag = 0
+            max_bonus_shield = 0
+            for mp in matching_pokes:
+                if mp.xp > max_xp:
+                    max_xp = mp.xp
+                if mp.battle_card.tm_flag > max_tm_flag:
+                    max_tm_flag = mp.battle_card.tm_flag
+                if mp.battle_card.bonus_shield > max_bonus_shield:
+                    max_bonus_shield=mp.battle_card.bonus_shield
+
+                player.release_by_id(mp.id)
+            shiny_poke = self.create_pokemon_by_name(card)
+            shiny_poke.battle_card.shiny = True
+            shiny_poke.xp = max_xp
+            shiny_poke.battle_card.tm_flag = max_tm_flag
+            shiny_poke.battle_card.bonus_shield = max_bonus_shield
+            player.add_to_roster(shiny_poke)
 
 
 class EvolutionManager(Component):
@@ -353,3 +416,7 @@ class EvolutionManager(Component):
                         .format(party_member.name, party_member.xp, threshold)
                     )
                     self.evolve(party_member)
+                    pokemon_factory: PokemonFactory = self.state.pokemon_factory
+                    pokemon_factory.shiny_checker(player, party_member.name)
+
+

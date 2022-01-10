@@ -235,35 +235,7 @@ class ShopManager(Component):
         # as shiny
         # check here if there are already two non-shiny copies of a pokemon in a players
         # combined inventory
-        roster_pokes = player.roster
-        matching_pokes = []
-        for poke in roster_pokes:
-            if (poke.battle_card.shiny != True) & (poke.name == card):
-                matching_pokes.append(poke)
-        if len(matching_pokes) == 3: 
-            max_xp = 0
-            max_tm_flag = 0
-            max_bonus_shield = 0
-            for mp in matching_pokes:
-                if mp.xp > max_xp:
-                    max_xp = mp.xp
-                if mp.battle_card.tm_flag > max_tm_flag:
-                    max_tm_flag = mp.battle_card.tm_flag
-                if mp.battle_card.bonus_shield > max_bonus_shield:
-                    max_bonus_shield=mp.battle_card.bonus_shield
-
-                player.release_by_id(mp.id)
-            shiny_poke = pokemon_factory.create_pokemon_by_name(card)
-            shiny_poke.battle_card.shiny = True
-            shiny_poke.xp = max_xp
-            shiny_poke.battle_card.tm_flag = max_tm_flag
-            shiny_poke.battle_card.bonus_shield = max_bonus_shield
-            player.add_to_roster(shiny_poke)
-    
-            self.log("Caught: Shiny {}!".format(shiny_poke.nickname))
-
-        else:
-            self.log("Caught: {}".format(caught.nickname))
+        pokemon_factory.shiny_checker(player,card)
 
     def roll(self, player):
         """
