@@ -55,7 +55,9 @@ class BattleCard:
     """
 
     SHINY_POWER_FACTOR = 1.3  # multiply attack and defense by this number
-
+    MOVE_REFERENCE_PATH = "qtassets/move_types.csv"
+    TYPE_REFERENCE_PATH = "qtassets/pokemon_types.csv"
+    
     def __init__(
         self,
         name,
@@ -71,7 +73,8 @@ class BattleCard:
         health= 0,
         energy = 0,
         bonus_shield = 0,
-        status = 1
+        status = 1,
+
     ):
         """
         Battle Card representation for a Pokemon.
@@ -93,6 +96,16 @@ class BattleCard:
         self.energy = energy
         self.bonus_shield = bonus_shield
         self.status = status  
+        
+        move_reference = pd.read_csv(self.MOVE_REFERENCE_PATH)
+        type_reference = pd.read_csv(self.TYPE_REFERENCE_PATH)
+
+
+        self.poke_type1 = type_reference[type_reference.name == name].type1.iloc[0]
+        self.poke_type2 = type_reference[type_reference.name == name].type1.iloc[0]
+        self.f_move_type = move_reference[move_reference.move == move_f].type1.iloc[0]
+        self.ch_move_type = move_reference[move_reference.move == move_ch].type1.iloc[0]
+        self.tm_move_type = move_reference[move_reference.move == move_tm].type1.iloc[0]
 
     def make_shiny(self):
         """
