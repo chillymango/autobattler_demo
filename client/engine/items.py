@@ -19,7 +19,7 @@ class PokePermItem:
         if self.name in player.inventory.keys():
             if player.inventory[self.name] > 0:
                 """
-                TM
+                TM: unlocks 2nd move
                 """
                 if self.name == 'TM':
                     if pokemon.battle_card.tm_flag == 1:
@@ -29,7 +29,7 @@ class PokePermItem:
             
                         player.remove_item(self.name)
                 """
-                Rare Candy
+                Rare Candy: +1 turn of XP
                 """
                 if self.name == 'Rare Candy':
                     if evolution_manager.get_threshold( pokemon.name) != None:
@@ -40,7 +40,7 @@ class PokePermItem:
                     else:
                         print('It had no effect')
                 """
-                Rental Ditto
+                Rental Ditto: clones a pokemon on the roster
                 """
                 if self.name == 'Rental Ditto':
                     
