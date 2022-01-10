@@ -409,14 +409,19 @@ class EvolutionManager(Component):
                 if party_member is None or party_member.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)
-                threshold = self.get_threshold(party_member.name)
-                if party_member.xp >= threshold:
-                    print(
-                        'Party member {} XP exceeds threshold ({} >= {})'
-                        .format(party_member.name, party_member.xp, threshold)
-                    )
-                    self.evolve(party_member)
-                    pokemon_factory: PokemonFactory = self.state.pokemon_factory
-                    pokemon_factory.shiny_checker(player, party_member.name)
+                self.evolution_checker(player, party_member)
+    
+    def evolution_checker(self, player, party_member):
+        threshold = self.get_threshold(party_member.name)
+        if party_member.xp >= threshold:
+            print(
+                'Party member {} XP exceeds threshold ({} >= {})'
+                .format(party_member.name, party_member.xp, threshold)
+            )
+            self.evolve(party_member)
+            pokemon_factory: PokemonFactory = self.state.pokemon_factory
+            pokemon_factory.shiny_checker(player, party_member.name)
+
+
 
 

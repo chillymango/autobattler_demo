@@ -1,20 +1,59 @@
 """
 Items and Inventory
 """
+from engine.state import GameState
+from engine.pokemon import EvolutionManager, PokemonFactory
+
 class PokePermItem:
-    def __init__(self, name):
+    def __init__(self, name, state):
         self.name = name
+        self.state = state
 
-    def use(self, pokemon, player):
 
-        if self.name == 'TM':
-            if pokemon.battle_card.tm_flag == 1:
-                print('It had no effect')
-            else:
-                pokemon.battle_card.tm_flag = 1
-    
-                player.remove_item(self.name)
+    def use(self, player,pokemon ):
+        """
+        check to see if the item is in the inventory, then use it if it is there
+        """
+        evolution_manager: EvolutionManager = self.state.evolution_manager
+        pokemon_factory: PokemonFactory = self.state.pokemon_factory
 
+        if player.inventory[self.name] > 0:
+            """
+            TM
+            """
+            if self.name == 'TM':
+                if pokemon.battle_card.tm_flag == 1:
+                    print('It had no effect')
+                else:
+                    pokemon.battle_card.tm_flag = 1
+        
+                    player.remove_item(self.name)
+            """
+            Rare Candy
+            """
+            if self.name == 'Rare Candy':
+                if evolution_manager.get_threshold( pokemon.name) != None:
+                    pokemon.xp += 50
+                    player.remove_item(self.name)
+                    evolution_manager.evolution_checker(player, pokemon)
+                    pokemon_factory.shiny_checker(player, pokemon.name)
+                else:
+                    print('It had no effect')
+            """
+            Rental Ditto
+            """
+            if self.name == 'Rental Ditto':
+                
+                clone = pokemon_factory.create_pokemon_by_name(pokemon.name)
+                if player.add_to_roster(clone) == True:
+                    pokemon_factory.shiny_checker(player, pokemon.name)
+                    player.remove_item(self.name)
+                else:
+                    print('It had no effect')
+
+        
+        else:
+            print('None present in inventory')
 
 
 
@@ -23,7 +62,6 @@ class _Item:
     Base class for items
     """
     #permanent items
-    #rare candy: XP+1
     #fire stone: if type1 == fire or type2 == fire: XP+3
     #water stone: if type1 == water or type2 == water: XP+3
     #leaf stone: if type1 == grass or type2 == grass: XP+3
@@ -34,7 +72,6 @@ class _Item:
     #weakness policy: if opponent has super effective move, +1 attack buff
 
     #global items
-    #rental ditto: clone a poke
     #master ball: next buy is free
     #poke flute: next N rerolls are free
 
