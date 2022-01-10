@@ -224,7 +224,6 @@ class ShopManager(Component):
             print("Not enough Poke Balls to catch this Pokemon")
             return
 
-
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
         caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
         player.add_to_roster(caught)
@@ -261,8 +260,10 @@ class ShopManager(Component):
             shiny_poke.battle_card.bonus_shield = max_bonus_shield
             player.add_to_roster(shiny_poke)
     
+            self.log("Caught: Shiny {}!".format(shiny_poke.nickname))
 
-
+        else:
+            self.log("Caught: {}".format(caught.nickname))
 
     def roll(self, player):
         """

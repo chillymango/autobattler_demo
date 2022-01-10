@@ -1,6 +1,7 @@
 import functools
 import sys
 from PyQt5 import QtCore
+from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -32,6 +33,7 @@ class Ui(QtWidgets.QMainWindow):
         uic.loadUi('qtassets/battlewindow.ui', self)
 
         if self.DEBUG:
+            self.state.logger.DEBUG = True
             self.window = DebugWindow(self.state)
             self.window.battle_window = self
 
@@ -86,7 +88,6 @@ class Ui(QtWidgets.QMainWindow):
             add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
         self.render_party()
 
-        # TODO: create a pokemon rendering button
         # team buttons
         self.teamMember = [
             self.findChild(QtWidgets.QPushButton, "teamMember{}".format(idx))
@@ -157,6 +158,10 @@ class Ui(QtWidgets.QMainWindow):
         # time to next stage
         self.timeToNextStage = self.findChild(QtWidgets.QProgressBar, "timeToNextStage")
 
+        # update log messages
+        self.logMessages = self.findChild(QtWidgets.QTextBrowser, "logMessages")
+        self.logMessages.moveCursor(QtGui.QTextCursor.End)
+
         # TODO: do something smarter than this
         for callback in [
             self.render_party,
@@ -165,12 +170,22 @@ class Ui(QtWidgets.QMainWindow):
             self.render_player_stats,
             self.render_opponent_party,
             self.render_time_to_next_stage,
+            self.render_log_messages,
         ]:
             timer = QtCore.QTimer(self)
             timer.timeout.connect(callback)
             timer.start(100)
 
         self.show()
+
+    def render_log_messages(self):
+        """
+        Update log messages
+
+        TODO: this is going to change a lot in multiplayer but get something working for now
+        """
+        self.logMessages.setText(self.state.logger.content)
+        #self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
     def render_time_to_next_stage(self):
         state: GameState = self.state
@@ -259,7 +274,6 @@ class Ui(QtWidgets.QMainWindow):
                 shift_team_up.setDisabled(True)
                 shift_team_down.setDisabled(True)
             else:
-                sprite = self.state.sprite_manager.get_normie_sprite(team_member.name)
                 shift_team_up.setDisabled(False)
                 shift_team_down.setDisabled(False)
                 remove_team_member.setDisabled(False)

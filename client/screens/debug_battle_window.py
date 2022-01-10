@@ -6,6 +6,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from engine.battle_seq import BattleManager
+from engine.logger import Logger
 from engine.match import Matchmaker
 from engine.sprites import SpriteManager
 from engine.state import GamePhase
@@ -18,6 +19,8 @@ class Ui(QtWidgets.QDialog):
     def __init__(self, game_state=None):
         super(Ui, self).__init__()
         self.game_state = game_state
+        logger: Logger = self.game_state.logger
+        self.log = logger.log
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
         uic.loadUi('qtassets/debug_battlewindow.ui', self)
@@ -54,6 +57,12 @@ class Ui(QtWidgets.QDialog):
         self.enableSprites = self.findChild(QtWidgets.QPushButton, "enableSprites")
         self.enableSprites.clicked.connect(self.enable_sprites)
 
+        self.disableLogTimestamps = self.findChild(QtWidgets.QPushButton, "disableLogTimestamps")
+        self.disableLogTimestamps.clicked.connect(self.disable_log_timestamps)
+
+        self.enableLogTimestamps = self.findChild(QtWidgets.QPushButton, "enableLogTimestamps")
+        self.enableLogTimestamps.clicked.connect(self.enable_log_timestamps)
+
         for callback in [
             self.update_game_phase
         ]:
@@ -62,6 +71,14 @@ class Ui(QtWidgets.QDialog):
             timer.start(100)
 
         self.show()
+
+    def disable_log_timestamps(self):
+        logger: Logger = self.game_state.logger
+        logger.TIMESTAMPS = False
+
+    def enable_log_timestamps(self):
+        logger: Logger = self.game_state.logger
+        logger.TIMESTAMPS = True
 
     def disable_sprites(self):
         sprite_manager: SpriteManager = self.game_state.sprite_manager
@@ -78,7 +95,6 @@ class Ui(QtWidgets.QDialog):
         
         print("Adding 100 energy")
         self.game_state.current_player.energy += 100
-
 
     def dev_console_callback(self):
         state: GameState = self.game_state

@@ -57,7 +57,7 @@ class GameState:
     @property
     def component_classes(self):
         return [
-            Logger,
+            Logger,  # this always has to go first -- TODO: fix this shit
             Turn,
             PlayerManager,
             SpriteManager,
@@ -88,6 +88,7 @@ class GameState:
         """
         if not self.phase == GamePhase.INITIALIZATION:
             raise RuntimeError("Attempted to start game while in non-initialize")
+        self.logger.log("Starting game")
         self.phase = GamePhase.TURN_SETUP
 
     def step_loop(self):

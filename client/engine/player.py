@@ -181,6 +181,9 @@ class Player:
         """
         return cls(user.name, type_=EntityType.HUMAN)
 
+    def __str__(self):
+        return self.name
+
     def __repr__(self):
         if self.is_alive:
             livestr = "Alive"
@@ -189,6 +192,8 @@ class Player:
         elif not self.is_alive:
             livestr = "Dead"
 
+        if self.type == EntityType.CREEP:
+            return "Creep Player"
         return "{} Player: {} ({})".format(self.type.name.capitalize(), self.name, livestr)
 
 

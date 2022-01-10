@@ -178,6 +178,32 @@
     <string>Add 100 Energy</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="disableLogTimestamps">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>30</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Disable Log Timestamps</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="enableLogTimestamps">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>100</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable Log Timestamps</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

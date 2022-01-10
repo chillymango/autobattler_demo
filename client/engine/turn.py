@@ -15,6 +15,7 @@ class Turn(Component):
     def advance(self):
         self._number += 1
         self._stage = self.stages[self._number]
+        self.log("---- Turn {} ----".format(self.number))
 
     def retract(self):
         if self._number > 0:
