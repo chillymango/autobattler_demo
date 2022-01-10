@@ -5,6 +5,7 @@ from enum import Enum
 
 from engine.base import Component
 
+
 MAX_STORAGE_SIZE = 30
 MAX_PARTY_SIZE = 6
 TEAM_SIZE = 3
@@ -87,6 +88,24 @@ class Player:
             self.remove_from_team(team_idx)
 
         self.party[idx] = None
+
+    def add_item(self, item):
+        """
+        add item to inventory
+        """
+        if item in self.inventory.keys():
+            self.inventory[item] += 1 
+        else:
+            self.inventory[item] = 1
+
+    def remove_item(self, item):
+        """
+        remove item from inventory
+        """
+        if item in self.inventory.keys():
+            self.inventory[item] += -1 
+        else:
+            self.inventory[item] = 0
 
     def add_to_team(self, pokemon):
         """
