@@ -5,7 +5,7 @@ import typing as T
 from collections import defaultdict
 from collections import namedtuple
 from uuid import uuid4
-
+import random
 from engine.base import Component
 import pandas as pd
 
@@ -214,7 +214,24 @@ class PokemonFactory(Component):
             pokemon_name = line.split(',')[0]
             self.PVE_movesets[pokemon_name] = line
         self.nickname_map = pd.read_csv(self.NAME_PATH)
-
+        mew_m_fast = ['SNARL', 'DRAGON_TAIL', 'VOLT_SWITCH', 'INFESTATION', 'SHADOW_CLAW', 'POUND', 'STEEL_WING', 'POISON_JAB', 'CHARGE_BEAM', 'FROST_BREATH', 'DRAGON_TAIL', 'ROCK_SMASH', 'WATERFALL']
+        mew_m_charged = ['ANCIENT_POWER','DRAGON_CLAW','ICE_BEAM','HYPER_BEAM','SOLAR_BEAM','THUNDER_BOLT','FLAME_CHARGE','LOW_SWEEP','ENERGY_BALL','STONE_EDGE','GYRO_BALL','DARK_PULSE','DAZZLING_GLEAM','SURF']
+        porygon_m_fast = ["HIDDEN_POWER_BUG",
+                "HIDDEN_POWER_DARK",
+                "HIDDEN_POWER_DRAGON",
+                "HIDDEN_POWER_ELECTRIC",
+                "HIDDEN_POWER_FIGHTING",
+            "HIDDEN_POWER_FIRE",
+            "HIDDEN_POWER_FLYING",
+            "HIDDEN_POWER_GHOST",
+            "HIDDEN_POWER_GRASS",
+            "HIDDEN_POWER_GROUND",
+            "HIDDEN_POWER_ICE",
+            "HIDDEN_POWER_POISON",
+            "HIDDEN_POWER_PSYCHIC",
+            "HIDDEN_POWER_ROCK",
+            "HIDDEN_POWER_STEEL",
+            "HIDDEN_POWER_WATER"   ]
     def get_PVE_battle_card(self, pokemon_name):
         """
         Load the default battle card for a Pokemon
@@ -253,6 +270,13 @@ class PokemonFactory(Component):
         Example, pass in `pikachu` to create a default Pikachu.
         """
         battle_card = self.get_default_battle_card(pokemon_name)
+        if pokemon_name == 'mew':
+            battle_card.move_f = random.choice(self.mew_m_fast)
+            battle_card.move_ch = random.choice(self.mew_m_charged)
+        if pokemon_name == 'porygon':
+            battle_card.move_f = random.choice(self.porygon_m_fast)
+
+
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         return Pokemon(pokemon_name, battle_card, nickname)
 
