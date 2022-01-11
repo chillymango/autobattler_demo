@@ -7,14 +7,14 @@ Start Turn
 * execute `step_turn`
 ** this should update the component for the current turn
 """
-from types import MethodType
 import json
 import typing as T
+import weakref
 
-from utils.string import camel_case_to_snake_case
+from utils.strings import camel_case_to_snake_case
 
 if T.TYPE_CHECKING:
-    from engine.state import Environment
+    from server.engine.env import Environment
 
 
 class GuiArray:
@@ -78,12 +78,12 @@ class Component:
     """
 
     def __init__(self, state: "Environment"):
-        self.state = state
+        self.state = weakref.proxy(state)
         self.initialize()
         classname = self.__class__.__name__
         snakecase = camel_case_to_snake_case(classname)
-        setattr(self.state, snakecase, self)
-        self.log = self.state.logger.log
+        # make it a weakref so ref count doesn't increment and the state can be garbage collected
+        setattr(self.state, snakecase, weakref.proxy(self))
 
     def to_dict(self):
         """

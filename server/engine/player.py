@@ -2,6 +2,7 @@
 Player Object Model
 """
 from enum import Enum
+from uuid import uuid4
 
 from engine.base import Component
 
@@ -22,7 +23,8 @@ class Player:
     This probably needs to do something more complicated later
     """
 
-    def __init__(self, name, type_=EntityType.COMPUTER):
+    def __init__(self, name, type_=EntityType.COMPUTER, id=None):
+        self._id = id or uuid4()
         self.name = name
         self.type = type_
         self.is_alive = None
@@ -42,6 +44,10 @@ class Player:
 
         self.team_locked = False
         self.party_locked = False
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def party_is_full(self):

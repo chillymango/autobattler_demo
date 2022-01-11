@@ -1,0 +1,36 @@
+"""
+Individual game API
+
+Supports inspection of some high-level game data
+"""
+import json
+import typing as T
+from uuid import UUID
+
+from fastapi.routing import APIRouter
+from pydantic import BaseModel
+
+from api.lobby import ALL_GAMES
+from api.player import Player as PlayerModel
+
+
+game_router = APIRouter(prefix="/game")
+
+
+class GamePlayersResponse(BaseModel):
+    players: T.List[PlayerModel]  # list of player objects
+
+
+@game_router.get("/players", response_model=GamePlayersResponse)
+async def get_game_players(game_id: str = None):
+    """
+    Return the list of players in a game
+    """
+    if game_id is None:
+        raise ValueError("No game_id provided to request")
+
+    game = ALL_GAMES.get(UUID(game_id))
+    if game is None:
+        raise ValueError("No game with id {} found".format(game_id))
+
+    return GamePlayersResponse(players=[PlayerModel.from_player_object(x) for x in game.players])

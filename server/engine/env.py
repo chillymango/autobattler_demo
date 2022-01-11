@@ -4,6 +4,8 @@ Game state should be stored here or something
 import time
 import typing as T
 from enum import Enum
+from uuid import uuid4
+
 from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import Logger
@@ -15,7 +17,8 @@ from engine.player import PlayerManager
 from engine.pokemon import EvolutionManager, PokemonFactory
 from engine.pokemon import TmManager
 from engine.shop import ShopManager
-from engine.sprites import SpriteManager
+# sprite manager not used in web
+#from engine.sprites import SpriteManager
 from engine.turn import Turn
 
 
@@ -70,7 +73,8 @@ class Environment:
             Logger,  # this always has to go first -- TODO: fix this shit
             Turn,
             PlayerManager,
-            SpriteManager,
+            # sprite manager not used in web
+            #SpriteManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
@@ -91,17 +95,48 @@ class Environment:
         If it's a subclass of `Component`, keep traversing to get a JSON.
         """
 
-    def __init__(self, players: T.List[Player]):
+    def __init__(self, max_players: int):
+        self._id = uuid4()
+        print("Created env with id {}".format(id))
         self.phase = GamePhase.INITIALIZATION
-        self.players = players
+        self.max_players = max_players
+        self.players = []
         self.components: T.List[Component] = []
         self.stage_duration = None
         self.time_to_next_stage = None
 
-        self.current_player = self.players[0]
+        if self.players:
+            self.current_player = self.players[0]
+        else:
+            self.current_player = None
 
         for component in self.component_classes:
             self.components.append(component(self))
+
+    def __del__(self):
+        print('Deleting env with id {}'.format(self._id))
+
+    def add_player(self, player):
+        if len(self.players) >= self.max_players:
+            raise ValueError("Player count {} already reached".format(self.max_players))
+        self.players.append(player)
+
+    def remove_player(self, player):
+        if player not in self.players:
+            raise ValueError("Player {} not in game players".format(player))
+        self.players.remove(player)
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def is_finished(self):
+        return self.phase in [GamePhase.COMPLETED, GamePhase.ERROR]
+
+    @property
+    def is_running(self):
+        return self.phase not in [GamePhase.INITIALIZATION, GamePhase.ERROR, GamePhase.COMPLETED]
 
     def start_game(self):
         """
