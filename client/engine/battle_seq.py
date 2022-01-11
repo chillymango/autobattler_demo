@@ -264,18 +264,43 @@ class BattleManager(Component):
                 self.log("Simultaneous KO by " + name1 + " and " + name2)
                 current_team1.status = 0
                 current_team2.status = 0
+                if current_team1.berry == 'Focus Band':
+                    current_team1.status = 1
+                    current_team1.health = 1
+                    current_team1.energy = 100
+                    current_team1.bonus_shield = -1
+                    self.eat_berry(current_team1, team1)
+                if current_team2.berry == 'Focus Band':
+                    current_team2.status = 1
+                    current_team2.health = 1
+                    current_team2.energy = 100
+                    current_team2.bonus_shield = -1
+                    self.eat_berry(current_team2, team2)
+
             elif battle_result[0] == 1:
                 self.log(name1 + " knocks out " + name2)
                 current_team2.status = 0
                 current_team1.health = battle_result[1]
                 current_team1.energy = battle_result[2]
                 current_team1.bonus_shield = battle_result[3] - 1
+                if current_team2.berry == 'Focus Band':
+                    current_team2.status = 1
+                    current_team2.health = 1
+                    current_team2.energy = 100
+                    current_team2.bonus_shield = -1
+                    self.eat_berry(current_team2, team2)
+
             elif battle_result[0] == 2:
                 self.log(name2 +" knocks out " + name1)
                 current_team1.status = 0
                 current_team2.health = battle_result[1]
                 current_team2.energy = battle_result[2]
                 current_team2.bonus_shield = battle_result[3] - 1
+                if current_team1.berry == 'Focus Band':
+                    current_team1.status = 1
+                    current_team1.health = 1
+                    current_team1.energy = 100
+                    current_team1.bonus_shield = -1
 
             current_team1_pair = next(((x, y) for x, y in team1_map.items() if y.status == 1), None)
             current_team2_pair = next(((x, y) for x, y in team2_map.items() if y.status == 1), None)
