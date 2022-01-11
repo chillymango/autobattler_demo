@@ -11,6 +11,7 @@ from selenium import webdriver
 import random
 import copy
 
+import re
 
 class BattleManager(Component):
     """
@@ -75,7 +76,7 @@ class BattleManager(Component):
             for idx in range(min(3 - len(team), len(unassigned))):
                 player.add_to_team(unassigned[idx])
                 team.append(unassigned[idx])
-        
+
 
         return team
 
@@ -101,7 +102,7 @@ class BattleManager(Component):
         if battler1.shiny == 1:
             DBUFF1 = 5
             ABUFF1 = 5
-            
+
         else:
             DBUFF1 = 4
             ABUFF1 = 4
@@ -199,6 +200,50 @@ class BattleManager(Component):
                 winner = 1
             else:
                 winner = 2
+
+        """
+        Battle Logging
+        """
+        battler_1_log = []
+
+        parent_div = driver.find_element_by_xpath("//div[@class='timeline'][1]")
+        count_of_divs = len(parent_div.find_elements_by_xpath("./div"))
+
+        for i in range(1,(count_of_divs+1)):
+            event = parent_div.find_element_by_xpath("./div["+str(i)+']/a')
+            time_div = parent_div.find_element_by_xpath("./div["+str(i)+']')
+
+            txt = time_div.get_attribute('style').split(' ')[1]
+            time = re.search("\d+", txt)[0]
+
+            battler_1_log.append(time + ', '+event.get_attribute('name') + ', ' + event.get_attribute('values'))
+
+
+        battler_2_log = []
+
+        parent_div = driver.find_element_by_xpath("//div[@class='timeline'][2]")
+        count_of_divs = len(parent_div.find_elements_by_xpath("./div"))
+
+        for i in range(1,(count_of_divs+1)):
+            event = parent_div.find_element_by_xpath("./div["+str(i)+']/a')
+            time_div = parent_div.find_element_by_xpath("./div["+str(i)+']')
+
+            txt = time_div.get_attribute('style').split(' ')[1]
+            time = re.search("\d+", txt)[0]
+
+            battler_2_log.append(time + ', '+event.get_attribute('name') + ', ' + event.get_attribute('values'))
+
+        battlelog_1_df = pd.DataFrame([sub.split(",") for sub in battler_1_log], columns=['Time', 'Event', 'Damage Dealt', 'Energy', 'Percent Damage Dealt'])
+        battlelog_1_df['Event'] = battlelog_1_df['Event'].str.strip()
+        battlelog_1_df.loc[battlelog_1_df['Event'] == 'Shield', "Damage Dealt"] = 0
+
+        battlelog_1_df = battlelog_1_df[~battlelog_1_df.Event.isin(['Tap', 'Swipe'])].reset_index(drop = True)
+
+        battlelog_2_df = pd.DataFrame([sub.split(",") for sub in battler_2_log], columns=['Time', 'Event', 'Damage Dealt', 'Energy', 'Percent Damage Dealt'])
+        battlelog_2_df['Event'] = battlelog_2_df['Event'].str.strip()
+        battlelog_2_df.loc[battlelog_2_df['Event'] == 'Shield', "Damage Dealt"] = 0
+        battlelog_2_df = battlelog_2_df[~battlelog_2_df.Event.isin(['Tap', 'Swipe'])].reset_index(drop = True)
+
 
         """
         Post-battle berries: these trigger if you win
