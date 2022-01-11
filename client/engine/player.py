@@ -35,8 +35,10 @@ class Player:
 
         self.hitpoints = 0
         self.balls = 0  # pokeballs are used to catch pokemon from the wild
+        self.master_balls = 0 
         self.energy = 0  # energy is used to 'roll' the shop
-
+        self.flute_charges = 0
+        
         # TODO: this sucks, do something smarter
         self.signals = []
 

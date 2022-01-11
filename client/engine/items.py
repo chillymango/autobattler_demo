@@ -215,6 +215,32 @@ class Berry:
                 print('None present in inventory')
 
 
+class PlayerItem:
+    def __init__(self, name, ):
+        self.name = name
+
+    def use(self, player ):
+        if self.name in player.inventory.keys():
+            if player.inventory[self.name] > 0:
+                """
+                PokeFlute: next N rerolls are free
+                """
+                if self.name == 'PokeFlute':
+                    player.flute_charges += 2
+                    player.remove_item(self.name)
+
+                """
+                Master Ball: next catch is free
+                """
+                if self.name == 'Master Ball':
+                    player.master_balls +=1
+                    player.remove_item(self.name)
+
+
+            else:
+                print('None present in inventory')
+        else:
+                print('None present in inventory')
 
 
 class _Item:

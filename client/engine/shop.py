@@ -227,7 +227,10 @@ class ShopManager(Component):
         pokemon_factory: PokemonFactory = self.state.pokemon_factory
         caught = pokemon_factory.create_pokemon_by_name(self.shop[player][idx])
         player.add_to_roster(caught)
-        player.balls -= cost
+        if player.master_balls == 0:
+            player.balls -= cost
+        else:
+            player.master_balls += -1
         self.shop[player][idx] = None
 
         # shiny logic:
@@ -241,7 +244,11 @@ class ShopManager(Component):
         """
         Load a new shop for a player based on their route
         """
-        if player.energy > 0:
+        if player.flute_charges > 0:
+            self.shop[player] = self.route[player].roll_shop()
+            player.flute_charges += -1
+
+        elif player.energy > 0:
             player.energy -= 1
             self.shop[player] = self.route[player].roll_shop()
         else:
