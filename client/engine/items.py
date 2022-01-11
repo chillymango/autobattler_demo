@@ -169,7 +169,22 @@ class PokePermItem:
                     else:
                         print('The stone is not compatable')
 
+                """
+                Choice items: nerf one move, buff attack
+                """
+                if self.name == 'Choice Band':
+                    if pokemon.battle_card.choiced == 0:
+                        pokemon.battle_card.choiced = 1
+                        player.remove_item(self.name)
+                    else:
+                        print('It had no effect')
 
+                if self.name == 'Choice Specs':
+                    if pokemon.battle_card.choiced == 0:
+                        pokemon.battle_card.choiced = 2
+                        player.remove_item(self.name)
+                    else:
+                        print('It had no effect')
 
             else:
                 print('None present in inventory')

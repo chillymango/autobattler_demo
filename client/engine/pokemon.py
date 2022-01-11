@@ -74,6 +74,7 @@ class BattleCard:
         energy = 0,
         bonus_shield = 0,
         status = 1,
+        choiced = 0
 
     ):
         """
@@ -106,6 +107,10 @@ class BattleCard:
         self.f_move_type = move_reference[move_reference.move == move_f].type.iloc[0]
         self.ch_move_type = move_reference[move_reference.move == move_ch].type.iloc[0]
         self.tm_move_type = move_reference[move_reference.move == move_tm].type.iloc[0]
+
+        self.choiced = 0
+        
+
 
     def make_shiny(self):
         """
