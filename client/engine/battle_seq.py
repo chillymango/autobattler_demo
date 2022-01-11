@@ -204,6 +204,8 @@ class BattleManager(Component):
         """
         Battle Logging
         """
+        battle_time = float(driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[2]").text[:-1])
+
         battler_1_log = []
 
         parent_div = driver.find_element_by_xpath("//div[@class='timeline'][1]")
@@ -236,13 +238,14 @@ class BattleManager(Component):
         battlelog_1_df = pd.DataFrame([sub.split(",") for sub in battler_1_log], columns=['Time', 'Event', 'Damage Dealt', 'Energy', 'Percent Damage Dealt'])
         battlelog_1_df['Event'] = battlelog_1_df['Event'].str.strip()
         battlelog_1_df.loc[battlelog_1_df['Event'] == 'Shield', "Damage Dealt"] = 0
-
         battlelog_1_df = battlelog_1_df[~battlelog_1_df.Event.isin(['Tap', 'Swipe'])].reset_index(drop = True)
+        battlelog_1_df['Time'] = battle_time*(battlelog_1_df['Time'].astype('float')/100)
 
         battlelog_2_df = pd.DataFrame([sub.split(",") for sub in battler_2_log], columns=['Time', 'Event', 'Damage Dealt', 'Energy', 'Percent Damage Dealt'])
         battlelog_2_df['Event'] = battlelog_2_df['Event'].str.strip()
         battlelog_2_df.loc[battlelog_2_df['Event'] == 'Shield', "Damage Dealt"] = 0
         battlelog_2_df = battlelog_2_df[~battlelog_2_df.Event.isin(['Tap', 'Swipe'])].reset_index(drop = True)
+        battlelog_2_df['Time'] = battle_time*(battlelog_2_df['Time'].astype('float')/100)
 
 
         """
