@@ -230,9 +230,6 @@ class _Item:
     #poke flute: next N rerolls are free
 
     #battle items: one round only
-    #oran berry: if poke survives a fight, restore 10%hp
-    #sitrus berry: if poke survives a fight, restore 30%hp
-    #salac berry: if poke survives, gain 50 energy
     #focus band: if poke dies, revive at back of team with 1hp and 100 energy
 
 

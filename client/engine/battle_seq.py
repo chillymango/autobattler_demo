@@ -152,6 +152,9 @@ class BattleManager(Component):
             FMOVE2 = battler2.move_f
             CHMOVE2 = battler2.move_ch
 
+        """
+        Pre-battle berries: these trigger no matter what
+        """
         if battler1.berry == 'Ganlon Berry':
             SHIELD1 += 1
             self.eat_berry(battler1, team1)
@@ -196,6 +199,31 @@ class BattleManager(Component):
                 winner = 1
             else:
                 winner = 2
+
+        """
+        Post-battle berries: these trigger if you win
+        """
+        maxhp_p1 = self.driver.find_element_by_xpath("/html/body/div/div/div[3]/div[1]/div[2]/div[4]/div[1]/span[2]").text
+        maxhp_p2 = self.driver.find_element_by_xpath("/html/body/div/div/div[3]/div[2]/div[2]/div[4]/div[1]/span[2]").text
+        maxhp_l = [int(maxhp_p1), int(maxhp_p2)]
+        battler_l = [battler1, battler2]
+        winner_i = winner-1
+        winner_p = battler_l[winner_i]
+
+        team_l = [team1, team2]
+        if winner_p.berry == 'Oran Berry':
+            survivorhp += maxhp_l[winner_i]*0.1
+            self.eat_berry(winner_p, team_l[winner_i])
+        if winner_p.berry == 'Sitrus Berry':
+            survivorhp += maxhp_l[winner_i]*0.3
+            self.eat_berry(winner_p, team_l[winner_i])
+        if winner_p.berry == 'Salac Berry':
+            survivorenergy += 50
+            self.eat_berry(winner_p, team_l[winner_i])
+        if winner_p.berry == 'Apicot Berry':
+            survivorshields += 1
+            self.eat_berry(winner_p, team_l[winner_i])
+
 
         return([winner, survivorhp, survivorenergy,survivorshields])
 
