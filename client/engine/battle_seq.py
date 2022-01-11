@@ -75,6 +75,7 @@ class BattleManager(Component):
             for idx in range(min(3 - len(team), len(unassigned))):
                 player.add_to_team(unassigned[idx])
                 team.append(unassigned[idx])
+        
 
         return team
 
@@ -89,7 +90,14 @@ class BattleManager(Component):
         self.log("{} sends out {}".format(player2, ", ".join([str(x) for x in team2])))
         return self.battle(team1, team2)
 
-    def oneVone(self,battler1, battler2):
+    def eat_berry(self, battler, team):
+        """
+        eat a berry
+        """
+        battler_position = battler.team_position
+        team[battler_position].battle_card.berry = None
+
+    def oneVone(self,battler1, battler2, team1, team2):
         if battler1.shiny == 1:
             DBUFF1 = 5
             ABUFF1 = 5
@@ -144,6 +152,26 @@ class BattleManager(Component):
             FMOVE2 = battler2.move_f
             CHMOVE2 = battler2.move_ch
 
+        if battler1.berry == 'Ganlon Berry':
+            SHIELD1 += 1
+            self.eat_berry(battler1, team1)
+        if battler2.berry == 'Ganlon Berry':
+            SHIELD2 += 1
+            self.eat_berry(battler2, team2)
+
+        if battler1.berry == 'Leppa Berry':
+            battler1.energy += 20
+            self.eat_berry(battler1, team1)
+        if battler2.berry == 'Leppa Berry':
+            battler2.energy += 20
+            self.eat_berry(battler2, team2)
+
+        if battler1.berry == 'Power Herb':
+            battler1.energy += 40
+            self.eat_berry(battler1, team1)
+        if battler2.berry == 'Power Herb':
+            battler2.energy += 40
+            self.eat_berry(battler2, team2)
 
 
         url = f'http://localhost/pvpoke/src/battle/10000/{battler1.name}-{battler1.level}-{battler1.a_iv}-{battler1.d_iv}-{battler1.hp_iv}-{ABUFF1}-{DBUFF1}-1-0/{battler2.name}-{battler2.level}-{battler2.a_iv}-{battler2.d_iv}-{battler2.hp_iv}-{ABUFF2}-{DBUFF2}-1-0/{SHIELD1}{SHIELD2}/{FMOVE1}-{CHMOVE1}-{TM1}/{FMOVE2}-{CHMOVE2}-{TM2}/{battler1.health}-{battler2.health}/{battler1.energy}-{battler2.energy}/'
@@ -175,6 +203,10 @@ class BattleManager(Component):
         # team_cards is a dict of nickname to battle card
         team1_cards = [x.battle_card for x in team1]
         team2_cards = [x.battle_card for x in team2]
+        for i in range(3):
+            team1_cards[i].team_position = i
+            team2_cards[i].team_position = i
+
         team1_live = copy.deepcopy(team1_cards)
         team2_live = copy.deepcopy(team2_cards)
 
@@ -199,7 +231,7 @@ class BattleManager(Component):
                 name2 = "{}'s {}".format(player2.name, name2)
             current_team1 = current_team1_pair[1]
             current_team2 = current_team2_pair[1]
-            battle_result = self.oneVone(current_team1, current_team2)
+            battle_result = self.oneVone(current_team1, current_team2, team1, team2)
             if battle_result[0] == 0:
                 self.log("Simultaneous KO by " + name1 + " and " + name2)
                 current_team1.status = 0

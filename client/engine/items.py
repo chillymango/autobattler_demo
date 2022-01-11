@@ -4,10 +4,11 @@ Items and Inventory
 from engine.state import GameState
 from engine.pokemon import EvolutionManager, PokemonFactory
 
-class PokePermItem:
+class Item:
     def __init__(self, name, state):
         self.name = name
         self.state = state
+        
 
 
     def use(self, player,pokemon ):
@@ -192,6 +193,28 @@ class PokePermItem:
                 print('None present in inventory')
 
 
+class Berry:
+    def __init__(self, name, ):
+        self.name = name
+        
+    def use(self, player,pokemon ):
+        if self.name in player.inventory.keys():
+            if player.inventory[self.name] > 0:
+                """
+                Berry
+                """
+                if pokemon.battle_card.berry != None:
+                    print('Pokemon is already holding something')
+                else:
+                    pokemon.battle_card.berry = self.name
+                    player.remove_item(self.name)
+
+            else:
+                print('None present in inventory')
+        else:
+                print('None present in inventory')
+
+
 
 
 class _Item:
@@ -200,8 +223,6 @@ class _Item:
     """
     #permanent items
     #eviolite: def buff if NFE
-    #choice specs: your fast move becomes lock on (or maybe yawn?). +2 attack buff
-    #choice band: your charged move(s) become frustration. +2 attack buff
     #weakness policy: if opponent has super effective move, +1 attack buff
 
     #global items
@@ -209,12 +230,9 @@ class _Item:
     #poke flute: next N rerolls are free
 
     #battle items: one round only
-    #ganlon berry: an extra shield
     #oran berry: if poke survives a fight, restore 10%hp
     #sitrus berry: if poke survives a fight, restore 30%hp
-    #leppa berry: start with 10 energy
-    #power herb: start with 30 energy
-    #salac berry: if poke survives, gain 40 energy
+    #salac berry: if poke survives, gain 50 energy
     #focus band: if poke dies, revive at back of team with 1hp and 100 energy
 
 

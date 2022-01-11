@@ -108,8 +108,15 @@ class BattleCard:
         self.ch_move_type = move_reference[move_reference.move == move_ch].type.iloc[0]
         self.tm_move_type = move_reference[move_reference.move == move_tm].type.iloc[0]
 
+        #has a choice item been used on pokemon?
         self.choiced = 0
-        
+
+        #which berry is the pokemon holding, if any
+        self.berry = None
+
+        #team position
+        self.team_position = None
+
 
 
     def make_shiny(self):
