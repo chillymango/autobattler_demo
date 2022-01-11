@@ -203,6 +203,8 @@ class BattleManager(Component):
 
         """
         Battle Logging
+
+        output a log of all events by each battler, held in battlelog_1_df and battlelog_2_df
         """
         battle_time = float(self.driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[2]").text[:-1])
 
