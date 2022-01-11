@@ -10,7 +10,7 @@ from engine.player import Player
 from selenium import webdriver
 import random
 import copy
-
+import pandas as pd
 import re
 
 class BattleManager(Component):
@@ -204,11 +204,11 @@ class BattleManager(Component):
         """
         Battle Logging
         """
-        battle_time = float(driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[2]").text[:-1])
+        battle_time = float(self.driver.find_element_by_xpath("/html/body/div/div/div[4]/div[2]/div[5]/div[1]/span[2]").text[:-1])
 
         battler_1_log = []
 
-        parent_div = driver.find_element_by_xpath("//div[@class='timeline'][1]")
+        parent_div = self.driver.find_element_by_xpath("//div[@class='timeline'][1]")
         count_of_divs = len(parent_div.find_elements_by_xpath("./div"))
 
         for i in range(1,(count_of_divs+1)):
@@ -223,7 +223,7 @@ class BattleManager(Component):
 
         battler_2_log = []
 
-        parent_div = driver.find_element_by_xpath("//div[@class='timeline'][2]")
+        parent_div = self.driver.find_element_by_xpath("//div[@class='timeline'][2]")
         count_of_divs = len(parent_div.find_elements_by_xpath("./div"))
 
         for i in range(1,(count_of_divs+1)):
