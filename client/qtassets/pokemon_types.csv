@@ -25,7 +25,7 @@
 23,23,chansey,Chansey,Normal,No Type
 24,24,pinsir,Pinsir,Bug,No Type
 25,25,clefable,Clefable,Fairy,No Type
-26,26,wigglytuff,Wigglytuff,Normal,No Type
+26,26,wigglytuff,Wigglytuff,Normal,Fairy
 27,27,magneton,Magneton,Electric,No Type
 28,28,golem,Golem,Rock,No Type
 29,29,alakazam,Alakazam,Psychic,No Type
@@ -84,7 +84,7 @@
 82,82,weedle,Weedle,Bug,No Type
 83,83,caterpie,Caterpie,Bug,No Type
 84,84,magikarp,Magikarp,Water,No Type
-85,85,jigglypuff,Jigglypuff,Normal,No Type
+85,85,jigglypuff,Jigglypuff,Normal,Fairy
 86,86,diglett,Diglett,Ground,No Type
 87,87,zubat,Zubat,Poison,No Type
 88,88,meowth_alolan,Alolan Meowth,Dark,No Type

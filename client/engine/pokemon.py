@@ -102,7 +102,7 @@ class BattleCard:
 
 
         self.poke_type1 = type_reference[type_reference.name == name].type1.iloc[0]
-        self.poke_type2 = type_reference[type_reference.name == name].type1.iloc[0]
+        self.poke_type2 = type_reference[type_reference.name == name].type2.iloc[0]
         self.f_move_type = move_reference[move_reference.move == move_f].type.iloc[0]
         self.ch_move_type = move_reference[move_reference.move == move_ch].type.iloc[0]
         self.tm_move_type = move_reference[move_reference.move == move_tm].type.iloc[0]

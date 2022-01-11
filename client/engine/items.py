@@ -51,7 +51,126 @@ class PokePermItem:
                     else:
                         print('It had no effect')
 
-        
+                """
+                Stones: +3 XP if type matches, evolves Eevee
+                """
+                if self.name == 'Fire Stone':
+                    stone_type = 'Fire'
+
+                    if pokemon.name == 'eevee':
+                        pokemon.xp == 0
+                        evolved_form = 'flareon'
+                        evolved_card = pokemon_factory.get_evolved_battle_card(
+                        evolved_form, pokemon.battle_card
+                            )
+                        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+                            pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
+
+                        # update name and battle card
+                        pokemon.name = evolved_form
+                        pokemon.battle_card = evolved_card
+                        pokemon_factory.shiny_checker(player, pokemon)
+
+                    elif (pokemon.battle_card.poke_type1 == stone_type) or (pokemon.battle_card.poke_type2 == stone_type):
+                        if evolution_manager.get_threshold( pokemon.name) != None:
+                            pokemon.xp += 150
+                            player.remove_item(self.name)
+                            evolution_manager.evolution_checker(player, pokemon)
+                            pokemon_factory.shiny_checker(player, pokemon)
+                        else:
+                            print('It had no effect')
+                    else:
+                        print('The stone is not compatable')
+
+                if self.name == 'Water Stone':
+                    stone_type = 'Water'
+
+                    if pokemon.name == 'eevee':
+                        pokemon.xp == 0
+                        evolved_form = 'vaporeon'
+                        evolved_card = pokemon_factory.get_evolved_battle_card(
+                        evolved_form, pokemon.battle_card
+                            )
+                        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+                            pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
+
+                        # update name and battle card
+                        pokemon.name = evolved_form
+                        pokemon.battle_card = evolved_card
+                        pokemon_factory.shiny_checker(player, pokemon)
+
+                    elif (pokemon.battle_card.poke_type1 == stone_type) or (pokemon.battle_card.poke_type2 == stone_type):
+                        if evolution_manager.get_threshold( pokemon.name) != None:
+                            pokemon.xp += 150
+                            player.remove_item(self.name)
+                            evolution_manager.evolution_checker(player, pokemon)
+                            pokemon_factory.shiny_checker(player, pokemon)
+                        else:
+                            print('It had no effect')
+                    else:
+                        print('The stone is not compatable')
+
+
+                if self.name == 'Thunder Stone':
+                    stone_type = 'Electric'
+
+                    if pokemon.name == 'eevee':
+                        pokemon.xp == 0
+                        evolved_form = 'jolteon'
+                        evolved_card = pokemon_factory.get_evolved_battle_card(
+                        evolved_form, pokemon.battle_card
+                            )
+                        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+                            pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
+
+                        # update name and battle card
+                        pokemon.name = evolved_form
+                        pokemon.battle_card = evolved_card
+                        pokemon_factory.shiny_checker(player, pokemon)
+
+                    elif (pokemon.battle_card.poke_type1 == stone_type) or (pokemon.battle_card.poke_type2 == stone_type):
+                        if evolution_manager.get_threshold( pokemon.name) != None:
+                            pokemon.xp += 150
+                            player.remove_item(self.name)
+                            evolution_manager.evolution_checker(player, pokemon)
+                            pokemon_factory.shiny_checker(player, pokemon)
+                        else:
+                            print('It had no effect')
+                    else:
+                        print('The stone is not compatable')
+
+
+                if self.name == 'Leaf Stone':
+                    stone_type = 'Grass'
+
+                    if (pokemon.battle_card.poke_type1 == stone_type) or (pokemon.battle_card.poke_type2 == stone_type):
+                        if evolution_manager.get_threshold( pokemon.name) != None:
+                            pokemon.xp += 150
+                            player.remove_item(self.name)
+                            evolution_manager.evolution_checker(player, pokemon)
+                            pokemon_factory.shiny_checker(player, pokemon)
+                        else:
+                            print('It had no effect')
+                    else:
+                        print('The stone is not compatable')
+
+
+                if self.name == 'Moon Stone':
+                    stone_type = 'Fairy'
+
+                    if (pokemon.battle_card.poke_type1 == stone_type) or (pokemon.battle_card.poke_type2 == stone_type):
+                        if evolution_manager.get_threshold( pokemon.name) != None:
+                            pokemon.xp += 150
+                            player.remove_item(self.name)
+                            evolution_manager.evolution_checker(player, pokemon)
+                            pokemon_factory.shiny_checker(player, pokemon)
+                        else:
+                            print('It had no effect')
+                    else:
+                        print('The stone is not compatable')
+
+
+
             else:
                 print('None present in inventory')
         else:
@@ -65,10 +184,6 @@ class _Item:
     Base class for items
     """
     #permanent items
-    #fire stone: if type1 == fire or type2 == fire: XP+3
-    #water stone: if type1 == water or type2 == water: XP+3
-    #leaf stone: if type1 == grass or type2 == grass: XP+3
-    #thunder stone: if type1 == electric or type2 == electric: XP+3
     #eviolite: def buff if NFE
     #choice specs: your fast move becomes lock on (or maybe yawn?). +2 attack buff
     #choice band: your charged move(s) become frustration. +2 attack buff
