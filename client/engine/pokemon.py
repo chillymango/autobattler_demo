@@ -326,6 +326,7 @@ class PokemonFactory(Component):
             max_xp = 0
             max_tm_flag = 0
             max_bonus_shield = 0
+            max_choice = 0
             for mp in matching_pokes:
                 if mp.xp > max_xp:
                     max_xp = mp.xp
@@ -333,6 +334,8 @@ class PokemonFactory(Component):
                     max_tm_flag = mp.battle_card.tm_flag
                 if mp.battle_card.bonus_shield > max_bonus_shield:
                     max_bonus_shield=mp.battle_card.bonus_shield
+                if mp.battle_card.choiced > max_choice:
+                    max_choice=mp.battle_card.max_choice
 
                 player.release_by_id(mp.id)
             shiny_poke = self.create_pokemon_by_name(card)
@@ -340,6 +343,7 @@ class PokemonFactory(Component):
             shiny_poke.xp = max_xp
             shiny_poke.battle_card.tm_flag = max_tm_flag
             shiny_poke.battle_card.bonus_shield = max_bonus_shield
+            shiny_poke.battle_card.choiced = max_choice
             player.add_to_roster(shiny_poke)
 
 
