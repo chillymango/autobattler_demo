@@ -112,8 +112,17 @@ class BattleManager(Component):
         else:
             DBUFF2 = 4
             ABUFF2 = 4
-        SHIELD1 = 1+battler1.bonus_shield
-        SHIELD2 = 1+battler2.bonus_shield
+        
+        #only the leads start with shields
+        if (battler1.team_position == 0) & (battler1.health == 0):
+            SHIELD1 = battler1.bonus_shield + 1
+        else:
+            SHIELD1 = battler1.bonus_shield
+
+        if (battler2.team_position == 0) & (battler2.health == 0):
+            SHIELD2 = battler2.bonus_shield + 1
+        else:
+            SHIELD2 = battler2.bonus_shield
         if battler1.tm_flag == 0:
             TM1 = 0
         else:
@@ -318,13 +327,13 @@ class BattleManager(Component):
                     current_team1.status = 1
                     current_team1.health = 1
                     current_team1.energy = 100
-                    current_team1.bonus_shield = -1
+                    current_team1.bonus_shield = 0
                     self.eat_berry(current_team1, team1)
                 if current_team2.berry == 'Focus Band':
                     current_team2.status = 1
                     current_team2.health = 1
                     current_team2.energy = 100
-                    current_team2.bonus_shield = -1
+                    current_team2.bonus_shield = 0
                     self.eat_berry(current_team2, team2)
 
             elif battle_result[0] == 1:
@@ -332,12 +341,12 @@ class BattleManager(Component):
                 current_team2.status = 0
                 current_team1.health = battle_result[1]
                 current_team1.energy = battle_result[2]
-                current_team1.bonus_shield = battle_result[3] - 1
+                current_team1.bonus_shield = battle_result[3] 
                 if current_team2.berry == 'Focus Band':
                     current_team2.status = 1
                     current_team2.health = 1
                     current_team2.energy = 100
-                    current_team2.bonus_shield = -1
+                    current_team2.bonus_shield = 0
                     self.eat_berry(current_team2, team2)
 
             elif battle_result[0] == 2:
@@ -345,12 +354,12 @@ class BattleManager(Component):
                 current_team1.status = 0
                 current_team2.health = battle_result[1]
                 current_team2.energy = battle_result[2]
-                current_team2.bonus_shield = battle_result[3] - 1
+                current_team2.bonus_shield = battle_result[3] 
                 if current_team1.berry == 'Focus Band':
                     current_team1.status = 1
                     current_team1.health = 1
                     current_team1.energy = 100
-                    current_team1.bonus_shield = -1
+                    current_team1.bonus_shield = 0
 
             current_team1_pair = next(((x, y) for x, y in team1_map.items() if y.status == 1), None)
             current_team2_pair = next(((x, y) for x, y in team2_map.items() if y.status == 1), None)
