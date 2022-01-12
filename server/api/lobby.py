@@ -46,7 +46,7 @@ def get_request_context(request: PlayerContextRequest) -> T.Tuple[Environment, P
     TODO: this pattern sucks ass, should do namespaced APIs
     """
     player = request.player
-    game_id = request.game_id
+    game_id = UUID(request.game_id)
 
     game = ALL_GAMES.get(game_id)
     if game is not None:

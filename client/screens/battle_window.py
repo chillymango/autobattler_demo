@@ -30,7 +30,7 @@ from utils.client import AsynchronousServerClient, GameServerClient
 if T.TYPE_CHECKING:
     pass
 
-logging_config.set_mode(LoggingModes.UVICORN, level=logging.DEBUG)
+logging_config.set_mode(LoggingModes.UVICORN, level=logging.INFO)
 
 
 class Ui(QtWidgets.QMainWindow):
@@ -53,8 +53,8 @@ class Ui(QtWidgets.QMainWindow):
         self.client.start_game(game.game_id)
 
         # create an environment to support rendering
-        self.env: ClientEnvironment = ClientEnvironment(8)
-        self.context = GameContext(self.env, self.current_player)
+        self.env: ClientEnvironment = ClientEnvironment(8, id=game.game_id)
+        self.context: GameContext = GameContext(self.env, self.player)
         # should load an initial state first?
         self.env.initialize()
 
@@ -74,9 +74,9 @@ class Ui(QtWidgets.QMainWindow):
         #self.pubsub_client.start_client(self.server_addr)
         #self.show()
 
-        self.client = AsynchronousServerClient()
+        self.async_client = AsynchronousServerClient()
         if self.DEBUG:
-            self.window = DebugWindow(self.env, self.client)
+            self.window = DebugWindow(self.env, ctx=self.context)
             self.window.battle_window = self
 
         # add buttons
@@ -359,6 +359,7 @@ class Ui(QtWidgets.QMainWindow):
         # TODO: make the below a weakref or something...
         self.current_player = self.state.get_player_by_id(self.player_id)
 
+        print(data)
         print(self.state)
         for method in self.render_functions:
             method()

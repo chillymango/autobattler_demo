@@ -1,8 +1,11 @@
 """
 Screen should provide debug functions for the battle window
 """
+import asyncio
+import logging
 import threading
 import typing as T
+from asyncqt import asyncSlot
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -12,6 +15,9 @@ from engine.match import Matchmaker
 from engine.sprites import SpriteManager
 
 from client.utils.error_window import error_window
+from server.api.base import PlayerContextRequest
+from utils.client import AsynchronousServerClient
+from utils.context import GameContext
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
@@ -20,13 +26,19 @@ if T.TYPE_CHECKING:
 
 class Ui(QtWidgets.QDialog):
 
-    def __init__(self, env: Environment, client: "GameServerClient"):
+    def __init__(self, env: "Environment", ctx: GameContext = None):
         super(Ui, self).__init__()
         self.env = env
+        self.ctx: GameContext = ctx
         logger: Logger = self.env.logger
         self.log = logger.log
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
+
+        loop = asyncio.get_event_loop()
+        self.client = AsynchronousServerClient(loop=loop)
+        #task = loop.create_task(self.create_client())
+        
         uic.loadUi('client/qtassets/debug_battlewindow.ui', self)
 
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
@@ -68,7 +80,7 @@ class Ui(QtWidgets.QDialog):
         self.enableLogTimestamps.clicked.connect(self.enable_log_timestamps)
 
         for callback in [
-            self.update_game_phase
+            #self.update_game_phase
         ]:
             timer = QtCore.QTimer(self)
             timer.timeout.connect(callback)
@@ -91,14 +103,6 @@ class Ui(QtWidgets.QDialog):
     def enable_sprites(self):
         sprite_manager: SpriteManager = self.env.sprite_manager
         sprite_manager.DISABLED = False
-
-    def add_energy_callback(self):
-        if self.env is None:
-            error_window("No active game")
-            return
-        
-        print("Adding 100 energy")
-        self.env.current_player.energy += 100
 
     def dev_console_callback(self):
         env: Environment = self.env
@@ -171,10 +175,25 @@ class Ui(QtWidgets.QDialog):
         self.env.turn.retract()
         print("Turn number is now {}".format(self.env.turn.number))
 
-    def add_pokeballs_callback(self):
+    @asyncSlot()
+    async def add_pokeballs_callback(self):
+        print("Adding 100 pokeballs")
+        print(f'ctx: {self.ctx}')
+        request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
+        print(f'request: {request}')
+        try:
+            await self.client.add_pokeballs(request)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise
+        print('Finished adding 100 pokeballs')
+
+    @asyncSlot()
+    async def add_energy_callback(self):
         if self.env is None:
             error_window("No active game")
             return
-        
-        print("Adding 100 pokeballs")
-        self.env.current_player.balls += 100
+        print("Adding 100 energy")
+        request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
+        await self.client.add_energy(request)
+        print('Finished adding 100 energy')

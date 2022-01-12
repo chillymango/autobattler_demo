@@ -4,12 +4,15 @@ FastAPI Client
 Abstracts things like connecting to the game server and making requests
 """
 import aiohttp
+import asyncio
 import json
+import logging
 import requests
 from types import MethodType
 from uuid import uuid4
 
 from pydantic import BaseModel
+from engine.player import Player
 
 # make request imports from API modules
 from server.api.base import ReportingResponse
@@ -130,39 +133,104 @@ class GameServerClient:
         if not response.success:
             print(response.message)
 
+    # debug functions
+    def add_pokeballs(self, ctx: PlayerContextRequest):
+        """
+        Add 100 Pokeballs
+        """
+        self.post("debug/add_pokeballs", ctx, response_type=ReportingResponse)
+
+    def add_energy(self, ctx: PlayerContextRequest):
+        """
+        Add 100 Energy
+        """
+        self.post("debug/add_energy", ctx, response_type=ReportingResponse)
+
 
 class AsynchronousServerClient(GameServerClient):
     """
     Override the get and post requests and use aiohttp
     """
 
-    # wrap all methods
-    def __init__(self, bind="http://localhost:8000"):
-        super().__init__(bind=bind)
+    def __init__(self, bind="http://localhost:8000", loop=None):
+        self.bind = bind
+        if loop:
+            self.session = aiohttp.ClientSession(loop=loop)
+        else:
+            self.session = aiohttp.ClientSession(loop=asyncio.get_event_loop())
 
-        # turn all functions into a coroutine
-        for attrname in dir(self):
-            if attrname.startswith('_'):
-                continue
-            attr = getattr(self, attrname)
+#    # wrap all methods
+#    def __init__(self, bind="http://localhost:8000"):
+#        super().__init__(bind=bind)
+#
+#        # turn all functions into a coroutine
+#        for attrname in dir(self):
+#            if attrname.startswith('_'):
+#                continue
+#            attr = getattr(self, attrname)
+#
+#            if isinstance(attr, MethodType):
+#                # replace with a coroutine wrapper
+#                async def __coro__():
+#                    return attr(self)
+#                setattr(self, attrname, __coro__)
 
-            if isinstance(attr, MethodType):
-                # replace with a coroutine wrapper
-                async def __coro__():
-                    return attr(self)
-                setattr(self, attrname, __coro__)
+    async def get_games(self):
+        """
+        Issue a request to get all current games
+        """
+        response = await self.get("lobby/all")
+        json_res = await response.json()
+        return json_res
 
-    async def get(self, *args, **kwargs):
-        addr = '/'.join(self.bind, args[0])
-        with aiohttp.ClientSession() as session:
-            await session.get(addr)
+    async def get(self, endpoint, **kwargs) -> aiohttp.ClientResponse:
+        addr = '/'.join([self.bind, endpoint])
+        return await self.session.get(addr)
+
+    async def post(self, endpoint: str, data: BaseModel, response_type=BaseModel, **kwargs):
+        print('doing post')
+        addr = '/'.join([self.bind, endpoint])
+        async with self.session.post(addr, json=data.dict(), **kwargs) as response:
+            print('oh man')
+            if response.status == 200:
+                print('yay')
+                return response_type.parse_raw(await response.text())
+            print('fuk')
+            response.raise_for_status()
+
+    # testing testing ...
+    async def add_pokeballs(self, ctx: PlayerContextRequest):
+        """
+        Add 100 Pokeballs
+        """
+        await self.post("debug/add_pokeballs", ctx, response_type=ReportingResponse)
+
+    async def add_energy(self, ctx: PlayerContextRequest):
+        """
+        Add 100 Energy
+        """
+        await self.post("debug/add_energy", ctx, response_type=ReportingResponse)
 
 
 if __name__ == "__main__":
-    # Asynchronous Test
-    import asyncio
-    async_client = AsynchronousServerClient()
-    asyncio.gather([async_client.get_games(), async_client.get_games()])
-    #client = GameServerClient()
     test_player = PlayerModel(id=str(uuid4()), name='Albert Yang')
+
+    client = GameServerClient()
+    game = client.create_game()
+    client.join_game(game.game_id, test_player)
+    client.start_game(game.game_id)
+
+    # Asynchronous Test
+    async def testing():
+        async_client = AsynchronousServerClient()
+        #asyncio.run(async_client.get_games())
+        print('finished getting?')
+        ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)
+        print(ctx)
+        await async_client.add_pokeballs(ctx)
+    #asyncio.run(async_client.add_pokeballs(ctx))
+    asyncio.run(testing())
+
+    # Synchronous Test
+
     import IPython; IPython.embed()

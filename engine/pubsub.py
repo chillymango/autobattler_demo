@@ -13,7 +13,7 @@ UPDATE_FREQUENCY = 10.0  # hz
 
 
 class PubSubInterface(Component):
-    
+
     def initialize(self):
         super().initialize()
         # do some stuff here to start broadcasting on the correct channels

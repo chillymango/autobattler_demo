@@ -8,10 +8,14 @@ from uuid import UUID
 
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
+from engine.env import Environment
 
 from server.api.lobby import ALL_GAMES
 from server.api.player import Player as PlayerModel
 
+if T.TYPE_CHECKING:
+    from engine.env import Environment
+    from engine.state import State
 
 game_router = APIRouter(prefix="/game")
 
@@ -28,11 +32,12 @@ async def get_game_players(game_id: str = None):
     if game_id is None:
         raise ValueError("No game_id provided to request")
 
-    game = ALL_GAMES.get(UUID(game_id))
+    game: "Environment" = ALL_GAMES.get(UUID(game_id))
+    state: "State" = game.state
     if game is None:
         raise ValueError("No game with id {} found".format(game_id))
 
-    return GamePlayersResponse(players=[PlayerModel.from_player_object(x) for x in game.players])
+    return GamePlayersResponse(players=[PlayerModel.from_player_object(x) for x in state.players])
 
 
 class GameStateResponse(BaseModel):

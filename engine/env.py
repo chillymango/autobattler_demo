@@ -3,6 +3,7 @@ Game env should be stored here or something
 """
 import time
 import typing as T
+from uuid import UUID
 from uuid import uuid4
 
 from engine.base import Component
@@ -47,9 +48,9 @@ class Environment:
             PubSubInterface,  # this should probably go last
         ]
 
-    def __init__(self, max_players: int):
-        self._id = uuid4()
-        print("Created env with id {}".format(id))
+    def __init__(self, max_players: int, id=None):
+        self._id = UUID(id) if id else uuid4()
+        print("Created env with id {}".format(self._id))
         self.state: State = State.default()
         self.state.phase = GamePhase.INITIALIZATION
         self.max_players = max_players

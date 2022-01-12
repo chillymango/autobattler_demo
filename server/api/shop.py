@@ -19,7 +19,7 @@ if T.TYPE_CHECKING:
     from engine.shop import ShopManager
     from engine.state import State
 
-shop_router = APIRouter("/shop")
+shop_router = APIRouter(prefix="/shop")
 
 
 @shop_router.post("/roll", response_model=ReportingResponse)

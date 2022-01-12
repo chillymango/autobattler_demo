@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from engine.state import GamePhase
 from server.api.base import ReportingResponse
-from server.api.base import RequestDenied
 from server.api.base import PlayerContextRequest
 from server.api.lobby import get_request_context
 
@@ -21,7 +20,7 @@ if T.TYPE_CHECKING:
     from engine.state import State
     from engine.turn import Turn
 
-debug_router = APIRouter("/debug")
+debug_router = APIRouter(prefix="/debug")
 
 
 @debug_router.post("/start_game", response_model=ReportingResponse)
