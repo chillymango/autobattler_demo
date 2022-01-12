@@ -1,98 +1,44 @@
 import functools
-import logging
 import sys
-import typing as T
-from asyncqt import QEventLoop
-from fastapi_websocket_pubsub import PubSubClient
-from fastapi_websocket_rpc.logger import logging_config, LoggingModes
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from client.client_env import ClientEnvironment
-from engine.match import Match
-from engine.match import Matchmaker
+
 from engine.player import EntityType
 from engine.player import Player
 from engine.shop import ShopManager
-from engine.state import GamePhase
-from engine.state import State
-from client.screens.debug_battle_window import Ui as DebugWindow
-from client.screens.storage_window import Ui as StorageWindow
-from client.utils.buttons import set_border_color, set_border_color_and_image, set_button_image
-from client.utils.buttons import clear_button_image
-from client.utils.buttons import PokemonButton
-from server.api.player import Player as PlayerModel
-from utils.context import GameContext
-from utils.user import User
-from utils.client import AsynchronousServerClient, GameServerClient
-
-if T.TYPE_CHECKING:
-    pass
-
-logging_config.set_mode(LoggingModes.UVICORN, level=logging.DEBUG)
+from engine.state import GamePhase, Environment
+from screens.debug_battle_window import Ui as DebugWindow
+from screens.storage_window import Ui as StorageWindow
+from utils.buttons import set_border_color, set_border_color_and_image, set_button_image
+from utils.buttons import clear_button_image
+from utils.buttons import PokemonButton
 
 
 class Ui(QtWidgets.QMainWindow):
 
     DEBUG = True
 
-    def __init__(self, server_addr: str = None, game_id: str = None):
+    def __init__(self, env: Environment = None):
         super(Ui, self).__init__()
-        self.client = GameServerClient()
-        game = self.client.create_game()
-        user = User.from_cache()
-        self.player_id = user.id
 
-        # create Player objects
-        # TODO: consolidate Player and PlayerModel because they're literally the fucking same
-        self.current_player = Player.create_from_user(user)
-        self.player = PlayerModel(id=user.id, name=user.name)
+        if env is None:
+            self.player = Player("Albert Yang", type_=EntityType.HUMAN)
+            self.env = Environment([self.player])
+        else:
+            self.player = self.env.current_player
+            self.env = env
 
-        self.client.join_game(game.game_id, self.player)
-        self.client.start_game(game.game_id)
+        uic.loadUi('qtassets/battlewindow.ui', self)
 
-        # create an environment to support rendering
-        self.env: ClientEnvironment = ClientEnvironment(8)
-        self.context = GameContext(self.env, self.current_player)
-        # should load an initial state first?
-        self.env.initialize()
-
-        #self.server_addr = None
-        self.server_addr = "ws://localhost:8000/pubsub"
-        self.game_id = game.game_id
-
-        uic.loadUi('client/qtassets/battlewindow.ui', self)
-
-        self.pubsub_client = PubSubClient()
-        self.state = None
-
-        # register remote state callbacks here
-        self.pubsub_client.subscribe(f"pubsub-{game.game_id}", callback=self._state_callback)
-
-        # TODO: register button actuation here
-        #self.pubsub_client.start_client(self.server_addr)
-        #self.show()
-
-        self.client = AsynchronousServerClient()
         if self.DEBUG:
-            self.window = DebugWindow(self.env, self.client)
+            self.env.logger.DEBUG = True
+            self.window = DebugWindow(self.env)
             self.window.battle_window = self
 
-        # add buttons
-        self.add_shop_interface()
-
-        self.render_functions = [
-            #self.render_party,
-            self.render_shop,
-            #self.render_team,
-            self.render_player_stats,
-            #self.render_opponent_party,
-            #self.render_time_to_next_stage,
-            #self.render_log_messages,
-        ]
-
-    def add_shop_interface(self):
+        # shop buttons
+        self.update_shop_signal = QtCore.pyqtSignal()
         self.shopLocationLabel = self.findChild(QtWidgets.QLabel, "shopLocationLabel")
         self.exploreWilds = self.findChild(QtWidgets.QPushButton, "exploreWilds")
         self.shopPokemon = [
@@ -102,10 +48,14 @@ class Ui(QtWidgets.QMainWindow):
         self.shop_pokemon_buttons = [
             PokemonButton(qbutton, self.env, "") for idx, qbutton in enumerate(self.shopPokemon)
         ]
+        # initialize from current shop offerings
+        for idx, shop_button in enumerate(self.shop_pokemon_buttons):
+            text = self.env.shop_manager.shop[self.player][idx]
+            shop_button.render_shop_card(text)
+            shop_button.button.clicked.connect(functools.partial(self.catch_pokemon_callback, idx))
 
         self.exploreWilds.clicked.connect(self.roll_shop_callback)
 
-    def add_party_interface(self):
         # party buttons
         self.manageStorage = self.findChild(QtWidgets.QPushButton, "manageStorage")
         self.manageStorage.clicked.connect(self.open_storage_window)
@@ -136,9 +86,8 @@ class Ui(QtWidgets.QMainWindow):
         ]
         for idx, add_party in enumerate(self.addParty):
             add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
-        #self.render_party()
+        self.render_party()
 
-    def add_team_interface(self):
         # team buttons
         self.teamMember = [
             self.findChild(QtWidgets.QPushButton, "teamMember{}".format(idx))
@@ -181,7 +130,6 @@ class Ui(QtWidgets.QMainWindow):
             )
         self.render_team()
 
-    def add_opposing_party_interface(self):
         # opposing party interface
         self.opponentName = self.findChild(QtWidgets.QLabel, "opponentName")
         self.opposingPokemon = [
@@ -202,22 +150,18 @@ class Ui(QtWidgets.QMainWindow):
             for idx in range(6)
         ]
 
-    def add_player_stats_interface(self):
         # player stats
         self.pokeBallCount = self.findChild(QtWidgets.QLineEdit, "pokeBallCount")
         self.energyCount = self.findChild(QtWidgets.QLineEdit, "energyCount")
         self.hitPoints = self.findChild(QtWidgets.QLineEdit, "hitPoints")
 
-    def add_stage_timer_interface(self):
         # time to next stage
         self.timeToNextStage = self.findChild(QtWidgets.QProgressBar, "timeToNextStage")
 
-    def add_message_interface(self):
         # update log messages
         self.logMessages = self.findChild(QtWidgets.QTextBrowser, "logMessages")
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
-    def start_state_render_callbacks(self):
         # TODO: do something smarter than this
         for callback in [
             self.render_party,
@@ -239,15 +183,13 @@ class Ui(QtWidgets.QMainWindow):
         Update log messages
 
         TODO: this is going to change a lot in multiplayer but get something working for now
-        Each player should get a unique message stream from the server.
         """
-        pass
-        #self.logMessages.setText(self.env.logger.content)
+        self.logMessages.setText(self.env.logger.content)
         #self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
     def render_time_to_next_stage(self):
-        state: "State" = self.state
-        if state.phase not in [
+        env: Environment = self.env
+        if env.phase not in [
             GamePhase.TURN_DECLARE_TEAM,
             GamePhase.TURN_PREPARE_TEAM,
             GamePhase.TURN_COMPLETE,
@@ -258,34 +200,34 @@ class Ui(QtWidgets.QMainWindow):
             self.timeToNextStage.setValue(0)
             return
 
-        if state.phase == GamePhase.TURN_DECLARE_TEAM:
+        if env.phase == GamePhase.TURN_DECLARE_TEAM:
             text = "Party Declaration"
-        elif state.phase == GamePhase.TURN_PREPARE_TEAM:
+        elif env.phase == GamePhase.TURN_PREPARE_TEAM:
             text = "Team Preparation"
-        elif state.phase == GamePhase.TURN_COMPLETE:
+        elif env.phase == GamePhase.TURN_COMPLETE:
             text = "Match Complete"        
 
-        phase_duration_ms = int(1E3 * state.t_phase_elapsed)
-        phase_time_ms = int(1E3 * state.t_phase_remaining)
+        stage_duration_ms = int(1E3 * env.stage_duration)
+        stage_time_ms = int(1E3 * env.time_to_next_stage)
         self.timeToNextStage.setFormat(text)
-        self.timeToNextStage.setMaximum(phase_duration_ms)
-        self.timeToNextStage.setValue(phase_time_ms)
+        self.timeToNextStage.setMaximum(stage_duration_ms)
+        self.timeToNextStage.setValue(stage_time_ms)
 
     def open_storage_window(self):
         self.storage_window = StorageWindow(game_env=self.env)
 
     def render_player_stats(self):
-        player: Player = self.current_player
+        player = self.env.current_player
         self.pokeBallCount.setText(str(player.balls))
         self.energyCount.setText(str(player.energy))
         self.hitPoints.setText(str(player.hitpoints))
 
     def render_opponent_party(self):
-        player: Player = self.current_player
-        state: State = self.state
-        matchmaker: Matchmaker = self.env.matchmaker
-        if state.current_matches is not None:
-            opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
+        player = self.env.current_player
+        if self.env.matchmaker.current_matches is not None:
+            opponent = self.env.matchmaker.get_player_opponent_in_round(
+                player, self.env.matchmaker.current_matches
+            )
             if opponent is not None:
                 self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
                 for idx in range(6):
@@ -300,7 +242,7 @@ class Ui(QtWidgets.QMainWindow):
             self.opposingPokemon[idx].setDisabled(True)
 
     def render_party(self):
-        player = self.current_player
+        player = self.env.current_player
         party = player.party
         for idx, party_member in enumerate(party):
             party_button = self.party_pokemon_buttons[idx]
@@ -337,31 +279,15 @@ class Ui(QtWidgets.QMainWindow):
                 remove_team_member.setDisabled(False)
 
     def render_shop(self):
-        shop_window: T.Dict[Player, str] = self.state.shop_window
-
-        for idx, pokemon_name in enumerate(shop_window[self.current_player]):
+        shop_manager: ShopManager = self.env.shop_manager
+        for idx, pokemon_name in enumerate(shop_manager.shop[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
             shop_button.render_shop_card(pokemon_name)
 
         # update shop location
-        if self.state.turn_number:
-            pass
-            #route = shop_manager.route[self.env.current_player]
-            #self.shopLocationLabel.setText(route.name)
-
-    async def _state_callback(self, topic, data):
-        """
-        Updates the state every time a pubsub message is received
-        """
-        # refresh references
-        self.state = State.parse_raw(data)
-
-        # TODO: make the below a weakref or something...
-        self.current_player = self.state.get_player_by_id(self.player_id)
-
-        print(self.state)
-        for method in self.render_functions:
-            method()
+        if self.env.turn.number:
+            route = shop_manager.route[self.env.current_player]
+            self.shopLocationLabel.setText(route.name)
 
     def roll_shop_callback(self):
         print("Rolling shop")
@@ -396,27 +322,8 @@ class Ui(QtWidgets.QMainWindow):
         self.env.current_player.team[idx], self.env.current_player.team[idx + 1] =\
             self.env.current_player.team[idx + 1], self.env.current_player.team[idx]
 
-    def closeEvent(self, *args, **kwargs):
-        super().closeEvent(*args, **kwargs)
-        # have the player leave the game
-        if self.game_id is not None:
-            self.client.leave_game(self.game_id, self.player)
-            if not len(self.client.get_players(self.game_id)):
-                print('Deleting game because last player left')
-                self.client.delete_game(self.game_id, force=True)
-
-
-async def main():
-    app = QtWidgets.QApplication(sys.argv)
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    window = Ui()
-    window.show()
-    window.pubsub_client.start_client(window.server_addr)
-    await window.pubsub_client.wait_until_done()
-    app.exec_()
-
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())    
+    app = QtWidgets.QApplication(sys.argv)
+    window = Ui()
+    app.exec_()

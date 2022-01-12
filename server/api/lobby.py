@@ -5,17 +5,18 @@ Supports high-level interfacing with games
 
 TODO: store game models etc in database and not in internal memory fucking lmao
 """
-import sys
 import typing as T
+from collections import namedtuple
 from uuid import UUID
 
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
-from api.base import ReportingResponse
-from api.player import Player as PlayerModel
-from engine.env import Environment
-from engine.player import Player
+from engine.env import Environment, GamePhase
+from engine.player import EntityType, Player
+from server.api.base import GameNotFound, PlayerContextRequest
+from server.api.base import ReportingResponse
+from server.api.player import Player as PlayerModel
 
 lobby_router = APIRouter(prefix="/lobby")
 
@@ -33,6 +34,24 @@ class CreateGameRequest(BaseModel):
 
 class CreateGameResponse(BaseModel):
     game_id: str
+
+
+PlayerContext = namedtuple("PlayerContext", ["game", "player"])
+
+
+def get_request_context(request: PlayerContextRequest) -> T.Tuple[Environment, PlayerModel]:
+    """
+    Given an incoming request, determine what game and player the request is meant for.
+
+    TODO: this pattern sucks ass, should do namespaced APIs
+    """
+    player = request.player
+    game_id = request.game_id
+
+    game = ALL_GAMES.get(game_id)
+    if game is not None:
+        return PlayerContext(game=game, player=player)
+    raise GameNotFound(f"No game with ID {game_id}")
 
 
 @lobby_router.post("/create")
@@ -107,7 +126,7 @@ async def join_game(request: JoinGameRequest):
 
         # create player from player model
         player_model = request.player
-        player = Player(name=player_model.name)
+        player = Player(name=player_model.name, type=EntityType.HUMAN, id=player_model.id)
         try:
             game.add_player(player)
             return ReportingResponse(success=True)
@@ -146,3 +165,28 @@ async def leave_game(request: LeaveGameRequest):
             return ReportingResponse(success=False, message=repr(err))
 
     return ReportingResponse(success=False, message="No game found with id ")
+
+
+class StartGameRequest(BaseModel):
+    """
+    Start a game by ID
+    """
+    game_id: str
+
+
+@lobby_router.post("/start")
+async def start_game(request: StartGameRequest):
+    """
+    Start a game
+    """
+    game_id = UUID(request.game_id)
+    game = ALL_GAMES.get(game_id)
+    if game is not None:
+        # call initialize on the game and then start the game loop
+        game.initialize()
+        # TODO: insert game loop stuff here
+        game.phase = GamePhase.TURN_SETUP
+        if game.is_running:
+            return ReportingResponse(success=True)
+
+    return ReportingResponse(success=False, message="Failed to start game")

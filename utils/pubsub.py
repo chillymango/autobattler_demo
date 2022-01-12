@@ -1,4 +1,4 @@
 """
-Implement push / pull and pub / sub
+PubSub Helpers
 """
 from fastapi_websocket_pubsub import PubSubClient

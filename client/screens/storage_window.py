@@ -1,19 +1,21 @@
 """
 Manage storage and party
 """
-from os import error
-from IPython.core.application import IPYTHON_SUPPRESS_CONFIG_ERRORS
+import typing as T
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
+if T.TYPE_CHECKING:
+    from engine.state import State
+
 
 class Ui(QtWidgets.QDialog):
 
-    def __init__(self, game_state=None):
+    def __init__(self, state: "State" = None):
         super(Ui, self).__init__()
-        self.state = game_state
+        self.state = state
         uic.loadUi('qtassets/storage.ui', self)
 
         self.update_party_signal = QtCore.pyqtSignal()

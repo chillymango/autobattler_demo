@@ -3,20 +3,25 @@ FastAPI Client
 
 Abstracts things like connecting to the game server and making requests
 """
+import aiohttp
 import json
 import requests
+from types import MethodType
 from uuid import uuid4
 
 from pydantic import BaseModel
 
 # make request imports from API modules
 from server.api.base import ReportingResponse
-from server.api.lobby import CreateGameRequest, StartGameRequest
+from server.api.base import PlayerContextRequest
+from server.api.lobby import CreateGameRequest, PlayerContext, StartGameRequest
 from server.api.lobby import CreateGameResponse
 from server.api.lobby import DeleteGameRequest
 from server.api.lobby import JoinGameRequest
 from server.api.lobby import LeaveGameRequest
 from server.api.player import Player as PlayerModel
+from server.api.shop import CatchPokemonRequest
+from utils.context import GameContext
 
 
 class ServerRequestFailure(Exception):
@@ -106,8 +111,58 @@ class GameServerClient:
         """
         return json.loads(self.get("game/players", params={'game_id': game_id}))
 
+    def roll_shop(self, game_context: GameContext):
+        """
+        Roll shop for a player
+        """
+        request = PlayerContextRequest.from_game_context()
+        response = self.post("shop/roll", request, response_type=ReportingResponse)
+        if not response.success:
+            print(response.message)
+
+    def catch_pokemon(self, game_context: GameContext, shop_index: int):
+        """
+        Catch Pokemon at some index in a shop for a player.
+        """
+        request = CatchPokemonRequest.from_game_context(game_context)
+        request.shop_index = shop_index
+        response = self.post("shop/catch", request, response_type=ReportingResponse)
+        if not response.success:
+            print(response.message)
+
+
+class AsynchronousServerClient(GameServerClient):
+    """
+    Override the get and post requests and use aiohttp
+    """
+
+    # wrap all methods
+    def __init__(self, bind="http://localhost:8000"):
+        super().__init__(bind=bind)
+
+        # turn all functions into a coroutine
+        for attrname in dir(self):
+            if attrname.startswith('_'):
+                continue
+            attr = getattr(self, attrname)
+
+            if isinstance(attr, MethodType):
+                # replace with a coroutine wrapper
+                async def __coro__():
+                    return attr(self)
+                setattr(self, attrname, __coro__)
+
+    async def get(self, *args, **kwargs):
+        addr = '/'.join(self.bind, args[0])
+        with aiohttp.ClientSession() as session:
+            await session.get(addr)
+
 
 if __name__ == "__main__":
-    client = GameServerClient()
+    # Asynchronous Test
+    import asyncio
+    async_client = AsynchronousServerClient()
+    asyncio.gather([async_client.get_games(), async_client.get_games()])
+    #client = GameServerClient()
     test_player = PlayerModel(id=str(uuid4()), name='Albert Yang')
     import IPython; IPython.embed()

@@ -2,6 +2,7 @@
 Screen should provide debug functions for the battle window
 """
 import threading
+import typing as T
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -9,21 +10,24 @@ from engine.battle_seq import BattleManager
 from engine.logger import Logger
 from engine.match import Matchmaker
 from engine.sprites import SpriteManager
-from engine.state import GamePhase
-from engine.state import Environment
-from utils.error_window import error_window
+
+from client.utils.error_window import error_window
+
+if T.TYPE_CHECKING:
+    from engine.env import Environment
+    from utils.client import GameServerClient
 
 
 class Ui(QtWidgets.QDialog):
 
-    def __init__(self, env=None):
+    def __init__(self, env: Environment, client: "GameServerClient"):
         super(Ui, self).__init__()
         self.env = env
         logger: Logger = self.env.logger
         self.log = logger.log
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
-        uic.loadUi('qtassets/debug_battlewindow.ui', self)
+        uic.loadUi('client/qtassets/debug_battlewindow.ui', self)
 
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         #self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)

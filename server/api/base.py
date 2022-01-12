@@ -6,6 +6,15 @@ TODO: look into using fastapi-utils for cbv. For now just define everything expl
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
+from server.api.player import Player
+from utils.context import GameContext
+
+
+class GameNotFound(Exception):
+    """
+    Raise when a game cannot be found
+    """
+
 
 class ReportingResponse(BaseModel):
     """
@@ -14,6 +23,19 @@ class ReportingResponse(BaseModel):
 
     success: bool
     message: str = ""
+
+
+class PlayerContextRequest(BaseModel):
+    """
+    A request that includes a player and a game as part of the context
+    """
+
+    player: Player
+    game_id: str
+
+    @classmethod
+    def from_game_context(cls, ctx: GameContext):
+        return cls(player=ctx.player, game_id=ctx.game.game_id)
 
 
 class MethodView:

@@ -117,7 +117,7 @@ class PokemonButton:
             return
 
         self.enable()
-        sprite_manager: SpriteManager = self.env.sprite_manager
+        sprite_manager: SpriteManager = self.state.sprite_manager
         if pokemon.battle_card.shiny:
             sprite = sprite_manager.get_shiny_sprite(pokemon.name)
         else:

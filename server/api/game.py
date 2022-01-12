@@ -3,15 +3,14 @@ Individual game API
 
 Supports inspection of some high-level game data
 """
-import json
 import typing as T
 from uuid import UUID
 
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
-from api.lobby import ALL_GAMES
-from api.player import Player as PlayerModel
+from server.api.lobby import ALL_GAMES
+from server.api.player import Player as PlayerModel
 
 
 game_router = APIRouter(prefix="/game")
@@ -34,3 +33,25 @@ async def get_game_players(game_id: str = None):
         raise ValueError("No game with id {} found".format(game_id))
 
     return GamePlayersResponse(players=[PlayerModel.from_player_object(x) for x in game.players])
+
+
+class GameStateResponse(BaseModel):
+    state_json_str: str  # JSON string representing the state object
+
+
+@game_router.get("/state", response_model=GameStateResponse)
+async def get_game_state(game_id: str = None):
+    """
+    Return the game state
+
+    NOTE: this is primarily for debugging, real game state should be transmitted over pubsub
+    """
+    if game_id is None:
+        raise ValueError("No game_id provided to request")
+
+    game = ALL_GAMES.get(UUID(game_id))
+    if game is None:
+        raise ValueError("No game with id {} found".format(game_id))
+
+    state = game.state
+    return GameStateResponse(state_json_str=state.json())
