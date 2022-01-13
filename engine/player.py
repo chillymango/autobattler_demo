@@ -40,6 +40,8 @@ class Player(BaseModel):
     balls: int = 0
     energy: int = 0
     id: str = str(uuid4())
+    party_locked: bool = False
+    team_locked: bool = False
 
     def __hash__(self):
         """

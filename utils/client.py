@@ -5,10 +5,16 @@ Abstracts things like connecting to the game server and making requests
 """
 import aiohttp
 import asyncio
+import concurrent.futures
 import json
 import logging
 import requests
+from threading import Thread
+import time
+import typing as T
+import weakref
 from types import MethodType
+from uuid import UUID
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -32,126 +38,63 @@ class ServerRequestFailure(Exception):
     Usually suggests a handled failure
     """
 
+nullplayer = PlayerModel(id='nullplayer', name='nullplayer')
 
-class GameServerClient:
+
+class AsyncLoopThread(Thread):
+    def __init__(self, coro, loop):
+        super().__init__(daemon=True)
+        self.coro = coro
+        self.loop = loop
+        self._returned = False
+        self._value = None
+
+    @property
+    def value(self):
+        if not self._returned:
+            raise ValueError("Coroutine hasn't finished yet")
+        return self._value
+
+    def run(self):
+        future = asyncio.run_coroutine_threadsafe(self.coro, self.loop)
+        self._value = future.result()
+        self._returned = True
+
+
+class CoroutineProxy:
     """
-    Really just for debugging for now...
+    I actually bet this will work
 
-    Really looking like the monorepo design is coming in soon lol
+    Wrap a class method as a callable that returns a coroutine which should
+    implement the synchronous client behavior.
     """
 
-    def __init__(self, bind="http://localhost:8000"):
-        self.bind = bind
+    def __init__(self, method):
+        self.method = method
 
-    def get(self, endpoint, **kwargs) -> str:
-        addr = "{}/{}".format(self.bind, endpoint)
-        print("Issuing get request to {}".format(addr))
-        response = requests.get(addr, **kwargs)
-        if response.status_code == 200:
-            return response.text
-        response.raise_for_status()
+    def run_task_in_thread(self, coro, loop):
+        """
+        runs in thread
+        """
+        asyncio.run_coroutine_threadsafe(coro, loop)
 
-    def post(self, endpoint: str, data: BaseModel, response_type=BaseModel, **kwargs):
-        addr = "{}/{}".format(self.bind, endpoint)
-        print("Issuing post request to {}".format(addr))
-        response = requests.post(addr, data.json(), **kwargs)
-        if response.status_code == 200:
-            return response_type.parse_raw(response.text)
-        response.raise_for_status()
-
-    def get_games(self):
-        """
-        Issue a request to get all current games
-        """
-        return json.loads(self.get("lobby/all"))
-
-    def create_game(self, number_of_players: int = 8):
-        """
-        Issue a create game request
-        """
-        request = CreateGameRequest(number_of_players=number_of_players)
-        return self.post("lobby/create", request, response_type=CreateGameResponse)
-
-    def delete_game(self, game_id: str, force: bool = False):
-        """
-        Issue a delete game request
-        """
-        request = DeleteGameRequest(game_id=game_id, force=force)
-        response = self.post("lobby/delete", request, response_type=ReportingResponse)
-        if not response.success:
-            raise ServerRequestFailure(response.message)
-
-    def join_game(self, game_id: str, player: PlayerModel):
-        """
-        Have a player join the game
-        """
-        request = JoinGameRequest(game_id=game_id, player=player)
-        response = self.post("lobby/join", request, response_type=ReportingResponse)
-        if not response.success:
-            raise ServerRequestFailure(response.message)
-
-    def leave_game(self, game_id: str, player: PlayerModel):
-        """
-        Have a player leave a game
-        """
-        request = LeaveGameRequest(game_id=game_id, player=player)
-        response = self.post("lobby/leave", request, response_type=ReportingResponse)
-        if not response.success:
-            raise ServerRequestFailure(response.message)
-
-    def start_game(self, game_id: str):
-        """
-        Start a game
-        """
-        request = StartGameRequest(game_id=game_id)
-        response = self.post("lobby/start", request, response_type=ReportingResponse)
-        if not response.success:
-            raise ServerRequestFailure(response.message)
-
-    def get_players(self, game_id: str):
-        """
-        Get the list of players in a game
-        """
-        return json.loads(self.get("game/players", params={'game_id': game_id}))
-
-    def roll_shop(self, game_context: GameContext):
-        """
-        Roll shop for a player
-        """
-        request = PlayerContextRequest.from_game_context()
-        response = self.post("shop/roll", request, response_type=ReportingResponse)
-        if not response.success:
-            print(response.message)
-
-    def catch_pokemon(self, game_context: GameContext, shop_index: int):
-        """
-        Catch Pokemon at some index in a shop for a player.
-        """
-        request = CatchPokemonRequest.from_game_context(game_context)
-        request.shop_index = shop_index
-        response = self.post("shop/catch", request, response_type=ReportingResponse)
-        if not response.success:
-            print(response.message)
-
-    # debug functions
-    def add_pokeballs(self, ctx: PlayerContextRequest):
-        """
-        Add 100 Pokeballs
-        """
-        self.post("debug/add_pokeballs", ctx, response_type=ReportingResponse)
-
-    def add_energy(self, ctx: PlayerContextRequest):
-        """
-        Add 100 Energy
-        """
-        self.post("debug/add_energy", ctx, response_type=ReportingResponse)
+    def __call__(self, *args, **kwargs):
+        # create another event loop in another thread and run the request there
+        
+        loop = asyncio.get_event_loop()
+        # TODO: this doesn't actually work with QEventLoop in QApplication right now
+        coro = self.method(*args, **kwargs)
+        task = loop.create_task(coro)
+        loop.run_until_complete(task)
+        return task.result()
 
 
-class AsynchronousServerClient(GameServerClient):
+class AsynchronousServerClient:
     """
     Override the get and post requests and use aiohttp
     """
 
+    # wrap all methods
     def __init__(self, bind="http://localhost:8000", loop=None):
         self.bind = bind
         if loop:
@@ -159,33 +102,9 @@ class AsynchronousServerClient(GameServerClient):
         else:
             self.session = aiohttp.ClientSession(loop=asyncio.get_event_loop())
 
-#    # wrap all methods
-#    def __init__(self, bind="http://localhost:8000"):
-#        super().__init__(bind=bind)
-#
-#        # turn all functions into a coroutine
-#        for attrname in dir(self):
-#            if attrname.startswith('_'):
-#                continue
-#            attr = getattr(self, attrname)
-#
-#            if isinstance(attr, MethodType):
-#                # replace with a coroutine wrapper
-#                async def __coro__():
-#                    return attr(self)
-#                setattr(self, attrname, __coro__)
-
-    async def get_games(self):
-        """
-        Issue a request to get all current games
-        """
-        response = await self.get("lobby/all")
-        json_res = await response.json()
-        return json_res
-
     async def get(self, endpoint, **kwargs) -> aiohttp.ClientResponse:
         addr = '/'.join([self.bind, endpoint])
-        return await self.session.get(addr)
+        return await self.session.get(addr, **kwargs)
 
     async def post(self, endpoint: str, data: BaseModel, response_type=BaseModel, **kwargs):
         print('doing post')
@@ -198,39 +117,184 @@ class AsynchronousServerClient(GameServerClient):
             print('fuk')
             response.raise_for_status()
 
-    # testing testing ...
+    async def get_games(self):
+        """
+        Issue a request to get all current games
+        """
+        return json.loads(await self.get("lobby/all"))
+
+    async def create_game(self, number_of_players: int = 8):
+        """
+        Issue a create game request
+        """
+        print(number_of_players)
+        request = CreateGameRequest(number_of_players=number_of_players)
+        return await self.post("lobby/create", request, response_type=CreateGameResponse)
+
+    async def delete_game(self, game_id: str, force: bool = False):
+        """
+        Issue a delete game request
+        """
+        request = DeleteGameRequest(game_id=game_id, force=force)
+        response = await self.post("lobby/delete", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def join_game(self, game_id: str, player: PlayerModel):
+        """
+        Have a player join the game
+        """
+        request = JoinGameRequest(game_id=game_id, player=player)
+        response = await self.post("lobby/join", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def leave_game(self, game_id: str, player: PlayerModel):
+        """
+        Have a player leave a game
+        """
+        request = LeaveGameRequest(game_id=game_id, player=player)
+        response = await self.post("lobby/leave", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def start_game(self, game_id: str):
+        """
+        Start a game
+        """
+        request = StartGameRequest(game_id=game_id)
+        response = await self.post("lobby/start", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def get_players(self, game_id: str):
+        """
+        Get the list of players in a game
+        """
+        return json.loads(await self.get("game/players", params={'game_id': game_id}))
+
+    async def roll_shop(self, game_context: GameContext):
+        """
+        Roll shop for a player
+        """
+        try:
+            request = PlayerContextRequest.from_game_context(game_context)
+            response = await self.post("shop/roll", request, response_type=ReportingResponse)
+            if not response.success:
+                print(response.message)
+        except Exception as exc:
+            print(repr(exc))
+            raise
+
+    async def catch_pokemon(self, game_context: GameContext, shop_index: int):
+        """
+        Catch Pokemon at some index in a shop for a player.
+        """
+        request = CatchPokemonRequest.from_game_context(game_context)
+        request.shop_index = shop_index
+        response = await self.post("shop/catch", request, response_type=ReportingResponse)
+        if not response.success:
+            print(response.message)
+
+    # debug functions
     async def add_pokeballs(self, ctx: PlayerContextRequest):
         """
         Add 100 Pokeballs
         """
-        await self.post("debug/add_pokeballs", ctx, response_type=ReportingResponse)
+        return await self.post("debug/add_pokeballs", ctx, response_type=ReportingResponse)
 
     async def add_energy(self, ctx: PlayerContextRequest):
         """
         Add 100 Energy
         """
-        await self.post("debug/add_energy", ctx, response_type=ReportingResponse)
+        return await self.post("debug/add_energy", ctx, response_type=ReportingResponse)
+
+    async def get_games(self):
+        """
+        Issue a request to get all current games
+        """
+        response = await self.get("lobby/all")
+        json_res = await response.json()
+        return json_res
+
+    async def advance_turn(self, game_id: T.Union[str, UUID]):
+        """
+        Issue a request to advance the turn by 1
+        """
+        game_id = str(game_id)
+        request = PlayerContextRequest(game_id=game_id, player=nullplayer)
+        response = await self.post("debug/advance_turn", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def retract_turn(self, game_id: T.Union[str, UUID]):
+        game_id = str(game_id)
+        request = PlayerContextRequest(game_id=game_id, player=nullplayer)
+        response = await self.post("debug/retract_turn", request, response_type=ReportingResponse)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+    async def make_new_matches(self, game_id: T.Union[str, UUID]):
+        """
+        Issue a request to make new matches
+        """
+        game_id = str(game_id)
+        request = PlayerContextRequest(game_id=game_id, player=nullplayer)
+        response = await self.post("debug/new_matches", request)
+        if not response.success:
+            raise ServerRequestFailure(response.message)
+
+
+class GameServerClient(AsynchronousServerClient):
+    """
+    Synchronous version of the server client.
+
+    All coroutines defined in the async client are wrapped with a proxy callable that will
+    await and return the output.
+    """
+
+    BUILTINS = ['get', 'post']
+
+    def __init__(self, bind="http://localhost:8000"):
+        super().__init__(bind=bind)  # probably don't need to support a loop argument?
+
+        # turn all functions into a coroutine
+        for attrname in dir(self):
+            if attrname.startswith('_'):
+                continue
+            if attrname in self.BUILTINS:
+                continue
+
+            attr = getattr(self, attrname)
+
+            if isinstance(attr, MethodType):
+                # replace with a coroutine wrapper
+                hidden_attr = f"__{attrname}"
+                setattr(self, hidden_attr, attr)
+                base = getattr(self, hidden_attr)
+
+                setattr(self, attrname, CoroutineProxy(base))
 
 
 if __name__ == "__main__":
     test_player = PlayerModel(id=str(uuid4()), name='Albert Yang')
 
-    client = GameServerClient()
-    game = client.create_game()
-    client.join_game(game.game_id, test_player)
-    client.start_game(game.game_id)
-
     # Asynchronous Test
     async def testing():
         async_client = AsynchronousServerClient()
-        #asyncio.run(async_client.get_games())
+        game = await async_client.create_game()
+        print(game)
+        await async_client.join_game(game.game_id, test_player)
+        await async_client.start_game(game.game_id)
         print('finished getting?')
         ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)
         print(ctx)
         await async_client.add_pokeballs(ctx)
-    #asyncio.run(async_client.add_pokeballs(ctx))
-    asyncio.run(testing())
+
+    #asyncio.run(testing())
 
     # Synchronous Test
+    client = GameServerClient()
+    game = client.create_game()
 
     import IPython; IPython.embed()

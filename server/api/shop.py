@@ -34,6 +34,8 @@ async def api_roll_shop(request: PlayerContextRequest):
     shop_manager: ShopManager = game.shop_manager
     shop_manager.roll(player)
 
+    return ReportingResponse(success=True)
+
 
 class CatchPokemonRequest(PlayerContextRequest):
 
@@ -50,3 +52,5 @@ async def api_catch(request: CatchPokemonRequest):
 
     shop_manager: ShopManager = game.shop_manager
     shop_manager.catch(player, request.shop_index)
+
+    return ReportingResponse(success=True)

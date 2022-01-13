@@ -35,7 +35,7 @@ class PlayerContextRequest(BaseModel):
 
     @classmethod
     def from_game_context(cls, ctx: GameContext):
-        return cls(player=ctx.player, game_id=ctx.game.game_id)
+        return cls(player=ctx.player, game_id=str(ctx.game.id))
 
 
 class MethodView:

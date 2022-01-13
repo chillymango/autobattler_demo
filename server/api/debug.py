@@ -83,3 +83,16 @@ def api_retract_turn(request: PlayerContextRequest):
     turn: "Turn" = game.turn
     turn.retract()
     return ReportingResponse(success=True)
+
+
+@debug_router.post("/new_matches", response_model=ReportingResponse)
+def api_new_matches(request: PlayerContextRequest):
+    """
+    Issue a request to make new matches
+    """
+    game, _ = get_request_context(request)
+    matchmaker: Matchmaker = game.matchmaker
+    # update current rounds
+    matches = matchmaker.organize_round()
+    state: State = game.state
+    state.current_matches = matches

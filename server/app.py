@@ -9,7 +9,7 @@ from fastapi_websocket_rpc.logger import logging_config, LoggingModes
 from server.api import add_routes
 
 #logging_config.set_mode(LoggingModes.UVICORN, level=logging.DEBUG)
-logging_config.set_mode(LoggingModes.UVICORN, level=logging.INFO)
+logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 app =  FastAPI()
 
 # add other APIs

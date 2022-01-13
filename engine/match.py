@@ -23,36 +23,28 @@ class Match(BaseModel):
 
     player1: Player
     player2: Player
-    result: T.Union[Player, None]
+    result: T.Union[Player, None] = None
+
+    @property
+    def players(self):
+        return (self.player1, self.player2)
 
     def has_player(self, player):
         return player in self.players
 
     def __hash__(self):
-        return hash(self.players)
-
-    @property
-    def result(self):
-        return self._result
+        return hash((self.player1, self.player2))
 
     @property
     def is_creep_match(self):
-        return "Creep Round" in [player.name for player in self.players]
-
-    @result.setter
-    def set_result(self, winner):
-        if winner not in self.players:
-            raise ValueError(
-                "Player {} did not play in match between {}".format(winner, self.players)
-            )
-        self._result = winner
+        return "Creep Round" in self.player1.name or "Creep Round" in self.player2.name
 
     def __repr__(self):
         if self._result:
             resultstr = "{} wins".format(self._result)
         else:
             resultstr = "Not played"
-        return "Match - ({}) vs ({}) ({})".format(self.players[0], self.players[1], resultstr)
+        return "Match - ({}) vs ({}) ({})".format(self.player1, self.player2, resultstr)
 
 
 class CreepRoundManager(Component):
@@ -96,8 +88,8 @@ class CreepRoundManager(Component):
 
     def create_creep_player(self):
         # do a lookup based on the current run
-        creep_player = Player("Creep Round",type_=EntityType.CREEP)
-        turn = self.env.turn.number
+        creep_player = Player(name="Creep Round", type=EntityType.CREEP)
+        turn = self.state.turn_number
         for idx, pokemon in enumerate(self.creep_round_pokemon[turn]):
             creep_player.add_to_party(pokemon)
             creep_player.add_party_to_team(idx)
@@ -111,7 +103,7 @@ class CreepRoundManager(Component):
         matches = []
         for player in self.state.players:
             creep_player = self.create_creep_player()
-            match = Match(player, creep_player)
+            match = Match(player1=player, player2=creep_player)
             matches.append(match)
 
         return matches
@@ -210,7 +202,7 @@ class Matchmaker(Component):
                 live_players.append(computer)
 
         # list potential matches
-        all_matches = [Match(p1, p2) for p1, p2 in combinations(live_players, 2)]
+        all_matches = [Match(player1=p1, player2=p2) for p1, p2 in combinations(live_players, 2)]
         shuffle(all_matches)  # to prevent guessing of matches based on lobby order
 
         # calculate match scores based on match history
@@ -248,7 +240,7 @@ class Matchmaker(Component):
         elif len(remaining_players) == 1:
             # organize a creep round for this player
             creep_player = self.env.creep_round_manager.create_creep_player()
-            match = Match(remaining_players[0], creep_player)
+            match = Match(player1=remaining_players[0], player2=creep_player)
             determined_matches.append(match)
 
         # update player opponent history

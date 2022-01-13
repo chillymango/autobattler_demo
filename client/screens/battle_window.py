@@ -2,6 +2,7 @@ import functools
 import logging
 import sys
 import typing as T
+from asyncqt import asyncSlot
 from asyncqt import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
@@ -30,7 +31,7 @@ from utils.client import AsynchronousServerClient, GameServerClient
 if T.TYPE_CHECKING:
     pass
 
-logging_config.set_mode(LoggingModes.UVICORN, level=logging.INFO)
+logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 
 class Ui(QtWidgets.QMainWindow):
@@ -39,28 +40,19 @@ class Ui(QtWidgets.QMainWindow):
 
     def __init__(self, server_addr: str = None, game_id: str = None):
         super(Ui, self).__init__()
-        self.client = GameServerClient()
-        game = self.client.create_game()
-        user = User.from_cache()
-        self.player_id = user.id
-
-        # create Player objects
-        # TODO: consolidate Player and PlayerModel because they're literally the fucking same
-        self.current_player = Player.create_from_user(user)
-        self.player = PlayerModel(id=user.id, name=user.name)
-
-        self.client.join_game(game.game_id, self.player)
-        self.client.start_game(game.game_id)
+        #self.client = GameServerClient()
+        game_id = self.create_and_join_game()
+        self.client = AsynchronousServerClient()
 
         # create an environment to support rendering
-        self.env: ClientEnvironment = ClientEnvironment(8, id=game.game_id)
+        self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
         self.context: GameContext = GameContext(self.env, self.player)
         # should load an initial state first?
         self.env.initialize()
 
         #self.server_addr = None
         self.server_addr = "ws://localhost:8000/pubsub"
-        self.game_id = game.game_id
+        self.game_id = game_id
 
         uic.loadUi('client/qtassets/battlewindow.ui', self)
 
@@ -68,13 +60,8 @@ class Ui(QtWidgets.QMainWindow):
         self.state = None
 
         # register remote state callbacks here
-        self.pubsub_client.subscribe(f"pubsub-{game.game_id}", callback=self._state_callback)
+        self.pubsub_client.subscribe(f"pubsub-{game_id}", callback=self._state_callback)
 
-        # TODO: register button actuation here
-        #self.pubsub_client.start_client(self.server_addr)
-        #self.show()
-
-        self.async_client = AsynchronousServerClient()
         if self.DEBUG:
             self.window = DebugWindow(self.env, ctx=self.context)
             self.window.battle_window = self
@@ -92,6 +79,23 @@ class Ui(QtWidgets.QMainWindow):
             #self.render_log_messages,
         ]
 
+    def create_and_join_game(self):
+        # oh boy man
+        client = GameServerClient()
+        game = client.create_game()
+        user = User.from_cache()
+        self.player_id = user.id
+
+        # create Player objects
+        # TODO: consolidate Player and PlayerModel because they're literally the fucking same
+        self.current_player = Player.create_from_user(user)
+        self.player = PlayerModel(id=user.id, name=user.name)
+
+        client.join_game(game.game_id, self.player)
+        client.start_game(game.game_id)
+
+        return game.game_id
+
     def add_shop_interface(self):
         self.shopLocationLabel = self.findChild(QtWidgets.QLabel, "shopLocationLabel")
         self.exploreWilds = self.findChild(QtWidgets.QPushButton, "exploreWilds")
@@ -100,7 +104,7 @@ class Ui(QtWidgets.QMainWindow):
             for idx in range(5)
         ]
         self.shop_pokemon_buttons = [
-            PokemonButton(qbutton, self.env, "") for idx, qbutton in enumerate(self.shopPokemon)
+            PokemonButton(qbutton, self.env, "") for qbutton in self.shopPokemon
         ]
 
         self.exploreWilds.clicked.connect(self.roll_shop_callback)
@@ -337,7 +341,10 @@ class Ui(QtWidgets.QMainWindow):
                 remove_team_member.setDisabled(False)
 
     def render_shop(self):
-        shop_window: T.Dict[Player, str] = self.state.shop_window
+        state: State = self.state
+        shop_window: T.Dict[Player, str] = state.shop_window
+        print(self.state.shop_window_raw)
+        print(shop_window)
 
         for idx, pokemon_name in enumerate(shop_window[self.current_player]):
             shop_button = self.shop_pokemon_buttons[idx]
@@ -345,29 +352,27 @@ class Ui(QtWidgets.QMainWindow):
 
         # update shop location
         if self.state.turn_number:
-            pass
-            #route = shop_manager.route[self.env.current_player]
-            #self.shopLocationLabel.setText(route.name)
+            route = self.state.stage.location
+            self.shopLocationLabel.setText(route)
 
     async def _state_callback(self, topic, data):
         """
         Updates the state every time a pubsub message is received
         """
         # refresh references
+        #print(data)
         self.state = State.parse_raw(data)
 
         # TODO: make the below a weakref or something...
         self.current_player = self.state.get_player_by_id(self.player_id)
 
-        print(data)
-        print(self.state)
         for method in self.render_functions:
             method()
 
-    def roll_shop_callback(self):
+    @asyncSlot()
+    async def roll_shop_callback(self):
         print("Rolling shop")
-        self.env.shop_manager.roll(self.player)
-        self.render_shop()
+        await self.client.roll_shop(self.context)
 
     def catch_pokemon_callback(self, idx):
         print("Acquiring Pokemon at index {}".format(idx))

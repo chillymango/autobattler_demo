@@ -105,7 +105,6 @@ class Environment:
         """
         if not self.state.phase == GamePhase.INITIALIZATION:
             raise RuntimeError("Attempted to start game while in non-initialize")
-        self.logger.log("Starting game")
         self.state.phase = GamePhase.TURN_SETUP
 
     def step_loop(self):

@@ -1,12 +1,14 @@
 """
 Items and Inventory
 """
-class PokePermItem:
-    def __init__(self, name):
-        self.name = name
+from pydantic import BaseModel
+
+
+class PokePermItem(BaseModel):
+
+    name: str
 
     def use(self, pokemon, player):
-
         if self.name == 'TM':
             if pokemon.battle_card.tm_flag == 1:
                 print('It had no effect')
@@ -14,8 +16,6 @@ class PokePermItem:
                 pokemon.battle_card.tm_flag = 1
     
                 player.remove_item(self.name)
-
-
 
 
 class _Item:
@@ -46,8 +46,6 @@ class _Item:
     #power herb: start with 30 energy
     #salac berry: if poke survives, gain 40 energy
     #focus band: if poke dies, revive at back of team with 1hp and 100 energy
-
-
 
     def use(self):
         """

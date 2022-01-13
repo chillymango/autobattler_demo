@@ -10,6 +10,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 from engine.base import Component
+from engine.player import Player
 from engine.pokemon import Pokemon, PokemonFactory
 from engine.turn import Turn
 from operator import attrgetter
@@ -141,7 +142,7 @@ class ShopManager(Component):
         Dynamically load shop object based on the current turn
         """
         return {
-            player: self.get_shop_by_turn_number(self.env.turn.number)
+            player: self.get_shop_by_turn_number(self.state.turn_number)
             for player in self.state.players
         }
 
@@ -162,7 +163,7 @@ class ShopManager(Component):
         """
         if not turn_number:
             print("Invalid turn number {}".format(turn_number))
-        stage = self.env.turn.stage
+        stage = self.state.stage
         return self.shop_distribution[stage.stage - 1]
 
     def get_shop_by_turn_number(self, turn_number):
@@ -241,12 +242,12 @@ class ShopManager(Component):
         # combined inventory
         pokemon_factory.shiny_checker(player,card)
 
-    def roll(self, player):
+    def roll(self, player: Player):
         """
         Load a new shop for a player based on their route
         """
         if player.energy > 0:
             player.energy -= 1
-            self.state.shop_window[player] = self.route[player].roll_shop()
+            self.state.shop_window_raw[player.id] = self.route[player].roll_shop()
         else:
             print("Cannot roll shop with no energy")

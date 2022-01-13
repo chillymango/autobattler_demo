@@ -1,8 +1,11 @@
-from collections import namedtuple
+from pydantic.main import BaseModel
 
 from engine.base import Component
 
-StageConfig = namedtuple("StageConfig", ["stage", "round", "location"])
+class StageConfig(BaseModel):
+    stage: int
+    round: int
+    location: str = ""
 
 
 class Turn(Component):
@@ -14,19 +17,21 @@ class Turn(Component):
 
     def advance(self):
         self.state.turn_number += 1
-        self.state.stage_number = self.stages[self.state.turn_number]
-        self.log("---- Turn {} ----".format(self.state.turn_number))
+        self.state.stage = self.stages[self.state.turn_number]
 
     def retract(self):
         if self.state.turn_number > 0:
             self.state.turn_number -= 1
-            self.state.stage_number = self.stages[self.state.turn_number]
+            self.state.stage = self.stages[self.state.turn_number]
         else:
             print("Cannot go beyond turn 0")
 
     @property
     def stage(self):
-        return self.state.stage_number
+        """
+        refers to the stage number
+        """
+        return self.state.stage.stage
 
     @property
     def number(self):
@@ -50,7 +55,7 @@ class Turn(Component):
             stage = int(entries[0])
             round = int(entries[1])
             location = ' '.join(entries[2:])
-            self.stages[turn_number] = StageConfig(stage, round, location)
+            self.stages[turn_number] = StageConfig(stage=stage, round=round, location=location)
             turn_number += 1
 
     def turn_setup(self):

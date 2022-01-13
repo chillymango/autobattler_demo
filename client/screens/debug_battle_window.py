@@ -14,17 +14,18 @@ from engine.logger import Logger
 from engine.match import Matchmaker
 from engine.sprites import SpriteManager
 
+from client.screens.base import GameWindow
 from client.utils.error_window import error_window
 from server.api.base import PlayerContextRequest
 from utils.client import AsynchronousServerClient
+from utils.client import GameServerClient
 from utils.context import GameContext
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from utils.client import GameServerClient
 
 
-class Ui(QtWidgets.QDialog):
+class Ui(QtWidgets.QDialog, GameWindow):
 
     def __init__(self, env: "Environment", ctx: GameContext = None):
         super(Ui, self).__init__()
@@ -35,9 +36,9 @@ class Ui(QtWidgets.QDialog):
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
 
+        # TODO: probably want to share client with parent window
         loop = asyncio.get_event_loop()
-        self.client = AsynchronousServerClient(loop=loop)
-        #task = loop.create_task(self.create_client())
+        self.client = AsynchronousServerClient(loop=loop)            
         
         uic.loadUi('client/qtassets/debug_battlewindow.ui', self)
 
@@ -132,55 +133,41 @@ class Ui(QtWidgets.QDialog):
         env: Environment = self.env
         self.gamePhase.setText(env.phase.name)
 
-    def make_new_matches_callback(self):
-        if self.env is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def make_new_matches_callback(self):
         print("Making new matches")
-        round = self.env.matchmaker.organize_round()
-        self.env.matchmaker.matches.append(round)
+        try:
+            await self.client.make_new_matches(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
 
-    def run_battle_callback(self):
-        if self.env is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def run_battle_callback(self):
         print("Running battle callback")
-        player = self.env.current_player
-        battle_manager: BattleManager = self.env.battle_manager
-        matchmaker: Matchmaker = self.env.matchmaker
-        opponent = matchmaker.get_player_opponent_in_round(player, matchmaker.current_matches)
-        result = battle_manager.player_battle(player, opponent)
-        if (result == 1):
-            print('player victory')
-        else:
-            print('creep victory')
+        # TODO: implement
+        print("This button doesn't work!!!")
 
-    def step_turn_forward_callback(self):
-        if self.env is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def step_turn_forward_callback(self):
         print("Stepping turn forward one.")
-        self.env.turn.advance()
-        print("Turn number is now {}".format(self.env.turn.number))
+        try:
+            await self.client.advance_turn(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise        
 
-    def step_turn_backward_callback(self):
-        if self.env is None:
-            error_window("No active game")
-            return
-
-        print("Stepping turn backward one.")
-        self.env.turn.retract()
-        print("Turn number is now {}".format(self.env.turn.number))
+    @asyncSlot()
+    async def step_turn_backward_callback(self):
+        print("Stepping turn back one.")
+        try:
+            await self.client.retract_turn(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise
 
     @asyncSlot()
     async def add_pokeballs_callback(self):
-        print("Adding 100 pokeballs")
-        print(f'ctx: {self.ctx}')
         request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
-        print(f'request: {request}')
         try:
             await self.client.add_pokeballs(request)
         except Exception as exc:

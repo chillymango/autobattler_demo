@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from engine.base import _Synchronized
 from engine.match import Match
 from engine.player import Player
+from engine.turn import StageConfig
 
 SHOP_SIZE = 5
 
@@ -62,7 +63,7 @@ class State(BaseModel):
     current_matches: T.List[Match]
     matches: T.List[T.List[Match]]
     turn_number: int
-    stage_number: int
+    stage: StageConfig = StageConfig(stage=0, round=0)
     t_phase_elapsed: float = 0.0
     t_phase_remaining: float = float('inf')
 
@@ -75,14 +76,13 @@ class State(BaseModel):
             current_matches=[],
             matches=[[]],
             turn_number=0,
-            stage_number=0,
         )
 
     @property
     def shop_window(self):
         return {
-            self.get_player_by_id(x.id): self.shop_window_raw.get(x, [None] * SHOP_SIZE)
-            for x in self.players
+            player: self.shop_window_raw.get(player.id, [None] * SHOP_SIZE)
+            for player in self.players
         }
 
     def get_player_by_id(self, id):

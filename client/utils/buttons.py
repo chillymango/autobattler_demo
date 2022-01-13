@@ -61,10 +61,10 @@ class PokemonButton:
     Renders a Pokemon sprite or text or blank, depending on configuration.
     """
 
-    def __init__(self, button, state, default_text="", label=None):
+    def __init__(self, button, env, default_text="", label=None):
         self.button: QPushButton = button
         self.label: QLabel = label
-        self.state = state
+        self.env = env
         self.default_text = default_text
         # TODO: add some more config options here probably
 
@@ -87,7 +87,7 @@ class PokemonButton:
             return
 
         self.enable()
-        sprite_manager: SpriteManager = self.state.sprite_manager
+        sprite_manager: SpriteManager = self.env.sprite_manager
         sprite = sprite_manager.get_normie_sprite(pokemon_name)
 
         if sprite is None:
@@ -96,7 +96,7 @@ class PokemonButton:
             self.button.setText(pokemon_name)
         else:
             self.button.setText('')
-            shop_manager: ShopManager = self.state.shop_manager
+            shop_manager: ShopManager = self.env.shop_manager
             tier = shop_manager.pokemon_tier_lookup[pokemon_name]
             color = shop_manager.tier_colors[tier]
             set_button_image(self.button, sprite, color)
