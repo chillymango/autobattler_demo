@@ -30,6 +30,8 @@ from server.api.lobby import JoinGameRequest
 from server.api.lobby import LeaveGameRequest
 from server.api.player import Player as PlayerModel
 from server.api.shop import CatchPokemonRequest
+from server.api.team import AddToTeamRequest, ShiftRequest
+from server.api.team import RemoveFromTeamRequest
 from utils.context import GameContext
 
 
@@ -107,14 +109,10 @@ class AsynchronousServerClient:
         return await self.session.get(addr, **kwargs)
 
     async def post(self, endpoint: str, data: BaseModel, response_type=BaseModel, **kwargs):
-        print('doing post')
         addr = '/'.join([self.bind, endpoint])
         async with self.session.post(addr, json=data.dict(), **kwargs) as response:
-            print('oh man')
             if response.status == 200:
-                print('yay')
                 return response_type.parse_raw(await response.text())
-            print('fuk')
             response.raise_for_status()
 
     async def get_games(self):
@@ -127,7 +125,6 @@ class AsynchronousServerClient:
         """
         Issue a create game request
         """
-        print(number_of_players)
         request = CreateGameRequest(number_of_players=number_of_players)
         return await self.post("lobby/create", request, response_type=CreateGameResponse)
 
@@ -190,9 +187,75 @@ class AsynchronousServerClient:
         """
         Catch Pokemon at some index in a shop for a player.
         """
-        request = CatchPokemonRequest.from_game_context(game_context)
-        request.shop_index = shop_index
-        response = await self.post("shop/catch", request, response_type=ReportingResponse)
+        print('doing catch request')
+        try:
+            request = CatchPokemonRequest.from_game_context(game_context, shop_index=shop_index)
+            response = await self.post("shop/catch", request, response_type=ReportingResponse)
+        except Exception as exc:
+            print(repr(exc))
+            raise
+        if not response.success:
+            print(response.message)
+
+    # NOTE: for team functions, for now we will just implement individual requests for adjusting
+    # teams discretely per requested operation, instead of asking for a team change. This will
+    # probably not scale but i'm not worried about that yet
+    # backend still responsible for handling validation
+    async def shift_team_member_up(self, ctx: PlayerContextRequest, idx: int):
+        """
+        ctx: player context
+        idx: index of pokemon to shift upwards
+        """
+        print('doing shift team member request')
+        try:
+            request = ShiftRequest.from_game_context(ctx, index=idx)
+            response = await self.post("team/shift_up", request, response_type=ReportingResponse)
+        except Exception as exc:
+            print(repr(exc))
+            raise
+        if not response.success:
+            print(response.message)
+
+    async def shift_team_member_down(self, ctx: PlayerContextRequest, idx: int):
+        """
+        ctx: player context
+        idx: index of pokemon to shift downwards
+        """
+        print('doing shift team member request')
+        try:
+            request = ShiftRequest.from_game_context(ctx, index=idx)
+            response = await self.post("team/shift_down", request, response_type=ReportingResponse)
+        except Exception as exc:
+            print(repr(exc))
+            raise
+        if not response.success:
+            print(response.message)
+
+    async def add_to_team(self, ctx: PlayerContextRequest, idx):
+        """
+        ctx: player context
+        idx: index of pokemon to remove
+        """
+        try:
+            request = AddToTeamRequest.from_game_context(ctx, party_idx=idx)
+            response = await self.post("team/add", request, response_type=ReportingResponse)            
+        except Exception as exc:
+            print(repr(exc))
+            raise
+        if not response.success:
+            print(response.message)
+
+    async def remove_from_team(self, ctx: PlayerContextRequest, idx):
+        """
+        ctx: player context
+        idx: index of pokemon to remove
+        """
+        try:
+            request = RemoveFromTeamRequest.from_game_context(ctx, team_idx=idx)
+            response = await self.post("team/remove", request, response_type=ReportingResponse)
+        except Exception as exc:
+            print(repr(exc))
+            raise
         if not response.success:
             print(response.message)
 
@@ -240,7 +303,8 @@ class AsynchronousServerClient:
         """
         game_id = str(game_id)
         request = PlayerContextRequest(game_id=game_id, player=nullplayer)
-        response = await self.post("debug/new_matches", request)
+        response = await self.post("debug/new_matches", request, response_type=ReportingResponse)
+        print('i am out?')
         if not response.success:
             raise ServerRequestFailure(response.message)
 
@@ -283,12 +347,9 @@ if __name__ == "__main__":
     async def testing():
         async_client = AsynchronousServerClient()
         game = await async_client.create_game()
-        print(game)
         await async_client.join_game(game.game_id, test_player)
         await async_client.start_game(game.game_id)
-        print('finished getting?')
         ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)
-        print(ctx)
         await async_client.add_pokeballs(ctx)
 
     #asyncio.run(testing())

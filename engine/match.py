@@ -135,7 +135,7 @@ class Matchmaker(Component):
 
 
     @staticmethod
-    def get_player_opponent_in_round(player, matches):
+    def get_player_opponent_in_round(player, matches: T.List[Match]):
         """
         In a group of matches, determine the one the specified player is participating in.
 
@@ -143,9 +143,9 @@ class Matchmaker(Component):
         """
         for match in matches:
             if match.has_player(player):
-                if match.players[0] == player:
-                    return match.players[1]
-                return match.players[0]
+                if match.player1 == player:
+                    return match.player2
+                return match.player1
 
         return None
 

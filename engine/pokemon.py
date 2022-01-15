@@ -8,6 +8,7 @@ from collections import defaultdict
 from collections import namedtuple
 from uuid import uuid4
 from pydantic import BaseModel
+from pydantic import Field
 
 from engine.base import Component
 from engine.base import _Synchronized
@@ -116,7 +117,7 @@ class Pokemon(BaseModel):
     name: str
     battle_card: BattleCard
     nickname: str
-    id: str = str(uuid4())
+    id: str = Field(default_factory=uuid4)
     xp: float = 0.0
 
     def __str__(self):
@@ -124,6 +125,9 @@ class Pokemon(BaseModel):
 
     def __repr__(self):
         return "{} ({})".format(self.name, self.id)
+
+    def __eq__(self, other):
+        return self.id == other.id
 
     @classmethod
     def from_dict(cls, data):
@@ -317,13 +321,9 @@ class PokemonFactory(Component):
             max_tm_flag = 0
             max_bonus_shield = 0
             for mp in matching_pokes:
-                if mp.xp > max_xp:
-                    max_xp = mp.xp
-                if mp.battle_card.tm_flag > max_tm_flag:
-                    max_tm_flag = mp.battle_card.tm_flag
-                if mp.battle_card.bonus_shield > max_bonus_shield:
-                    max_bonus_shield=mp.battle_card.bonus_shield
-
+                max_xp = max(mp.xp, max_xp)
+                max_tm_flag = max(mp.battle_card.tm_flag, max_tm_flag)
+                max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
                 player.release_by_id(mp.id)
             shiny_poke = self.create_pokemon_by_name(card)
             shiny_poke.battle_card.shiny = True

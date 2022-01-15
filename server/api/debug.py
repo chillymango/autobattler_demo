@@ -23,7 +23,7 @@ if T.TYPE_CHECKING:
 debug_router = APIRouter(prefix="/debug")
 
 
-@debug_router.post("/start_game", response_model=ReportingResponse)
+@debug_router.post("/new_matches", response_model=ReportingResponse)
 def api_make_new_matches(request: PlayerContextRequest):
     """
     Request the Matchmaker create new matches
@@ -35,7 +35,7 @@ def api_make_new_matches(request: PlayerContextRequest):
     # these rounds were not played so do not commit them to memory
     if state.phase == GamePhase.TURN_EXECUTE:
         return ReportingResponse(success=False, message="matches are currently playing")
-    state.matches = matchmaker.organize_round()
+    state.current_matches = matchmaker.organize_round()
     return ReportingResponse(success=True)
 
 
@@ -85,14 +85,14 @@ def api_retract_turn(request: PlayerContextRequest):
     return ReportingResponse(success=True)
 
 
-@debug_router.post("/new_matches", response_model=ReportingResponse)
-def api_new_matches(request: PlayerContextRequest):
-    """
-    Issue a request to make new matches
-    """
-    game, _ = get_request_context(request)
-    matchmaker: Matchmaker = game.matchmaker
-    # update current rounds
-    matches = matchmaker.organize_round()
-    state: State = game.state
-    state.current_matches = matches
+#@debug_router.post("/new_matches", response_model=ReportingResponse)
+#def api_new_matches(request: PlayerContextRequest):
+#    """
+#    Issue a request to make new matches
+#    """
+#    game, _ = get_request_context(request)
+#    matchmaker: Matchmaker = game.matchmaker
+#    # update current rounds
+#    matches = matchmaker.organize_round()
+#    state: State = game.state
+#    state.current_matches = matches

@@ -3,6 +3,7 @@ import logging
 import sys
 import typing as T
 from asyncqt import asyncSlot
+from asyncqt import asyncClose
 from asyncqt import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
@@ -11,6 +12,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
+from client.screens.base import AsyncCallback
 from engine.match import Match
 from engine.match import Matchmaker
 from engine.player import EntityType
@@ -24,6 +26,7 @@ from client.utils.buttons import set_border_color, set_border_color_and_image, s
 from client.utils.buttons import clear_button_image
 from client.utils.buttons import PokemonButton
 from server.api.player import Player as PlayerModel
+from utils.async_util import async_partial
 from utils.context import GameContext
 from utils.user import User
 from utils.client import AsynchronousServerClient, GameServerClient
@@ -68,13 +71,16 @@ class Ui(QtWidgets.QMainWindow):
 
         # add buttons
         self.add_shop_interface()
+        self.add_opposing_party_interface()
+        self.add_party_interface()
+        self.add_team_interface()
 
         self.render_functions = [
-            #self.render_party,
+            self.render_party,
             self.render_shop,
-            #self.render_team,
+            self.render_team,
             self.render_player_stats,
-            #self.render_opponent_party,
+            self.render_opponent_party,
             #self.render_time_to_next_stage,
             #self.render_log_messages,
         ]
@@ -97,12 +103,20 @@ class Ui(QtWidgets.QMainWindow):
         return game.game_id
 
     def add_shop_interface(self):
+        """
+        Add shop interface buttons
+        """
         self.shopLocationLabel = self.findChild(QtWidgets.QLabel, "shopLocationLabel")
         self.exploreWilds = self.findChild(QtWidgets.QPushButton, "exploreWilds")
         self.shopPokemon = [
             self.findChild(QtWidgets.QPushButton, "shopPokemon{}".format(idx))
             for idx in range(5)
         ]
+        self.shop_pokemon_buttons = []
+        for idx, button in enumerate(self.shopPokemon):
+            self.shop_pokemon_buttons.append(PokemonButton(button, self.env, ''))
+            prop = getattr(self, 'catch_pokemon_callback{}'.format(idx))
+            button.clicked.connect(prop)
         self.shop_pokemon_buttons = [
             PokemonButton(qbutton, self.env, "") for qbutton in self.shopPokemon
         ]
@@ -139,8 +153,8 @@ class Ui(QtWidgets.QMainWindow):
             for idx in range(6)
         ]
         for idx, add_party in enumerate(self.addParty):
-            add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
-        #self.render_party()
+            #add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
+            add_party.clicked.connect(getattr(self, f"add_to_team_callback{idx}"))
 
     def add_team_interface(self):
         # team buttons
@@ -175,15 +189,14 @@ class Ui(QtWidgets.QMainWindow):
         ]
         for idx in range(3):
             self.removeTeamMember[idx].clicked.connect(
-                functools.partial(self.remove_team_member_callback, idx)
+                getattr(self, f"remove_team_member_callback{idx}")
             )
             self.shiftTeamMemberUp[idx].clicked.connect(
-                functools.partial(self.shift_up_callback, idx)
+                getattr(self, f"shift_up_callback{idx}")
             )
             self.shiftTeamMemberDown[idx].clicked.connect(
-                functools.partial(self.shift_down_callback, idx)
+                getattr(self, f"shift_down_callback{idx}")
             )
-        self.render_team()
 
     def add_opposing_party_interface(self):
         # opposing party interface
@@ -220,23 +233,6 @@ class Ui(QtWidgets.QMainWindow):
         # update log messages
         self.logMessages = self.findChild(QtWidgets.QTextBrowser, "logMessages")
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
-
-    def start_state_render_callbacks(self):
-        # TODO: do something smarter than this
-        for callback in [
-            self.render_party,
-            self.render_shop,
-            self.render_team,
-            self.render_player_stats,
-            self.render_opponent_party,
-            self.render_time_to_next_stage,
-            self.render_log_messages,
-        ]:
-            timer = QtCore.QTimer(self)
-            timer.timeout.connect(callback)
-            timer.start(100)
-
-        self.show()
 
     def render_log_messages(self):
         """
@@ -320,7 +316,7 @@ class Ui(QtWidgets.QMainWindow):
                 item_button.setDisabled(False)
 
     def render_team(self):
-        player = self.env.current_player
+        player = self.current_player
         team = player.team
         arr = [x for x in team]
         if len(arr) < 3:
@@ -343,8 +339,6 @@ class Ui(QtWidgets.QMainWindow):
     def render_shop(self):
         state: State = self.state
         shop_window: T.Dict[Player, str] = state.shop_window
-        print(self.state.shop_window_raw)
-        print(shop_window)
 
         for idx, pokemon_name in enumerate(shop_window[self.current_player]):
             shop_button = self.shop_pokemon_buttons[idx]
@@ -374,19 +368,117 @@ class Ui(QtWidgets.QMainWindow):
         print("Rolling shop")
         await self.client.roll_shop(self.context)
 
-    def catch_pokemon_callback(self, idx):
+    async def test_catch_pokemon_callback(self, idx):
         print("Acquiring Pokemon at index {}".format(idx))
-        self.env.shop_manager.catch(self.player, idx)
-        self.render_shop()
-        self.render_party()
+        return await self.client.catch_pokemon(self.context, idx)
 
+    @asyncSlot()
+    async def catch_pokemon_callback(self, idx):
+        print("Acquiring Pokemon at index {}".format(idx))
+        return await self.client.catch_pokemon(self.context, idx)
+
+    # TODO: i hate this so much but i'm not smart enough to do something better
+    # i will come back to this i swear
+    @asyncSlot()
+    async def catch_pokemon_callback0(self):
+        idx = 0
+        print("Acquiring Pokemon at index {}".format(idx))
+        return await self.client.catch_pokemon(self.context, idx)
+
+    @asyncSlot()
+    async def catch_pokemon_callback1(self):
+        print("Acquiring Pokemon at index 1")
+        return await self.client.catch_pokemon(self.context, 1)
+
+    @asyncSlot()
+    async def catch_pokemon_callback2(self):
+        print("Acquiring Pokemon at index 2")
+        return await self.client.catch_pokemon(self.context, 2)
+
+    @asyncSlot()
+    async def catch_pokemon_callback3(self):
+        print("Acquiring Pokemon at index 3")
+        return await self.client.catch_pokemon(self.context, 3)
+
+    @asyncSlot()
+    async def catch_pokemon_callback4(self):
+        print("Acquiring Pokemon at index 4")
+        return await self.client.catch_pokemon(self.context, 4)
+
+    @asyncSlot()
     def add_to_team_callback(self, idx):
-        print("Adding pokemon at index {} to team".format(idx))
-        self.env.current_player.add_party_to_team(idx)
+        return self.client.add_to_team(self.context, idx)
 
-    def remove_team_member_callback(self, idx):
+    @asyncSlot()
+    async def add_to_team_callback0(self):
+        idx = 0
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def add_to_team_callback1(self):
+        idx = 1
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def add_to_team_callback2(self):
+        idx = 2
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def add_to_team_callback3(self):
+        idx = 3
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def add_to_team_callback4(self):
+        idx = 4
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def add_to_team_callback5(self):
+        idx = 5
+        return await self.client.add_to_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback(self, idx):
         print("Removing team member at idx {} from team".format(idx))
-        self.env.current_player.remove_from_team(idx)
+        #self.env.current_player.remove_from_team(idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback0(self):
+        idx = 0
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback1(self):
+        idx = 1
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback2(self):
+        idx = 2
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback3(self):
+        idx = 3
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback4(self):
+        idx = 4
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
+
+    @asyncSlot()
+    async def remove_team_member_callback5(self):
+        idx = 5
+        print("Removing team member at idx {} from team".format(idx))
+        return await self.client.remove_from_team(self.context, idx)
 
     def shift_up_callback(self, idx):
         print("Shifting team member at {} up".format(idx))
@@ -395,21 +487,70 @@ class Ui(QtWidgets.QMainWindow):
         self.env.current_player.team[idx], self.env.current_player.team[idx - 1] =\
             self.env.current_player.team[idx - 1], self.env.current_player.team[idx]
 
-    def shift_down_callback(self, idx):
+    @asyncSlot()
+    async def shift_up_callback0(self):
+        idx = 0
+        print("Shifting team member at {} up".format(idx))
+        if idx == 0:
+            return
+        return await self.client.shift_team_member_up(self.context, idx)
+
+    @asyncSlot()
+    async def shift_up_callback1(self):
+        idx = 1
+        print("Shifting team member at {} up".format(idx))
+        if idx == 0:
+            return
+        return await self.client.shift_team_member_up(self.context, idx)
+
+    @asyncSlot()
+    async def shift_up_callback2(self):
+        idx = 2
+        print("Shifting team member at {} up".format(idx))
+        if idx == 0:
+            return
+        return await self.client.shift_team_member_up(self.context, idx)
+
+    @asyncSlot()
+    async def shift_down_callback(self, idx):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        self.env.current_player.team[idx], self.env.current_player.team[idx + 1] =\
-            self.env.current_player.team[idx + 1], self.env.current_player.team[idx]
+        return await self.client.shift_team_member_down(self.context, idx)
 
-    def closeEvent(self, *args, **kwargs):
+    @asyncSlot()
+    async def shift_down_callback0(self):
+        idx = 0
+        print("Shifting team member at {} down".format(idx))
+        if idx == 2:
+            return
+        return await self.client.shift_team_member_down(self.context, idx)
+
+    @asyncSlot()
+    async def shift_down_callback1(self):
+        idx = 1
+        print("Shifting team member at {} down".format(idx))
+        if idx == 2:
+            return
+        return await self.client.shift_team_member_down(self.context, idx)
+
+    @asyncSlot()
+    async def shift_down_callback2(self):
+        idx = 2
+        print("Shifting team member at {} down".format(idx))
+        if idx == 2:
+            return
+        return await self.client.shift_team_member_down(self.context, idx)
+
+    @asyncClose
+    async def closeEvent(self, *args, **kwargs):
         super().closeEvent(*args, **kwargs)
         # have the player leave the game
         if self.game_id is not None:
-            self.client.leave_game(self.game_id, self.player)
+            await self.client.leave_game(self.game_id, self.player)
             if not len(self.client.get_players(self.game_id)):
                 print('Deleting game because last player left')
-                self.client.delete_game(self.game_id, force=True)
+                await self.client.delete_game(self.game_id, force=True)
 
 
 async def main():

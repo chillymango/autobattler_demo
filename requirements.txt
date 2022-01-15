@@ -7,3 +7,4 @@ selenium
 pandas
 PyQt5
 asyncqt
+fastapi_websocket_pubsub

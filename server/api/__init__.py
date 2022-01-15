@@ -3,13 +3,15 @@ from .game import game_router
 from .lobby import lobby_router
 from .pubsub import pubsub_router
 from .shop import shop_router
+from .team import team_router
 
 ALL_ROUTERS = [
     debug_router,
     game_router,
     lobby_router,
     pubsub_router,
-    shop_router
+    shop_router,
+    team_router
 ]
 
 
