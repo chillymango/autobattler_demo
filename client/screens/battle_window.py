@@ -39,13 +39,12 @@ logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 class Ui(QtWidgets.QMainWindow):
 
-    DEBUG = True
+    DEBUG = False
 
     def __init__(self, server_addr: str = None, game_id: str = None):
         super(Ui, self).__init__()
-        #self.client = GameServerClient()
         game_id = self.create_and_join_game()
-        self.client = AsynchronousServerClient()
+        self.client = AsynchronousServerClient(bind=server_addr)
 
         # create an environment to support rendering
         self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
@@ -53,8 +52,6 @@ class Ui(QtWidgets.QMainWindow):
         # should load an initial state first?
         self.env.initialize()
 
-        #self.server_addr = None
-        self.server_addr = "ws://localhost:8000/pubsub"
         self.game_id = game_id
 
         uic.loadUi('client/qtassets/battlewindow.ui', self)
@@ -557,9 +554,9 @@ async def main():
     app = QtWidgets.QApplication(sys.argv)
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
-    window = Ui()
+    window = Ui(server_addr="http://76.210.142.219:8000")
     window.show()
-    window.pubsub_client.start_client(window.server_addr)
+    window.pubsub_client.start_client("ws://76.210.142.219:8000/pubsub")
     await window.pubsub_client.wait_until_done()
     app.exec_()
 

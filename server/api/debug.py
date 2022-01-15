@@ -13,6 +13,7 @@ from server.api.base import PlayerContextRequest
 from server.api.lobby import get_request_context
 
 if T.TYPE_CHECKING:
+    from engine.battle import BattleManager
     from engine.env import Environment
     from engine.match import Matchmaker
     from engine.player import Player
@@ -83,6 +84,16 @@ def api_retract_turn(request: PlayerContextRequest):
     turn: "Turn" = game.turn
     turn.retract()
     return ReportingResponse(success=True)
+
+
+@debug_router.post("/initiate_battle", response_model=ReportingResponse)
+def api_initiate_battle(request: PlayerContextRequest):
+    """
+    Initiate a battle
+    """
+    game, _ = get_request_context(request)
+    battle_manager: BattleManager = game.battle_manager
+    battle_manager.turn_execute()
 
 
 #@debug_router.post("/new_matches", response_model=ReportingResponse)
