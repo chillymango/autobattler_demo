@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import sys
 import typing as T
 from asyncqt import asyncSlot
@@ -39,13 +40,17 @@ logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 class Ui(QtWidgets.QMainWindow):
 
-    DEBUG = False
+    DEBUG = os.environ.get('DEBUG')
 
     def __init__(self, server_addr: str = None, game_id: str = None):
         super(Ui, self).__init__()
         self.server_addr = server_addr
-        game_id = self.create_and_join_game()
+        #game_id = self.create_and_join_game()
+        game_id = 'a3414ef8-1231-4c79-8cd1-4fde53a6c9be'
         self.client = AsynchronousServerClient(bind=server_addr)
+        client = GameServerClient(self.server_addr)
+        self.create_player()
+        client.join_game(game_id, self.player)
 
         # create an environment to support rendering
         self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
@@ -86,19 +91,20 @@ class Ui(QtWidgets.QMainWindow):
     def create_and_join_game(self):
         # oh boy man
         client = GameServerClient(self.server_addr)
-        game = client.create_game()
-        user = User.from_cache()
-        self.player_id = user.id
+        #game = client.create_game()
 
+    def create_player(self):
         # create Player objects
         # TODO: consolidate Player and PlayerModel because they're literally the fucking same
+        user = User.from_cache()
+        self.player_id = user.id
         self.current_player = Player.create_from_user(user)
         self.player = PlayerModel(id=user.id, name=user.name)
 
-        client.join_game(game.game_id, self.player)
+        #client.join_game(game.game_id, self.player)
         #client.start_game(game.game_id)
 
-        return game.game_id
+        return self.player
 
     def add_shop_interface(self):
         """

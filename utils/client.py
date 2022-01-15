@@ -347,15 +347,16 @@ if __name__ == "__main__":
     async def testing():
         async_client = AsynchronousServerClient()
         game = await async_client.create_game()
-        await async_client.join_game(game.game_id, test_player)
-        await async_client.start_game(game.game_id)
-        ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)
-        await async_client.add_pokeballs(ctx)
+        print(game)
+        #await async_client.join_game(game.game_id, test_player)
+        #await async_client.start_game(game.game_id)
+        #ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)
+        #await async_client.add_pokeballs(ctx)
 
-    #asyncio.run(testing())
+    asyncio.run(testing())
 
     # Synchronous Test
-    client = GameServerClient()
-    game = client.create_game()
+    #client = GameServerClient()
+    #game = client.create_game()
 
-    import IPython; IPython.embed()
+    #import IPython; IPython.embed()
