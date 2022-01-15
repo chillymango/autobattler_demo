@@ -43,6 +43,7 @@ class Ui(QtWidgets.QMainWindow):
 
     def __init__(self, server_addr: str = None, game_id: str = None):
         super(Ui, self).__init__()
+        self.server_addr = server_addr
         game_id = self.create_and_join_game()
         self.client = AsynchronousServerClient(bind=server_addr)
 
@@ -84,7 +85,7 @@ class Ui(QtWidgets.QMainWindow):
 
     def create_and_join_game(self):
         # oh boy man
-        client = GameServerClient()
+        client = GameServerClient(self.server_addr)
         game = client.create_game()
         user = User.from_cache()
         self.player_id = user.id
@@ -95,7 +96,7 @@ class Ui(QtWidgets.QMainWindow):
         self.player = PlayerModel(id=user.id, name=user.name)
 
         client.join_game(game.game_id, self.player)
-        client.start_game(game.game_id)
+        #client.start_game(game.game_id)
 
         return game.game_id
 

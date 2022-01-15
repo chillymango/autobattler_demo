@@ -7,6 +7,7 @@ TODO: store game models etc in database and not in internal memory fucking lmao
 """
 import typing as T
 from collections import namedtuple
+from threading import Thread
 from uuid import UUID
 
 from fastapi.routing import APIRouter
@@ -186,6 +187,14 @@ async def start_game(request: StartGameRequest):
         game.initialize()
         # TODO: insert game loop stuff here
         game.phase = GamePhase.TURN_SETUP
+
+        # start a game thread???
+        def run_loop():
+            while True:
+                game.step_loop()
+        thread = Thread(target=run_loop)
+        thread.daemon = True
+        thread.start()
         if game.is_running:
             return ReportingResponse(success=True)
 

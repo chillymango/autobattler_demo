@@ -109,22 +109,23 @@ class Ui(QtWidgets.QDialog, GameWindow):
         env: Environment = self.env
         import IPython; IPython.embed()
 
-    def start_game_callback(self):
+    @asyncSlot()
+    async def start_game_callback(self):
         """
         Initiate the game.
         """
-        env: Environment = self.env
-        env.start_game()
+        #env: Environment = self.env
+        #env.start_game()
 
-        self.stop_game.clear()
+        #self.stop_game.clear()
 
-        def run_loop():
-            while not self.stop_game.is_set():
-                env.step_loop()
-
-        self.runner = threading.Thread(target=run_loop)
-        self.runner.daemon = True
-        self.runner.start()
+#        def run_loop():
+#            while not self.stop_game.is_set():
+#                env.step_loop()
+#
+#        self.runner = threading.Thread(target=run_loop)
+#        self.runner.daemon = True
+#        self.runner.start()
 
     def update_game_phase(self):
         """
