@@ -259,6 +259,12 @@ class Matchmaker(Component):
         creep_round_manager: CreepRoundManager = self.env.creep_round_manager
         creeps = creep_round_manager.creep_round_pokemon[self.env.turn.number]
         if not any(creeps):
-            self.state.matches.append(self.organize_round())
+            self.state.current_matches = self.organize_round()
         else:
-            self.state.matches.append(creep_round_manager.organize_creep_round())
+            self.state.current_matches = self.organize_round()
+
+    def turn_cleanup(self):
+        """
+        Update matches with what was played
+        """
+        self.state.matches.append(self.state.current_matches)

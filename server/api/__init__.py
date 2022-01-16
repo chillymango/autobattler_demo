@@ -4,6 +4,7 @@ from .lobby import lobby_router
 from .pubsub import pubsub_router
 from .shop import shop_router
 from .team import team_router
+from .websocket import ws_router
 
 ALL_ROUTERS = [
     debug_router,
@@ -11,7 +12,8 @@ ALL_ROUTERS = [
     lobby_router,
     pubsub_router,
     shop_router,
-    team_router
+    team_router,
+    ws_router
 ]
 
 

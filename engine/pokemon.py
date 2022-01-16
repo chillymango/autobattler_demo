@@ -12,6 +12,7 @@ from pydantic import Field
 
 from engine.base import Component
 from engine.base import _Synchronized
+from utils.strings import uuid_as_str
 
 DEFAULT_XP_GAIN = 50.0
 
@@ -117,7 +118,7 @@ class Pokemon(BaseModel):
     name: str
     battle_card: BattleCard
     nickname: str
-    id: str = Field(default_factory=uuid4)
+    id: str = Field(default_factory=uuid_as_str)
     xp: float = 0.0
 
     def __str__(self):
@@ -127,7 +128,10 @@ class Pokemon(BaseModel):
         return "{} ({})".format(self.name, self.id)
 
     def __eq__(self, other):
-        return self.id == other.id
+        try:
+            return self.id == getattr(other, 'id')
+        except AttributeError:
+            return False
 
     @classmethod
     def from_dict(cls, data):

@@ -1,11 +1,14 @@
-import functools
+#import functools
 import logging
 import os
 import sys
+from telnetlib import IP
 import typing as T
-from asyncqt import asyncSlot
-from asyncqt import asyncClose
-from asyncqt import QEventLoop
+#import websockets
+import aiohttp
+from qasync import asyncSlot
+from qasync import asyncClose
+from qasync import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
 from PyQt5 import QtCore
@@ -13,7 +16,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
-from client.screens.base import AsyncCallback
+from client.screens.base import AsyncCallback, GameWindow
 from engine.match import Match
 from engine.match import Matchmaker
 from engine.player import EntityType
@@ -31,6 +34,7 @@ from utils.async_util import async_partial
 from utils.context import GameContext
 from utils.user import User
 from utils.client import AsynchronousServerClient, GameServerClient
+from utils.websockets_client import WebSocketClient
 
 if T.TYPE_CHECKING:
     pass
@@ -38,39 +42,38 @@ if T.TYPE_CHECKING:
 logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 
-class Ui(QtWidgets.QMainWindow):
+class Ui(QtWidgets.QMainWindow, GameWindow):
 
     DEBUG = os.environ.get('DEBUG')
+    CREATE_AND_START_GAME = True
 
-    def __init__(self, server_addr: str = None, game_id: str = None):
+    def __init__(self, server_addr: str = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
         self.server_addr = server_addr
-        #game_id = self.create_and_join_game()
-        game_id = 'a3414ef8-1231-4c79-8cd1-4fde53a6c9be'
-        self.client = AsynchronousServerClient(bind=server_addr)
-        client = GameServerClient(self.server_addr)
+        self.websocket = WebSocketClient(websocket)
         self.create_player()
-        client.join_game(game_id, self.player)
+        self.client = AsynchronousServerClient(bind=server_addr)
 
         # create an environment to support rendering
         self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
         self.context: GameContext = GameContext(self.env, self.player)
         # should load an initial state first?
+        print('Initializing env')
         self.env.initialize()
 
         self.game_id = game_id
 
         uic.loadUi('client/qtassets/battlewindow.ui', self)
 
+        # declare child pages
+        self.storage_window = None
+        self.debug_window = None
+
         self.pubsub_client = PubSubClient()
         self.state = None
 
-        # register remote state callbacks here
-        self.pubsub_client.subscribe(f"pubsub-{game_id}", callback=self._state_callback)
-
         if self.DEBUG:
-            self.window = DebugWindow(self.env, ctx=self.context)
-            self.window.battle_window = self
+            self.debug_window = DebugWindow(self, self.env, ctx=self.context)
 
         # add buttons
         self.add_shop_interface()
@@ -84,14 +87,9 @@ class Ui(QtWidgets.QMainWindow):
             self.render_team,
             self.render_player_stats,
             self.render_opponent_party,
-            #self.render_time_to_next_stage,
+            self.render_time_to_next_stage,
             #self.render_log_messages,
         ]
-
-    def create_and_join_game(self):
-        # oh boy man
-        client = GameServerClient(self.server_addr)
-        #game = client.create_game()
 
     def create_player(self):
         # create Player objects
@@ -100,9 +98,6 @@ class Ui(QtWidgets.QMainWindow):
         self.player_id = user.id
         self.current_player = Player.create_from_user(user)
         self.player = PlayerModel(id=user.id, name=user.name)
-
-        #client.join_game(game.game_id, self.player)
-        #client.start_game(game.game_id)
 
         return self.player
 
@@ -269,14 +264,25 @@ class Ui(QtWidgets.QMainWindow):
         elif state.phase == GamePhase.TURN_COMPLETE:
             text = "Match Complete"        
 
-        phase_duration_ms = int(1E3 * state.t_phase_elapsed)
-        phase_time_ms = int(1E3 * state.t_phase_remaining)
+        # TODO: can probably just interpolate this based on starting time and get it
+        # *HELLA* smooth (60fps baby)
+        phase_time_ms = int(1E3 * state.t_phase_elapsed)
+        if state.t_phase_duration != float('inf'):
+            phase_duration_ms = int(1E3 * state.t_phase_duration)
+        else:
+            phase_time_ms = int(1E9)  # close enough eh?
         self.timeToNextStage.setFormat(text)
         self.timeToNextStage.setMaximum(phase_duration_ms)
         self.timeToNextStage.setValue(phase_time_ms)
 
     def open_storage_window(self):
-        self.storage_window = StorageWindow(game_env=self.env)
+        self.storage_window = StorageWindow(
+            self,
+            env=self.env,
+            ctx=self.context,
+            player_model=self.player,
+            websocket=self.websocket,
+        )
 
     def render_player_stats(self):
         player: Player = self.current_player
@@ -358,8 +364,7 @@ class Ui(QtWidgets.QMainWindow):
         Updates the state every time a pubsub message is received
         """
         # refresh references
-        #print(data)
-        self.state = State.parse_raw(data)
+        self.env.state = self.state = State.parse_raw(data)
 
         # TODO: make the below a weakref or something...
         self.current_player = self.state.get_player_by_id(self.player_id)
@@ -367,10 +372,19 @@ class Ui(QtWidgets.QMainWindow):
         for method in self.render_functions:
             method()
 
+        # if other windows are alive, update those too?
+        if self.storage_window is not None:
+            self.storage_window.update_state()
+            self.storage_window.render_party()
+            self.storage_window.render_storage()
+
+        if self.debug_window is not None:
+            self.debug_window.update_game_phase()
+
     @asyncSlot()
     async def roll_shop_callback(self):
         print("Rolling shop")
-        await self.client.roll_shop(self.context)
+        await self.websocket.roll_shop(self.context)
 
     async def test_catch_pokemon_callback(self, idx):
         print("Acquiring Pokemon at index {}".format(idx))
@@ -379,35 +393,39 @@ class Ui(QtWidgets.QMainWindow):
     @asyncSlot()
     async def catch_pokemon_callback(self, idx):
         print("Acquiring Pokemon at index {}".format(idx))
-        return await self.client.catch_pokemon(self.context, idx)
+        await self.websocket.catch_pokemon(self.context, idx)
 
     # TODO: i hate this so much but i'm not smart enough to do something better
     # i will come back to this i swear
     @asyncSlot()
     async def catch_pokemon_callback0(self):
         idx = 0
-        print("Acquiring Pokemon at index {}".format(idx))
-        return await self.client.catch_pokemon(self.context, idx)
+        print(f"Acquiring Pokemon at index {idx}")
+        await self.websocket.catch_pokemon(self.context, idx)
 
     @asyncSlot()
     async def catch_pokemon_callback1(self):
+        idx = 1
         print("Acquiring Pokemon at index 1")
-        return await self.client.catch_pokemon(self.context, 1)
+        await self.websocket.catch_pokemon(self.context, idx)
 
     @asyncSlot()
     async def catch_pokemon_callback2(self):
+        idx = 2
         print("Acquiring Pokemon at index 2")
-        return await self.client.catch_pokemon(self.context, 2)
+        await self.websocket.catch_pokemon(self.context, idx)
 
     @asyncSlot()
     async def catch_pokemon_callback3(self):
-        print("Acquiring Pokemon at index 3")
-        return await self.client.catch_pokemon(self.context, 3)
+        idx = 3
+        print(f"Acquiring Pokemon at index {idx}")
+        await self.websocket.catch_pokemon(self.context, idx)
 
     @asyncSlot()
     async def catch_pokemon_callback4(self):
-        print("Acquiring Pokemon at index 4")
-        return await self.client.catch_pokemon(self.context, 4)
+        idx = 4
+        print(f"Acquiring Pokemon at index {idx}")
+        await self.websocket.catch_pokemon(self.context, idx)
 
     @asyncSlot()
     def add_to_team_callback(self, idx):
@@ -416,32 +434,32 @@ class Ui(QtWidgets.QMainWindow):
     @asyncSlot()
     async def add_to_team_callback0(self):
         idx = 0
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def add_to_team_callback1(self):
         idx = 1
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def add_to_team_callback2(self):
         idx = 2
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def add_to_team_callback3(self):
         idx = 3
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def add_to_team_callback4(self):
         idx = 4
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def add_to_team_callback5(self):
         idx = 5
-        return await self.client.add_to_team(self.context, idx)
+        return await self.websocket.add_to_team(self.context, idx)
 
     @asyncSlot()
     async def remove_team_member_callback(self, idx):
@@ -452,37 +470,19 @@ class Ui(QtWidgets.QMainWindow):
     async def remove_team_member_callback0(self):
         idx = 0
         print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
+        return await self.websocket.remove_team_member(self.context, idx)
 
     @asyncSlot()
     async def remove_team_member_callback1(self):
         idx = 1
         print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
+        return await self.websocket.remove_team_member(self.context, idx)
 
     @asyncSlot()
     async def remove_team_member_callback2(self):
         idx = 2
         print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
-
-    @asyncSlot()
-    async def remove_team_member_callback3(self):
-        idx = 3
-        print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
-
-    @asyncSlot()
-    async def remove_team_member_callback4(self):
-        idx = 4
-        print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
-
-    @asyncSlot()
-    async def remove_team_member_callback5(self):
-        idx = 5
-        print("Removing team member at idx {} from team".format(idx))
-        return await self.client.remove_from_team(self.context, idx)
+        return await self.websocket.remove_team_member(self.context, idx)
 
     def shift_up_callback(self, idx):
         print("Shifting team member at {} up".format(idx))
@@ -497,7 +497,7 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} up".format(idx))
         if idx == 0:
             return
-        return await self.client.shift_team_member_up(self.context, idx)
+        return await self.websocket.shift_team_up(self.context, idx)
 
     @asyncSlot()
     async def shift_up_callback1(self):
@@ -505,7 +505,7 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} up".format(idx))
         if idx == 0:
             return
-        return await self.client.shift_team_member_up(self.context, idx)
+        return await self.websocket.shift_team_up(self.context, idx)
 
     @asyncSlot()
     async def shift_up_callback2(self):
@@ -513,14 +513,14 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} up".format(idx))
         if idx == 0:
             return
-        return await self.client.shift_team_member_up(self.context, idx)
+        return await self.websocket.shift_team_up(self.context, idx)
 
     @asyncSlot()
     async def shift_down_callback(self, idx):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        return await self.client.shift_team_member_down(self.context, idx)
+        return await self.websocket.shift_team_down(self.context, idx)
 
     @asyncSlot()
     async def shift_down_callback0(self):
@@ -528,7 +528,7 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        return await self.client.shift_team_member_down(self.context, idx)
+        return await self.websocket.shift_team_down(self.context, idx)
 
     @asyncSlot()
     async def shift_down_callback1(self):
@@ -536,7 +536,7 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        return await self.client.shift_team_member_down(self.context, idx)
+        return await self.websocket.shift_team_down(self.context, idx)
 
     @asyncSlot()
     async def shift_down_callback2(self):
@@ -544,7 +544,11 @@ class Ui(QtWidgets.QMainWindow):
         print("Shifting team member at {} down".format(idx))
         if idx == 2:
             return
-        return await self.client.shift_team_member_down(self.context, idx)
+        return await self.websocket.shift_team_down(self.context, idx)
+
+    def subscribe_pubsub_topic(self):
+        pubsub_topic = f"pubsub-state-{self.game_id}"
+        self.pubsub_client.subscribe(pubsub_topic, callback=self._state_callback)
 
     @asyncClose
     async def closeEvent(self, *args, **kwargs):
@@ -552,22 +556,55 @@ class Ui(QtWidgets.QMainWindow):
         # have the player leave the game
         if self.game_id is not None:
             await self.client.leave_game(self.game_id, self.player)
-            if not len(self.client.get_players(self.game_id)):
+            if not len(await self.client.get_players(self.game_id)):
                 print('Deleting game because last player left')
                 await self.client.delete_game(self.game_id, force=True)
 
-
+import websockets
 async def main():
-    app = QtWidgets.QApplication(sys.argv)
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    window = Ui(server_addr="http://76.210.142.219:8000")
+    SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'http://localhost:8000')
+    ws_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/game_buttons"
+    pubsub_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/pubsub"
+    ws = await websockets.connect(ws_addr)
+    async def qt_loop():
+        while True:
+            app.processEvents()
+            await asyncio.sleep(0.0)
+
+    window = Ui(server_addr=SERVER_ADDRESS, websocket=ws)
+
+    if os.environ.get('CREATE_AND_START_GAME', True):
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(window.client.create_game())
+        await task
+        game = task.result()
+        print(game)
+        game_id = game.game_id
+        window.env._id = game_id
+        window.game_id = game_id
+    else:
+        game_id = '673b70ca-7ee4-4013-86b3-342eda0d3d02'
+
+    # join the game with the current user
+    player = window.create_player()
+    await loop.create_task(window.client.join_game(game_id, player))
+    try:
+        await loop.create_task(window.client.start_game(game_id))
+    except Exception as exc:
+        print(f"Exception in starting game: {repr(exc)}")
+        raise
     window.show()
-    window.pubsub_client.start_client("ws://76.210.142.219:8000/pubsub")
+    window.subscribe_pubsub_topic()
+    window.pubsub_client.start_client(pubsub_addr, loop=loop)
+    print('started pubsub')
     await window.pubsub_client.wait_until_done()
-    app.exec_()
+    print('wait what')
 
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())    
+    app = QtWidgets.QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+    coro = main()
+    loop.run_until_complete(coro)

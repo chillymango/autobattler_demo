@@ -5,7 +5,7 @@ import asyncio
 import logging
 import threading
 import typing as T
-from asyncqt import asyncSlot
+from qasync import asyncSlot
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -27,8 +27,9 @@ if T.TYPE_CHECKING:
 
 class Ui(QtWidgets.QDialog, GameWindow):
 
-    def __init__(self, env: "Environment", ctx: GameContext = None):
+    def __init__(self, parent, env: "Environment", ctx: GameContext = None):
         super(Ui, self).__init__()
+        self.parent = parent
         self.env = env
         self.ctx: GameContext = ctx
         logger: Logger = self.env.logger
@@ -132,7 +133,7 @@ class Ui(QtWidgets.QDialog, GameWindow):
         Print the current game state phase
         """
         env: Environment = self.env
-        self.gamePhase.setText(env.phase.name)
+        self.gamePhase.setText(env.state.phase.name)
 
     @asyncSlot()
     async def make_new_matches_callback(self):
@@ -185,3 +186,7 @@ class Ui(QtWidgets.QDialog, GameWindow):
         request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
         await self.client.add_energy(request)
         print('Finished adding 100 energy')
+
+    def closeEvent(self, *args, **kwargs):
+        self.parent.debug_window = None
+        super().closeEvent(*args, **kwargs)

@@ -5,6 +5,7 @@ this module should really be named cheatcodes
 """
 import typing as T
 from fastapi import APIRouter
+from fastapi import WebSocket
 from pydantic import BaseModel
 
 from engine.state import GamePhase
@@ -63,7 +64,6 @@ def api_add_pokeballs(request: PlayerContextRequest):
     player.balls += 100
     return ReportingResponse(success=True)
 
-
 @debug_router.post("/advance_turn", response_model=ReportingResponse)
 def api_advance_turn(request: PlayerContextRequest):
     """
@@ -94,16 +94,3 @@ def api_initiate_battle(request: PlayerContextRequest):
     game, _ = get_request_context(request)
     battle_manager: BattleManager = game.battle_manager
     battle_manager.turn_execute()
-
-
-#@debug_router.post("/new_matches", response_model=ReportingResponse)
-#def api_new_matches(request: PlayerContextRequest):
-#    """
-#    Issue a request to make new matches
-#    """
-#    game, _ = get_request_context(request)
-#    matchmaker: Matchmaker = game.matchmaker
-#    # update current rounds
-#    matches = matchmaker.organize_round()
-#    state: State = game.state
-#    state.current_matches = matches

@@ -6,11 +6,13 @@ from enum import Enum
 from uuid import UUID
 from uuid import uuid4
 from pydantic import BaseModel
+from pydantic import Field
 
 from engine.base import Component
 from engine.base import _Synchronized
 from engine.pokemon import Pokemon
 from utils.user import User
+from utils.strings import uuid_as_str
 
 
 MAX_STORAGE_SIZE = 30
@@ -39,7 +41,7 @@ class Player(BaseModel):
     hitpoints: int = 0
     balls: int = 0
     energy: int = 0
-    id: str = str(uuid4())
+    id: str = Field(default_factory=uuid_as_str)
     party_locked: bool = False
     team_locked: bool = False
 
@@ -47,7 +49,12 @@ class Player(BaseModel):
         """
         Use the objects id (uuid) as a hash
         """
-        return int(UUID(self.id))
+        try:
+            return int(UUID(self.id))
+        except Exception:
+            print(self.name)
+            print(self.id)
+            raise
 
     def __eq__(self, other):
         return (
@@ -61,6 +68,10 @@ class Player(BaseModel):
     @property
     def team_is_full(self):
         return len(self.team) >= 3
+
+    @property
+    def storage_is_full(self):
+        return len(self.storage) >= MAX_STORAGE_SIZE
 
     @property
     def roster(self):
@@ -186,6 +197,35 @@ class Player(BaseModel):
             if poke.id == id:
                 self.release_from_party(index)
                 break
+
+    def move_party_to_storage(self, pokemon):
+        """
+        Move Pokemon from party to storage
+
+        Runs a check to ensure that the Pokemon is in party first and that
+        storage is not full.
+        """
+        if pokemon is None:
+            raise Exception(f'Null Pokemon submitted for move')
+        if pokemon not in self.party:
+            raise Exception(f"{pokemon} not in party")
+        if self.add_to_storage(pokemon):
+            self.release_from_party(self.party.index(pokemon))
+            if pokemon in self.team:
+                self.remove_from_team(self.team.index(pokemon))
+        else:
+            raise Exception("Player storage is full")
+
+    def move_storage_to_party(self, pokemon):
+        """
+        Move Pokemon from storage to party
+        """
+        if pokemon not in self.storage:
+            raise Exception(f'{pokemon} not in storage')
+        if self.add_to_party(pokemon):
+            self.release_from_storage(self.storage.index(pokemon))
+        else:
+            raise Exception("Failed to add Pokemon to party")
 
     def add_to_roster(self, pokemon):
         """

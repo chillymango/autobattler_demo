@@ -65,7 +65,7 @@ class State(BaseModel):
     turn_number: int
     stage: StageConfig = StageConfig(stage=0, round=0)
     t_phase_elapsed: float = 0.0
-    t_phase_remaining: float = float('inf')
+    t_phase_duration: float = float('inf')
 
     @classmethod
     def default(cls):
@@ -95,4 +95,4 @@ class State(BaseModel):
 
     @property
     def time_left_in_turn(self):
-        return self.t_phase_remaining - self.t_phase_elapsed
+        return self.t_phase_duration - self.t_phase_elapsed

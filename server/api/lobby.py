@@ -52,6 +52,7 @@ def get_request_context(request: PlayerContextRequest) -> T.Tuple[Environment, P
     game = ALL_GAMES.get(game_id)
     if game is not None:
         return PlayerContext(game=game, player=player)
+    print(ALL_GAMES)
     raise GameNotFound(f"No game with ID {game_id}")
 
 

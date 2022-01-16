@@ -1,30 +1,44 @@
 """
 Manage storage and party
 """
+from locale import currency
+from telnetlib import IP
 import typing as T
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from qasync import asyncSlot
+
+from utils.websockets_client import WebSocketClient
 
 if T.TYPE_CHECKING:
-    from engine.state import State
+    from engine.env import Environment
+    from engine.player import Player
+    from server.api.player import Player as PlayerModel
+    from utils.context import GameContext
 
 
 class Ui(QtWidgets.QDialog):
 
-    def __init__(self, state: "State" = None):
+    def __init__(
+        self,
+        parent,
+        env: "Environment" = None,
+        ctx: "GameContext" = None,
+        player_model: "PlayerModel" = None,
+        websocket = None,
+    ):
         super(Ui, self).__init__()
-        self.state = state
-        uic.loadUi('qtassets/storage.ui', self)
-
-        self.update_party_signal = QtCore.pyqtSignal()
-        #self.update_party_signal.connect(self.render_party)
-
-        self.update_storage_signal = QtCore.pyqtSignal()
-        #self.update_storage_signal.connect(self.render_storage)
-
-        self.current_player = self.state.current_player
+        self.parent = parent
+        self.env = env
+        self.ctx = ctx
+        self.player_model = player_model
+        self.websocket: WebSocketClient = websocket
+        self._last_seen_party = None
+        self._last_seen_storage = None
+        uic.loadUi('client/qtassets/storage.ui', self)
+        self.update_state()
 
         # load current party
         self.partyView = self.findChild(QtWidgets.QListView, "partyView")
@@ -49,7 +63,19 @@ class Ui(QtWidgets.QDialog):
 
         self.show()
 
+    def update_state(self):
+        try:
+            self.current_player = self.env.state.get_player_by_id(self.player_model.id)
+        except Exception as exc:
+            print(repr(exc))
+
     def render_party(self):
+        # NOTE: if party didn't change from last update, do not render
+        # this is because we screw with the UI targeting if we render every time
+        if self._last_seen_party == self.current_player.party:
+            return
+        self._last_seen_party = self.current_player.party
+
         self.party_model = QtGui.QStandardItemModel()
         for pokemon in self.current_player.party:
             # TODO: fix this, what a horrible pattern of potentially accepting nulls
@@ -61,6 +87,12 @@ class Ui(QtWidgets.QDialog):
         self.partyView.setModel(self.party_model)
 
     def render_storage(self):
+        # NOTE: if storage didn't change from last update, do not render
+        # this is because we screw with the UI targeting if we render every time
+        if self._last_seen_storage == self.current_player.storage:
+            return
+        self._last_seen_storage = self.current_player.storage
+
         self.storage_model = QtGui.QStandardItemModel()
         for pokemon in self.current_player.storage:
             if pokemon is not None:
@@ -70,44 +102,35 @@ class Ui(QtWidgets.QDialog):
             self.storage_model.appendRow(item)
         self.storageView.setModel(self.storage_model)
 
-    def move_party_to_storage(self):
+    @asyncSlot()
+    async def move_party_to_storage(self):
         party_selected = self.partyView.selectedIndexes()
         for party_member in party_selected:
             row = party_member.row()
-            pokemon = self.current_player.party[row]
-            self.current_player.party[row] = None
-            self.current_player.storage.append(pokemon)
-            # if pokemon was on the team, remove it from the team
-            if pokemon in self.current_player.team:
-                self.current_player.team.remove(pokemon)
-        self.render_party()
-        self.render_storage()
+            await self.websocket.move_to_storage(self.ctx, row)
 
-    def move_storage_to_party(self):
+    @asyncSlot()
+    async def move_storage_to_party(self):
         storage_selected = self.storageView.selectedIndexes()
         # TODO: this currently really just supports 1 moving at a time, maybe fix that
         for storage_member in storage_selected:
-            if self.current_player.party_is_full:
-                print("Out of space in party")
-                break
-
             row = storage_member.row()
-            pokemon = self.current_player.storage[row]
-            self.current_player.storage.remove(pokemon)
-            self.current_player.add_to_party(pokemon)
-        self.render_party()
-        self.render_storage()
+            await self.websocket.move_to_party(self.ctx, row)
 
-    def release_pokemon_party(self):
+    @asyncSlot()
+    async def release_pokemon_party(self):
         party_selected = self.partyView.selectedIndexes()
         for party_member in party_selected:
             idx = party_member.row()
-            self.current_player.release_from_party(idx)
-        self.render_party()
+            await self.websocket.release_from_party(self.ctx, idx)
 
-    def release_pokemon_storage(self):
+    @asyncSlot()
+    async def release_pokemon_storage(self):
         storage_selected = self.storageView.selectedIndexes()
         for storage_member in storage_selected:
             idx = storage_member.row()
-            self.current_player.release_from_storage(idx)
-        self.render_storage()
+            await self.websocket.release_from_storage(self.ctx, idx)
+
+    def closeEvent(self, *args, **kwargs):
+        self.parent.storage_window = None
+        super().closeEvent(*args, **kwargs)

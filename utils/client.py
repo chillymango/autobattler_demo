@@ -346,8 +346,9 @@ if __name__ == "__main__":
     # Asynchronous Test
     async def testing():
         async_client = AsynchronousServerClient()
-        game = await async_client.create_game()
-        print(game)
+        #game = await async_client.create_game()
+        await async_client.start_game('673b70ca-7ee4-4013-86b3-342eda0d3d02')
+        #print(game)
         #await async_client.join_game(game.game_id, test_player)
         #await async_client.start_game(game.game_id)
         #ctx = PlayerContextRequest(player=test_player, game_id=game.game_id)

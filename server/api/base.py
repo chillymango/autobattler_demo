@@ -16,6 +16,15 @@ class GameNotFound(Exception):
     """
 
 
+class WebSocketRequest(BaseModel):
+    """
+    WebSocket Requests
+
+    All WebSocket request models should inherit from this class to support automatic determination
+    of WebSocket request types for the parser.
+    """
+
+
 class ReportingResponse(BaseModel):
     """
     Basic response which has a `success` flag and a `message` field to report status

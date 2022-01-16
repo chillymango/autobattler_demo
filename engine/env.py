@@ -55,8 +55,6 @@ class Environment:
         self.state.phase = GamePhase.INITIALIZATION
         self.max_players = max_players
         self.components: T.List[Component] = []
-        self.stage_duration = None
-        self.time_to_next_stage = None
 
         # uh i don't think we actually use this anymore
         self.current_player = None
@@ -110,6 +108,8 @@ class Environment:
     def step_loop(self):
         """
         Step forward one phase in the main turn loop.
+
+        TODO: handle with asyncio instead of threading?
         """
         if self.state.phase == GamePhase.TURN_SETUP:
             # run turn setup actions
@@ -119,27 +119,27 @@ class Environment:
             return
         if self.state.phase == GamePhase.TURN_DECLARE_TEAM:
             # this is just a UI phase, don't do anything
-            if self.time_to_next_stage is None:
-                self.time_to_next_stage = 15.0
-                self.stage_duration = 15.0
-            elif self.time_to_next_stage < 0.0:
-                self.time_to_next_stage = None
+            if self.state.t_phase_elapsed == 0:
+                self.state.t_phase_duration = 15.0
+                self.state.t_phase_elapsed += 0.05
+            elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
+                self.state.t_phase_elapsed = 0
                 self.state.phase = GamePhase.TURN_PREPARE_TEAM
             else:
-                self.time_to_next_stage -= 0.2
-                time.sleep(0.2)
+                self.state.t_phase_elapsed += 0.05
+                time.sleep(0.05)
             return
         if self.state.phase == GamePhase.TURN_PREPARE_TEAM:
             # this is just a UI phase, don't do anything
-            if self.time_to_next_stage is None:
-                self.time_to_next_stage = 15.0
-                self.stage_duration = 15.0
-            elif self.time_to_next_stage < 0.0:
-                self.time_to_next_stage = None
+            if self.state.t_phase_elapsed == 0:
+                self.state.t_phase_duration = 15.0
+                self.state.t_phase_elapsed += 0.05
+            elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
+                self.state.t_phase_elapsed = 0
                 self.state.phase = GamePhase.TURN_EXECUTE
             else:
-                self.time_to_next_stage -= 0.2
-                time.sleep(0.2)
+                self.state.t_phase_elapsed += 0.05
+                time.sleep(0.05)
             return
         if self.state.phase == GamePhase.TURN_EXECUTE:
             for component in self.components:
@@ -150,17 +150,22 @@ class Environment:
             for component in self.components:
                 component.turn_cleanup()
             self.state.phase = GamePhase.TURN_COMPLETE
+            return
         if self.state.phase == GamePhase.TURN_COMPLETE:
-            # TODO: this probably blocks, fix with event loop
-            if self.time_to_next_stage is None:
-                self.time_to_next_stage = 5.0
-                self.stage_duration = 5.0
-            elif self.time_to_next_stage < 0.0:
-                self.time_to_next_stage = None
+            # this is just a UI phase, don't do anything
+            if self.state.t_phase_elapsed == 0:
+                self.state.t_phase_duration = 15.0
+                self.state.t_phase_elapsed += 0.05
+            elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
+                self.state.t_phase_elapsed = 0
                 self.state.phase = GamePhase.TURN_SETUP
             else:
-                self.time_to_next_stage -= 0.2
-                time.sleep(0.2)
+                self.state.t_phase_elapsed += 0.05
+                time.sleep(0.05)
+            return
+        if self.state.phase == GamePhase.READY_TO_START:
+            # ok move it on in
+            self.state.phase = GamePhase.TURN_SETUP
             return
 
-        raise RuntimeError("Game phase not in main turn loop yet")
+        raise RuntimeError(f"Game phase not in main turn loop yet. Phase {self.state.phase}")

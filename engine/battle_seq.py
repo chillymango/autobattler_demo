@@ -1,6 +1,7 @@
 """
 Battle Manager
 """
+import typing as T
 from engine.base import Component
 from engine.logger import Logger
 from engine.match import Matchmaker
@@ -10,6 +11,9 @@ from engine.player import Player
 from selenium import webdriver
 import random
 import copy
+
+if T.TYPE_CHECKING:
+    from engine.state import State
 
 
 class BattleManager(Component):
@@ -28,7 +32,9 @@ class BattleManager(Component):
         self.driver = webdriver.Firefox()
 
         logger: Logger = self.env.logger
-        self.log = logger.log
+
+    def log(self, msg):
+        print(msg)
 
     def __del__(self):
         """
@@ -203,8 +209,9 @@ class BattleManager(Component):
 
         Battle manager also calculates damage for players and will modify player health.
         """
+        state: State = self.state
         matchmaker: Matchmaker = self.env.matchmaker
-        if not matchmaker.current_matches:
+        if not state.current_matches:
             print("No matches to run")
             return
 

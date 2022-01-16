@@ -1,5 +1,10 @@
-from asyncqt import asyncSlot
+import typing as T
+from qasync import asyncSlot
 from server.api.base import PlayerContextRequest
+
+if T.TYPE_CHECKING:
+    from engine.env import Environment
+    from server.api.player import Player as PlayerModel
 
 
 class AsyncCallback:
@@ -31,6 +36,21 @@ class GameWindow:
 
     env = None
     player = None
+
+    def __init__(
+        self,
+        env: "Environment" = None,
+        player: "PlayerModel" = None,
+    ):
+        self.env = env
+        self.player = player
+
+    @property
+    def render_methods(self):
+        """
+        Returns a list of the methods used to render the window
+        """
+        return []
 
     def get_player_context(self):
         return PlayerContextRequest(player=self.player, game_id=self.env.id)
