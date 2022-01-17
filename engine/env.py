@@ -157,7 +157,7 @@ class Environment:
         if self.state.phase == GamePhase.TURN_DECLARE_TEAM:
             # this is just a UI phase, don't do anything
             if self.state.t_phase_elapsed == 0:
-                self.state.t_phase_duration = 15.0
+                self.state.t_phase_duration = 30.0
                 self.state.t_phase_elapsed += 0.05
             elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
                 self.state.t_phase_elapsed = 0

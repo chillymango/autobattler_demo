@@ -17,7 +17,7 @@ class PlayerManager(Component):
         for player in self.players:
             player.is_alive = True
             player.hitpoints = 20
-            player.balls = 5
+            player.balls = 10
 
     def turn_setup(self):
         """
@@ -26,8 +26,8 @@ class PlayerManager(Component):
         # base update
         # TODO: make this scale as the game goes on
         for player in self.players:
-            player.balls += 5
-            player.energy += 5
+            player.balls += 20
+            player.energy += 10
 
     def turn_cleanup(self):
         """

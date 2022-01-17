@@ -110,7 +110,7 @@ class BattleManager(Component):
         team2 = self.get_team_for_player(player2)
         self.log("{} sends out {}".format(player1, ", ".join([str(x) for x in team1])), recipient=players)
         self.log("{} sends out {}".format(player2, ", ".join([str(x) for x in team2])), recipient=players)
-        return self.battle(team1, team2)
+        return self.battle(team1, team2, player1=player1, player2=player2)
 
     def oneVone(self,battler1, battler2):
         if battler1.shiny == 1:
