@@ -71,7 +71,7 @@ class Ui(QtWidgets.QDialog):
         for idx, player in enumerate(state.players):
             print(player)
             button = self.playerButton[idx]
-            button.setText(player.name)
+            button.setText('\n'.join(player.name.split()))
             button.setDisabled(False)
 
         # TODO: replace 8 with constant
