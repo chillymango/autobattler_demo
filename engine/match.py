@@ -226,12 +226,15 @@ class Matchmaker(Component):
         manager should have organized a creep round.
         If there is no creep round, organize a player round.
         """
+        print('Running Matchmaker')
         creep_round_manager: CreepRoundManager = self.env.creep_round_manager
-        creeps = creep_round_manager.creep_round_pokemon[self.env.turn.number]
+        creeps = creep_round_manager.creep_round_pokemon[self.state.turn_number]
         if not any(creeps):
+            print('Trying to organize real round')
             self.state.current_matches = self.organize_round()
         else:
-            self.state.current_matches = self.organize_round()
+            print('Trying to organize creep round')
+            self.state.current_matches = creep_round_manager.organize_creep_round()
 
     def turn_cleanup(self):
         """

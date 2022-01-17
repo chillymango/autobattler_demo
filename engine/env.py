@@ -22,6 +22,12 @@ from engine.turn import Turn
 from utils.phase import GamePhase
 
 
+class GameOver(Exception):
+    """
+    Throw this when the game is over
+    """
+
+
 class Environment:
     """
     TODO: rename this to Environment
@@ -137,8 +143,13 @@ class Environment:
 
         TODO: handle with asyncio instead of threading?
         """
+        # if no players left in game, stop the count (game)
+        if not self.state.players:
+            raise GameOver("No players left in game.")
+
         if self.state.phase == GamePhase.TURN_SETUP:
             # run turn setup actions
+            self.log('Running TURN_SETUP')
             for component in self.components:
                 component.turn_setup()
             self.state.phase = GamePhase.TURN_DECLARE_TEAM
@@ -168,11 +179,13 @@ class Environment:
                 time.sleep(0.05)
             return
         if self.state.phase == GamePhase.TURN_EXECUTE:
+            self.log('Running TURN_EXECUTE')
             for component in self.components:
                 component.turn_execute()
             self.state.phase = GamePhase.TURN_CLEANUP
             return
         if self.state.phase == GamePhase.TURN_CLEANUP:
+            self.log('Running TURN_CLEANUP')
             for component in self.components:
                 component.turn_cleanup()
             self.state.phase = GamePhase.TURN_COMPLETE

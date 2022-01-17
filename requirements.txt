@@ -8,3 +8,4 @@ pandas
 PyQt5
 qasync
 fastapi_websocket_pubsub
+nest_asyncio

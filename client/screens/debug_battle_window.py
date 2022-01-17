@@ -27,11 +27,10 @@ if T.TYPE_CHECKING:
 
 class Ui(QtWidgets.QDialog, GameWindow):
 
-    def __init__(self, parent, env: "Environment", ctx: GameContext = None):
+    def __init__(self, parent, env: "Environment"):
         super(Ui, self).__init__()
         self.parent = parent
         self.env = env
-        self.ctx: GameContext = ctx
         logger: Logger = self.env.logger
         self.log = logger.log
         self.runner: threading.Thread = None
@@ -89,6 +88,13 @@ class Ui(QtWidgets.QDialog, GameWindow):
             timer.start(100)
 
         self.show()
+
+    @property
+    def context(self):
+        """
+        TODO: probably want to implement something cleaner here
+        """
+        return self.parent.context
 
     def disable_log_timestamps(self):
         logger: Logger = self.env.logger
@@ -169,7 +175,7 @@ class Ui(QtWidgets.QDialog, GameWindow):
 
     @asyncSlot()
     async def add_pokeballs_callback(self):
-        request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
+        request = PlayerContextRequest(player=self.context.player, game_id=str(self.env.id))
         try:
             await self.client.add_pokeballs(request)
         except Exception as exc:
@@ -183,7 +189,7 @@ class Ui(QtWidgets.QDialog, GameWindow):
             error_window("No active game")
             return
         print("Adding 100 energy")
-        request = PlayerContextRequest(player=self.ctx.player, game_id=str(self.env.id))
+        request = PlayerContextRequest(player=self.context.player, game_id=str(self.env.id))
         await self.client.add_energy(request)
         print('Finished adding 100 energy')
 

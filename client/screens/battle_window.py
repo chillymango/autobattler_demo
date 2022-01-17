@@ -38,7 +38,7 @@ logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 class Ui(QtWidgets.QMainWindow, GameWindow):
 
     DEBUG = os.environ.get('DEBUG')
-    CREATE_AND_START_GAME = True
+    CREATE_AND_START_GAME = False
 
     def __init__(self, user, client: AsynchronousServerClient = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
@@ -64,7 +64,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.state = None
 
         if self.DEBUG:
-            self.debug_window = DebugWindow(self, self.env, ctx=self.context)
+            self.debug_window = DebugWindow(self, self.env)
 
         # add buttons
         self.add_shop_interface()
@@ -83,10 +83,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         ]
 
     @property
-    def context(self) -> GameContext:
+    def context(self):
         return GameContext(self.env, self.player)
 
-    @property
+    @property   
     def player(self):
         state: "State" = self.state
         print(state)
@@ -286,23 +286,27 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.hitPoints.setText(str(player.hitpoints))
 
     def render_opponent_party(self):
-        player: Player = self.player
-        state: State = self.state
-        matchmaker: Matchmaker = self.env.matchmaker
-        if state.current_matches is not None:
-            opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
-            if opponent is not None:
-                self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
-                for idx in range(6):
-                    button = self.opposing_pokemon_buttons[idx]
-                    pokemon = opponent.party[idx]
-                    button.render_pokemon_card(pokemon)
-                return
+        try:
+            player: Player = self.player
+            state: State = self.state
+            matchmaker: Matchmaker = self.env.matchmaker
+            if state.current_matches is not None:
+                opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
+                if opponent is not None:
+                    self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
+                    for idx in range(6):
+                        button = self.opposing_pokemon_buttons[idx]
+                        pokemon = opponent.party[idx]
+                        button.render_pokemon_card(pokemon)
+                    return
 
-        self.opponentName.setText("No Match Scheduled")
-        for idx in range(6):
-            self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
-            self.opposingPokemon[idx].setDisabled(True)
+            self.opponentName.setText("No Match Scheduled")
+            for idx in range(6):
+                self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
+                self.opposingPokemon[idx].setDisabled(True)
+
+        except Exception as exc:
+            print(repr(exc))
 
     def render_party(self):
         player = self.player
@@ -363,7 +367,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         print(self.state)
 
         for method in self.render_functions:
-            method()
+            try:
+                method()
+            except Exception as exc:
+                print(f'Failed to run {method}')
 
         # if other windows are alive, update those too?
         if self.storage_window is not None:
@@ -563,6 +570,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @asyncClose
     async def closeEvent(self, *args, **kwargs):
         super().closeEvent(*args, **kwargs)
+        # check if debug window exists and close it as well
+        if self.debug_window is not None:
+            self.debug_window.close()
+
         # have the player leave the game
         if self.game_id is not None:
             await self.client.leave_game(self.game_id, self.player)
@@ -600,11 +611,6 @@ async def main():
     # join the game with the current user
     player = window.create_player()
     await loop.create_task(window.client.join_game(game_id, player))
-#    try:
-#        await loop.create_task(window.client.start_game(game_id))
-#    except Exception as exc:
-#        print(f"Exception in starting game: {repr(exc)}")
-#        raise
     window.show()
     window.subscribe_pubsub_state()
     window.subscribe_pubsub_messages()

@@ -6,6 +6,7 @@ Supports high-level interfacing with games
 TODO: store game models etc in database and not in internal memory fucking lmao
 """
 import asyncio
+from tkinter import ALL
 import typing as T
 from collections import namedtuple
 from threading import Thread
@@ -15,7 +16,7 @@ from fastapi.routing import APIRouter
 from fastapi_websocket_pubsub import PubSubEndpoint
 from pydantic import BaseModel
 
-from engine.env import Environment, GamePhase
+from engine.env import Environment, GameOver, GamePhase
 from engine.models.player import EntityType
 from engine.models.player import Player
 from server.api.base import GameNotFound, PlayerContextRequest
@@ -215,7 +216,12 @@ async def start_game(request: StartGameRequest):
         # start a game thread???
         def run_loop():
             while True:
-                game.step_loop()
+                try:
+                    game.step_loop()
+                except GameOver:
+                    break
+            ALL_GAMES.pop(game.id)
+
         thread = Thread(target=run_loop)
         thread.daemon = True
         thread.start()
@@ -223,6 +229,3 @@ async def start_game(request: StartGameRequest):
             return ReportingResponse(success=True)
 
     return ReportingResponse(success=False, message="Failed to start game")
-
-
-print('not this fucking shit again')

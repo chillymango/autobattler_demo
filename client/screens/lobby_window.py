@@ -11,6 +11,7 @@ from qasync import asyncClose
 from qasync import asyncSlot
 
 from engine.models.state import State
+from utils.phase import GamePhase
 
 if T.TYPE_CHECKING:
     from utils.client import AsynchronousServerClient
@@ -65,8 +66,27 @@ class Ui(QtWidgets.QDialog):
         print(f'Started pubsub subscription of {pubsub_topic}')
 
     async def _state_callback(self, topic, data):
-        # TODO: dep structure is pretty bad
         state = State.parse_raw(data)
+        print(state)
+
+        # if game is no longer in INITIALIZATION, open the battle window
+        if state.phase not in [GamePhase.ERROR, GamePhase.COMPLETED, GamePhase.INITIALIZATION]:
+            print('STARTING A GAME...')
+            self.lobbyStatus.setText("Starting game...")
+            # TODO: not sure if this is the correct pattern...
+            try:
+                print('Disconnecting pubsub')
+                await self.pubsub_client.disconnect()
+                print('Disconnected pubsub')
+            except BaseException as exc:
+                print('In EXC handler')
+                print(repr(exc))
+
+            print('Opening BW')
+            await self.parent.open_battle_window()
+            self.hide()
+            return
+
         for idx, player in enumerate(state.players):
             button = self.playerButton[idx]
             button.setText('\n'.join(player.name.split()))
@@ -89,13 +109,11 @@ class Ui(QtWidgets.QDialog):
         try:
             self.startGame.setDisabled(True)
             self.lobbyStatus.setText("Starting Game...")
-            await self.client.start_game(self.game_id)
-            # open battle window
-            asyncio.ensure_future(self.parent.open_battle_window())
-
-            # stop subscription
-            await self.pubsub_client.disconnect()
-            self.hide()
+            try:
+                await self.client.start_game(self.game_id)
+            except Exception as exc:
+                print(repr(exc))
+            # defer transition trigger to state callback
         finally:
             self.startGame.setDisabled(False)
 

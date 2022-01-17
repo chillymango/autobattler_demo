@@ -6,6 +6,7 @@ import typing as T
 from engine.base import Component
 from engine.logger import Logger
 from engine.match import Matchmaker
+from engine.logger import __ALL_PLAYERS__
 from engine.models.player import EntityType
 from engine.models.player import Player
 
@@ -48,8 +49,10 @@ class BattleManager(Component):
 
         logger: Logger = self.env.logger
 
-    def log(self, msg):
+    def log(self, msg, recipients=__ALL_PLAYERS__):
+        logger: Logger = self.env.logger
         print(msg)
+        logger.log(msg, recipients=recipients)
 
     def __del__(self):
         """
@@ -159,6 +162,7 @@ class BattleManager(Component):
         return([winner, survivorhp, survivorenergy,survivorshields])
 
     def battle(self, team1, team2, player1=None, player2=None):
+        players = [player1, player2]
         # team_cards is a dict of nickname to battle card
         team1_cards = [x.battle_card for x in team1]
         team2_cards = [x.battle_card for x in team2]
@@ -188,17 +192,17 @@ class BattleManager(Component):
             current_team2 = current_team2_pair[1]
             battle_result = self.oneVone(current_team1, current_team2)
             if battle_result[0] == 0:
-                self.log("Simultaneous KO by " + name1 + " and " + name2)
+                self.log("Simultaneous KO by " + name1 + " and " + name2, recipients=players)
                 current_team1.status = 0
                 current_team2.status = 0
             elif battle_result[0] == 1:
-                self.log(name1 + " knocks out " + name2)
+                self.log(name1 + " knocks out " + name2, recipients=players)
                 current_team2.status = 0
                 current_team1.health = battle_result[1]
                 current_team1.energy = battle_result[2]
                 current_team1.bonus_shield = battle_result[3] - 1
             elif battle_result[0] == 2:
-                self.log(name2 +" knocks out " + name1)
+                self.log(name2 +" knocks out " + name1, recipients=players)
                 current_team1.status = 0
                 current_team2.health = battle_result[1]
                 current_team2.energy = battle_result[2]
@@ -230,7 +234,8 @@ class BattleManager(Component):
             print("No matches to run")
             return
 
-        for match in matchmaker.current_matches:
+        print('Running matches')
+        for match in self.state.current_matches:
             result = self.player_battle(*match.players)
             # handle HP
             losing_player: Player = None
@@ -246,5 +251,8 @@ class BattleManager(Component):
             if losing_player is not None:
                 losing_player.hitpoints -= 2
 
-            if match.has_player(self.env.current_player):
-                self.log(msg)
+            # send messages to involved players
+            for player in match.players:
+                if player.is_creep:
+                    continue
+                self.log(msg, recipient=player)

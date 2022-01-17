@@ -54,7 +54,11 @@ class Player(BaseModel):
     def __eq__(self, other):
         if not isinstance(other, Player):
             return False
-        return self.name == self.type == other.type and self.id == other.id
+        return self.name == other.name and self.type == other.type and self.id == other.id
+
+    @property
+    def is_creep(self):
+        return self.type == EntityType.CREEP
 
     @property
     def party_is_full(self):

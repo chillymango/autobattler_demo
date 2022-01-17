@@ -102,15 +102,23 @@ class Ui(QtWidgets.QMainWindow):
             raise
 
         try:
+            print('Init Battle Window')
             self._battle_window = BattleWindow(user=self.user, client=self.client, game_id=game_id, websocket=ws)
+            print('show Battle Window')
             self._battle_window.show()
+            print('Subscribe States')
             self._battle_window.subscribe_pubsub_state()
             self._battle_window.subscribe_pubsub_messages()
+            print('Start client')
             self._battle_window.pubsub_client.start_client(self.server_config.pubsub_path)
+            self._battle_window.pubsub_client.wait_until_ready()
+            self.hide()
+            print('done')
         except Exception as exc:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback)
             print(f'Failed to open battle window: {repr(exc)}')
+        print('Running forever')
         await self._battle_window.pubsub_client.wait_until_done()
 
     @asyncSlot()
@@ -135,6 +143,8 @@ class Ui(QtWidgets.QMainWindow):
                 self._lobby_window.start_pubsub_subscription()
                 print(self.server_config.pubsub_path)
                 self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
+                await self._lobby_window.pubsub_client.wait_until_ready()
+                self._lobby_window.show()
                 self.hide()
         except Exception as exc:
             error_window(f'Failed to join game: {repr(exc)}')
