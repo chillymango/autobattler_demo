@@ -4,7 +4,6 @@ Pubsub interface for the game
 Supports broadcasting game state
 """
 import asyncio
-from msilib.schema import Environment
 import typing as T
 from queue import Empty
 
