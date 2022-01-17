@@ -11,9 +11,9 @@ from client.engine.shop import ShopManager
 from client.engine.state import GamePhase, Environment
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
-from client.utils.buttons import set_border_color, set_border_color_and_image, set_button_image
-from client.utils.buttons import clear_button_image
-from client.utils.buttons import PokemonButton
+from utils.buttons import set_border_color, set_border_color_and_image, set_button_image
+from utils.buttons import clear_button_image
+from utils.buttons import PokemonButton
 
 
 class Ui(QtWidgets.QMainWindow):

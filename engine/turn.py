@@ -1,11 +1,5 @@
-from pydantic.main import BaseModel
-
 from engine.base import Component
-
-class StageConfig(BaseModel):
-    stage: int
-    round: int
-    location: str = ""
+from engine.models.stage_config import StageConfig
 
 
 class Turn(Component):

@@ -5,18 +5,15 @@ TODO: use websockets
 """
 import typing as T
 from fastapi import APIRouter
-from pydantic import BaseModel
-from engine.player import TEAM_SIZE
+from engine.models.player import TEAM_SIZE
 
 from server.api.base import ReportingResponse
 from server.api.base import PlayerContextRequest
 from server.api.lobby import get_request_context
 
 if T.TYPE_CHECKING:
-    from engine.env import Environment
     from engine.player import Player
-    from engine.shop import ShopManager
-    from engine.state import State
+    from engine.models.state import State
 
 team_router = APIRouter(prefix="/team")
 

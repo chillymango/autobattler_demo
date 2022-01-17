@@ -28,11 +28,11 @@ from server.api.lobby import CreateGameResponse
 from server.api.lobby import DeleteGameRequest
 from server.api.lobby import JoinGameRequest
 from server.api.lobby import LeaveGameRequest
-from server.api.player import Player as PlayerModel
 from server.api.shop import CatchPokemonRequest
 from server.api.team import AddToTeamRequest, ShiftRequest
 from server.api.team import RemoveFromTeamRequest
 from utils.context import GameContext
+from server.api.user import User
 
 
 class ServerRequestFailure(Exception):
@@ -40,7 +40,8 @@ class ServerRequestFailure(Exception):
     Usually suggests a handled failure
     """
 
-nullplayer = PlayerModel(id='nullplayer', name='nullplayer')
+# TODO: what a stupid concept here
+nullplayer = User(id='nullplayer', name='nullplayer')
 
 
 class AsyncLoopThread(Thread):
@@ -121,11 +122,11 @@ class AsynchronousServerClient:
         """
         return json.loads(await self.get("lobby/all"))
 
-    async def create_game(self, number_of_players: int = 8):
+    async def create_game(self, user: User, number_of_players: int = 8):
         """
         Issue a create game request
         """
-        request = CreateGameRequest(number_of_players=number_of_players)
+        request = CreateGameRequest(player_id=user.id, number_of_players=number_of_players)
         return await self.post("lobby/create", request, response_type=CreateGameResponse)
 
     async def delete_game(self, game_id: str, force: bool = False):
@@ -137,23 +138,25 @@ class AsynchronousServerClient:
         if not response.success:
             raise ServerRequestFailure(response.message)
 
-    async def join_game(self, game_id: str, player: PlayerModel):
+    async def join_game(self, game_id: str, user: User):
         """
         Have a player join the game
         """
-        request = JoinGameRequest(game_id=game_id, player=player)
+        request = JoinGameRequest(game_id=game_id, user=user)
         response = await self.post("lobby/join", request, response_type=ReportingResponse)
         if not response.success:
             raise ServerRequestFailure(response.message)
+        return response
 
-    async def leave_game(self, game_id: str, player: PlayerModel):
+    async def leave_game(self, game_id: str, user: User):
         """
         Have a player leave a game
         """
-        request = LeaveGameRequest(game_id=game_id, player=player)
+        request = LeaveGameRequest(game_id=game_id, user=user)
         response = await self.post("lobby/leave", request, response_type=ReportingResponse)
         if not response.success:
             raise ServerRequestFailure(response.message)
+        return response
 
     async def start_game(self, game_id: str):
         """
@@ -163,6 +166,7 @@ class AsynchronousServerClient:
         response = await self.post("lobby/start", request, response_type=ReportingResponse)
         if not response.success:
             raise ServerRequestFailure(response.message)
+        return response
 
     async def get_players(self, game_id: str):
         """
@@ -341,7 +345,7 @@ class GameServerClient(AsynchronousServerClient):
 
 
 if __name__ == "__main__":
-    test_player = PlayerModel(id=str(uuid4()), name='Albert Yang')
+    test_player = User(id=str(uuid4()), name='Albert Yang')
 
     # Asynchronous Test
     async def testing():

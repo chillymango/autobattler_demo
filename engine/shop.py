@@ -10,10 +10,10 @@ from collections import defaultdict
 from collections import namedtuple
 
 from engine.base import Component
-from engine.player import Player
-from engine.pokemon import Pokemon, PokemonFactory
+from engine.models.player import Player
+from engine.models.pokemon import Pokemon
+from engine.pokemon import PokemonFactory
 from engine.turn import Turn
-from operator import attrgetter
 
 # for debugging
 SEED = os.environ.get("SHOP_RANDOM_SEED", 0)

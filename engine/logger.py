@@ -13,7 +13,7 @@ from engine.base import Component
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from engine.state import State
+    from engine.models.state import State
 
 
 __ALL_PLAYERS__ = "__ALL_PLAYERS_CONSTANT__"

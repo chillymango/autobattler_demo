@@ -4,16 +4,16 @@ Pubsub interface for the game
 Supports broadcasting game state
 """
 import asyncio
-import time
+from msilib.schema import Environment
 import typing as T
 from queue import Empty
-from queue import Queue
-from pydantic import BaseModel
-from pydantic import Field
 
 from engine.base import Component
 from engine.logger import Logger, Message
 from engine.player import Player
+
+if T.TYPE_CHECKING:
+    from engine.models.state import State
 
 UPDATE_FREQUENCY = 10.0  # hz
 
@@ -27,20 +27,21 @@ class PubSubInterface(Component):
 
         # do some stuff here to start broadcasting on the correct channels
         # use game ID for namespace
+        for player in self.state.players:
+            self._pubsub_msg_headers[player] = f"pubsub-msg-{str(player.id)}-{self.env.id}"
+            print(f"PubSub msg player {player.name} on {self._pubsub_msg_headers[player]}")
 
-        # broadcast state
-        self._pubsub_state_header = f"pubsub-state-{self.env.id}"
-        print(f"PubSub state on {self._pubsub_state_header}")
-
+    def __init__(self, env: Environment, state: "State"):
+        super().__init__(env, state)
+        # specific player messages
+        self._pubsub_msg_headers = {}
         # broadcast global messages (all players)
         self._pubsub_msg_global_header = f"pubsub-msg-all-{self.env.id}"
         print(f"PubSub msg all on {self._pubsub_msg_global_header}")
 
-        # broadcast specific player messages
-        self._pubsub_msg_headers = {}
-        for player in self.state.players:
-            self._pubsub_msg_headers[player] = f"pubsub-msg-{str(player.id)}-{self.env.id}"
-            print(f"PubSub msg player {player.name} on {self._pubsub_msg_headers[player]}")
+        self.update_freq = 1.0
+        self._pubsub_state_header = f"pubsub-state-{self.env.id}"
+        print(f"PubSub state on {self._pubsub_state_header}")
 
         # NOTE: defer import to break circular deps
         from server.api.pubsub import endpoint
@@ -61,7 +62,7 @@ class PubSubInterface(Component):
 
             await asyncio.gather(*tasks, return_exceptions=True)
 
-            await asyncio.sleep(1.0 / UPDATE_FREQUENCY)
+            await asyncio.sleep(1.0 / self.update_freq)
 
     async def _flush_queue(self, topic, queue):
         """

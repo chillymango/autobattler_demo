@@ -18,7 +18,7 @@ from server.api.lobby import get_request_context
 if T.TYPE_CHECKING:
     from engine.player import Player
     from engine.shop import ShopManager
-    from engine.state import State
+    from engine.models.state import State
     from engine.turn import Turn
 
 ws_router = APIRouter(prefix="/webs")

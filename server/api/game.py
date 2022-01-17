@@ -11,33 +11,33 @@ from pydantic import BaseModel
 from engine.env import Environment
 
 from server.api.lobby import ALL_GAMES
-from server.api.player import Player as PlayerModel
+from server.api.user import User
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from engine.state import State
+    from engine.models.state import State
 
 game_router = APIRouter(prefix="/game")
 
 
 class GamePlayersResponse(BaseModel):
-    players: T.List[PlayerModel]  # list of player objects
+    players: T.List[User]
 
 
-@game_router.get("/players", response_model=GamePlayersResponse)
-async def get_game_players(game_id: str = None):
-    """
-    Return the list of players in a game
-    """
-    if game_id is None:
-        raise ValueError("No game_id provided to request")
-
-    game: "Environment" = ALL_GAMES.get(UUID(game_id))
-    state: "State" = game.state
-    if game is None:
-        raise ValueError("No game with id {} found".format(game_id))
-
-    return GamePlayersResponse(players=[PlayerModel.from_player_object(x) for x in state.players])
+#@game_router.get("/players", response_model=GamePlayersResponse)
+#async def get_game_players(game_id: str = None):
+#    """
+#    Return the list of players in a game
+#    """
+#    if game_id is None:
+#        raise ValueError("No game_id provided to request")
+#
+#    game: "Environment" = ALL_GAMES.get(UUID(game_id))
+#    state: "State" = game.state
+#    if game is None:
+#        raise ValueError("No game with id {} found".format(game_id))
+#
+#    return GamePlayersResponse(players=[User.from_player_object(x) for x in state.players])
 
 
 class GameStateResponse(BaseModel):

@@ -17,9 +17,9 @@ from engine.pokemon import EvolutionManager, PokemonFactory
 from engine.pokemon import TmManager
 from engine.pubsub import PubSubInterface
 from engine.shop import ShopManager
-from engine.state import GamePhase
-from engine.state import State
+from engine.models.state import State
 from engine.turn import Turn
+from utils.phase import GamePhase
 
 
 class Environment:
@@ -79,6 +79,13 @@ class Environment:
         if player in self.state.players:
             print("Player {} already in players".format(player))
         self.state.players.append(player)
+
+    def remove_player_by_id(self, player_id):
+        for player in self.state.players:
+            if player.id == player_id:
+                self.state.players.remove(player)
+                return
+        raise ValueError(f"Player {player_id} not in game players")
 
     def remove_player(self, player):
         if player not in self.state.players:

@@ -6,44 +6,15 @@ The class in this module is responsible for creating pairs for matches.
 import typing as T
 from collections import defaultdict
 from itertools import combinations
-from random import shuffle, sample
-from pydantic import BaseModel
+from random import shuffle
 
 from engine.base import Component
-from engine.player import EntityType
-from engine.player import Player
-from engine.pokemon import PokemonFactory
+from engine.models.match import Match
+from engine.models.player import EntityType
+from engine.models.player import Player
 
-
-class Match(BaseModel):
-    """
-    Represents a match between two players.
-    """
-
-    player1: Player
-    player2: Player
-    result: T.Union[Player, None] = None
-
-    @property
-    def players(self):
-        return (self.player1, self.player2)
-
-    def has_player(self, player):
-        return player in self.players
-
-    def __hash__(self):
-        return hash((self.player1, self.player2))
-
-    @property
-    def is_creep_match(self):
-        return "Creep Round" in self.player1.name or "Creep Round" in self.player2.name
-
-    def __repr__(self):
-        if self._result:
-            resultstr = "{} wins".format(self._result)
-        else:
-            resultstr = "Not played"
-        return "Match - ({}) vs ({}) ({})".format(self.player1, self.player2, resultstr)
+if T.TYPE_CHECKING:
+    from engine.pokemon import PokemonFactory
 
 
 class CreepRoundManager(Component):

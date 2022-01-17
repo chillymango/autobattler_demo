@@ -17,7 +17,7 @@ if T.TYPE_CHECKING:
     from engine.env import Environment
     from engine.player import Player
     from engine.shop import ShopManager
-    from engine.state import State
+    from engine.models.state import State
 
 shop_router = APIRouter(prefix="/shop")
 

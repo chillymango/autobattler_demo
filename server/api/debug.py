@@ -8,10 +8,10 @@ from fastapi import APIRouter
 from fastapi import WebSocket
 from pydantic import BaseModel
 
-from engine.state import GamePhase
 from server.api.base import ReportingResponse
 from server.api.base import PlayerContextRequest
 from server.api.lobby import get_request_context
+from utils.phase import GamePhase
 
 if T.TYPE_CHECKING:
     from engine.battle import BattleManager
@@ -19,7 +19,7 @@ if T.TYPE_CHECKING:
     from engine.match import Matchmaker
     from engine.player import Player
     from engine.shop import ShopManager
-    from engine.state import State
+    from engine.models.state import State
     from engine.turn import Turn
 
 debug_router = APIRouter(prefix="/debug")

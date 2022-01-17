@@ -5,23 +5,30 @@ Supports high-level interfacing with games
 
 TODO: store game models etc in database and not in internal memory fucking lmao
 """
+import asyncio
 import typing as T
 from collections import namedtuple
 from threading import Thread
 from uuid import UUID
 
 from fastapi.routing import APIRouter
+from fastapi_websocket_pubsub import PubSubEndpoint
 from pydantic import BaseModel
 
 from engine.env import Environment, GamePhase
-from engine.player import EntityType, Player
+from engine.models.player import EntityType
+from engine.models.player import Player
 from server.api.base import GameNotFound, PlayerContextRequest
 from server.api.base import ReportingResponse
-from server.api.player import Player as PlayerModel
+from server.api.user import User
+
+if T.TYPE_CHECKING:
+    from engine.models.state import State
 
 lobby_router = APIRouter(prefix="/lobby")
 
 ALL_GAMES: T.Dict[UUID, Environment] = {}  # map of game_id to game_object
+GAME_BROADCAST_TASKS: T.Dict[UUID, asyncio.Task] = {}
 
 
 @lobby_router.get("/all")
@@ -30,6 +37,7 @@ async def get_all_games():
 
 
 class CreateGameRequest(BaseModel):
+    player_id: str
     number_of_players: int = 8
 
 
@@ -40,7 +48,7 @@ class CreateGameResponse(BaseModel):
 PlayerContext = namedtuple("PlayerContext", ["game", "player"])
 
 
-def get_request_context(request: PlayerContextRequest) -> T.Tuple[Environment, PlayerModel]:
+def get_request_context(request: PlayerContextRequest) -> T.Tuple[Environment, User]:
     """
     Given an incoming request, determine what game and player the request is meant for.
 
@@ -61,9 +69,17 @@ async def create_game(request: CreateGameRequest):
     """
     Create a game
     """
+    # TODO: make this check faster...
+    for game in ALL_GAMES.values():
+        state: "State" = game.state
+        try:
+            state.get_player_by_id(request.player_id)
+            raise Exception("Player already in game")
+        except ValueError:
+            pass
+
     game = Environment(request.number_of_players)
     ALL_GAMES[game.id] = game
-    # make publisher start broadcasting game state
     return CreateGameResponse(game_id=str(game.id))
 
 
@@ -94,6 +110,10 @@ async def delete_game(request: DeleteGameRequest):
                 return ReportingResponse(success=False, message=message)
 
         ALL_GAMES.pop(game_id)
+        if GAME_BROADCAST_TASKS.get(game_id):
+            task = GAME_BROADCAST_TASKS.pop(game_id)
+            task.cancel()
+
         return ReportingResponse(success=True)
 
     return ReportingResponse(
@@ -110,7 +130,7 @@ class JoinGameRequest(BaseModel):
     """
 
     game_id: str
-    player: PlayerModel
+    user: User
 
 
 @lobby_router.post("/join")
@@ -126,9 +146,9 @@ async def join_game(request: JoinGameRequest):
         if game.is_finished:
             return ReportingResponse(success=False, message="Game has already finished")
 
-        # create player from player model
-        player_model = request.player
-        player = Player(name=player_model.name, type=EntityType.HUMAN, id=player_model.id)
+        # create player from user
+        user = request.user
+        player = Player(name=user.name, type=EntityType.HUMAN, id=user.id)
         try:
             game.add_player(player)
             return ReportingResponse(success=True)
@@ -146,7 +166,7 @@ class LeaveGameRequest(BaseModel):
     """
 
     game_id: str
-    player: PlayerModel
+    user: User
 
 
 @lobby_router.post("/leave")
@@ -158,10 +178,8 @@ async def leave_game(request: LeaveGameRequest):
     game = ALL_GAMES.get(game_id)
     if game is not None:
         # create player from player model
-        player_model = request.player
-        player = Player(name=player_model.name)
         try:
-            game.remove_player(player)
+            game.remove_player_by_id(request.user.id)
             return ReportingResponse(success=True)
         except Exception as err:
             return ReportingResponse(success=False, message=repr(err))
@@ -200,3 +218,6 @@ async def start_game(request: StartGameRequest):
             return ReportingResponse(success=True)
 
     return ReportingResponse(success=False, message="Failed to start game")
+
+
+print('not this fucking shit again')

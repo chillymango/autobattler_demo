@@ -15,7 +15,7 @@ from engine.match import Matchmaker
 from engine.sprites import SpriteManager
 
 from client.screens.base import GameWindow
-from client.utils.error_window import error_window
+from utils.error_window import error_window
 from server.api.base import PlayerContextRequest
 from utils.client import AsynchronousServerClient
 from utils.client import GameServerClient

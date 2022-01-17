@@ -5,15 +5,15 @@ import typing as T
 from engine.base import Component
 from engine.logger import Logger
 from engine.match import Matchmaker
-from engine.player import EntityType
-from engine.player import Player
+from engine.models.player import EntityType
+from engine.models.player import Player
 
 from selenium import webdriver
 import random
 import copy
 
 if T.TYPE_CHECKING:
-    from engine.state import State
+    from engine.models.state import State
 
 
 class BattleManager(Component):

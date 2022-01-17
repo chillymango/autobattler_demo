@@ -4,7 +4,7 @@ from server.api.base import PlayerContextRequest
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from server.api.player import Player as PlayerModel
+    from server.api.user import User
 
 
 class AsyncCallback:
@@ -40,10 +40,10 @@ class GameWindow:
     def __init__(
         self,
         env: "Environment" = None,
-        player: "PlayerModel" = None,
+        user: "User" = None,
     ):
         self.env = env
-        self.player = player
+        self.user = user
 
     @property
     def render_methods(self):

@@ -17,7 +17,7 @@ from utils.strings import camel_case_to_snake_case
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from engine.state import State
+    from engine.models.state import State
 
 
 class GuiArray:

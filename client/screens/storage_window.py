@@ -14,8 +14,7 @@ from utils.websockets_client import WebSocketClient
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from engine.player import Player
-    from server.api.player import Player as PlayerModel
+    from server.api.user import User
     from utils.context import GameContext
 
 
@@ -26,14 +25,14 @@ class Ui(QtWidgets.QDialog):
         parent,
         env: "Environment" = None,
         ctx: "GameContext" = None,
-        player_model: "PlayerModel" = None,
+        user: "User" = None,
         websocket = None,
     ):
         super(Ui, self).__init__()
         self.parent = parent
         self.env = env
         self.ctx = ctx
-        self.player_model = player_model
+        self.user = user
         self.websocket: WebSocketClient = websocket
         self._last_seen_party = None
         self._last_seen_storage = None
@@ -65,7 +64,7 @@ class Ui(QtWidgets.QDialog):
 
     def update_state(self):
         try:
-            self.current_player = self.env.state.get_player_by_id(self.player_model.id)
+            self.current_player = self.env.state.get_player_by_id(self.user.id)
         except Exception as exc:
             print(repr(exc))
 

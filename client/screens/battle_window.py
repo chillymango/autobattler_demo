@@ -1,8 +1,6 @@
-#import functools
 import logging
 import os
 import sys
-from telnetlib import IP
 import typing as T
 import websockets
 from qasync import asyncSlot
@@ -10,31 +8,25 @@ from qasync import asyncClose
 from qasync import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
-from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
-from client.screens.base import AsyncCallback, GameWindow
+from client.screens.base import GameWindow
 
-from engine.match import Match
 from engine.match import Matchmaker
-from engine.player import EntityType
 from engine.player import Player
 from engine.pubsub import Message
-from engine.shop import ShopManager
-from engine.state import GamePhase
-from engine.state import State
+from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
-from client.utils.buttons import set_border_color, set_border_color_and_image, set_button_image
-from client.utils.buttons import clear_button_image
-from client.utils.buttons import PokemonButton
-from server.api.player import Player as PlayerModel
-from utils.async_util import async_partial
+from utils.buttons import PokemonButton
+from server.api.user import User
 from utils.context import GameContext
-from utils.user import User
-from utils.client import AsynchronousServerClient, GameServerClient
+from server.api.user import User
+from utils.client import AsynchronousServerClient
+from utils.phase import GamePhase
+from utils.error_window import error_window
 from utils.websockets_client import WebSocketClient
 
 if T.TYPE_CHECKING:
@@ -94,11 +86,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def create_player(self):
         # create Player objects
-        # TODO: consolidate Player and PlayerModel because they're literally the fucking same
-        user = User.from_cache()
-        self.player_id = user.id
-        self.current_player = Player.create_from_user(user)
-        self.player = PlayerModel(id=user.id, name=user.name)
+        self.user = User.from_cache()
+        self.player_id = self.user.id
+        self.current_player = Player.create_from_user(self.user)
 
         return self.player
 
@@ -582,10 +572,16 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
 
 async def main():
+    print('doing shit')
     SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'http://76.210.142.219:8000')
     ws_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/game_buttons"
     pubsub_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/pubsub"
-    ws = await websockets.connect(ws_addr)
+    print('making websocket')
+    try:
+        ws = await websockets.connect(ws_addr)
+    except Exception:
+        error_window('Unable to connect to game')
+        raise
 
     window = Ui(server_addr=SERVER_ADDRESS, websocket=ws)
 

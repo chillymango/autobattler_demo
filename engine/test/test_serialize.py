@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from engine.env import Environment
 from engine.player import EntityType, Player
 from engine.pokemon import BattleCard, Pokemon, PokemonFactory
-from engine.state import State
+from engine.models.state import State
 
 
 class TestEncodeDecode(unittest.TestCase):
