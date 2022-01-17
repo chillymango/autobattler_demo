@@ -49,11 +49,6 @@ class BattleManager(Component):
 
         logger: Logger = self.env.logger
 
-    def log(self, msg, recipients=__ALL_PLAYERS__):
-        logger: Logger = self.env.logger
-        print(msg)
-        logger.log(msg, recipients=recipients)
-
     def __del__(self):
         """
         Close the Selenium webdriver before exiting
