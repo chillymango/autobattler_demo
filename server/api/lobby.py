@@ -6,7 +6,6 @@ Supports high-level interfacing with games
 TODO: store game models etc in database and not in internal memory fucking lmao
 """
 import asyncio
-from tkinter import ALL
 import typing as T
 from collections import namedtuple
 from threading import Thread
