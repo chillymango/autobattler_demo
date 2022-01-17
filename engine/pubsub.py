@@ -8,11 +8,11 @@ import typing as T
 from queue import Empty
 
 from engine.base import Component
-from engine.env import Environment
 from engine.logger import Logger, Message
 from engine.player import Player
 
 if T.TYPE_CHECKING:
+    from engine.env import Environment
     from engine.models.state import State
 
 UPDATE_FREQUENCY = 10.0  # hz
@@ -31,7 +31,7 @@ class PubSubInterface(Component):
             self._pubsub_msg_headers[player] = f"pubsub-msg-{str(player.id)}-{self.env.id}"
             print(f"PubSub msg player {player.name} on {self._pubsub_msg_headers[player]}")
 
-    def __init__(self, env: Environment, state: "State"):
+    def __init__(self, env: "Environment", state: "State"):
         super().__init__(env, state)
         # specific player messages
         self._pubsub_msg_headers = {}
