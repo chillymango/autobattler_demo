@@ -25,6 +25,9 @@ class PubSubInterface(Component):
         # assumes the logger component is set up first
         self.logger: Logger = self.env.logger
 
+        # increase broadcast speed
+        self.update_freq = 10.0
+
         # do some stuff here to start broadcasting on the correct channels
         # use game ID for namespace
         for player in self.state.players:

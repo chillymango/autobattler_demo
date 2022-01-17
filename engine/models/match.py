@@ -28,8 +28,8 @@ class Match(BaseModel):
         return "Creep Round" in self.player1.name or "Creep Round" in self.player2.name
 
     def __repr__(self):
-        if self._result:
-            resultstr = "{} wins".format(self._result)
+        if self.result:
+            resultstr = "{} wins".format(self.result)
         else:
             resultstr = "Not played"
         return "Match - ({}) vs ({}) ({})".format(self.player1, self.player2, resultstr)

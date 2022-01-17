@@ -40,16 +40,14 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     DEBUG = os.environ.get('DEBUG')
     CREATE_AND_START_GAME = True
 
-    def __init__(self, server_addr: str = None, game_id: str = None, websocket = None):
+    def __init__(self, user, client: AsynchronousServerClient = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
-        self.server_addr = server_addr
+        self.user = user
         self.websocket = WebSocketClient(websocket)
-        self.create_player()
-        self.client = AsynchronousServerClient(bind=server_addr)
+        self.client = client
 
         # create an environment to support rendering
         self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
-        self.context: GameContext = GameContext(self.env, self.player)
         # should load an initial state first?
         print('Initializing env')
         self.env.initialize()
@@ -84,13 +82,18 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.render_time_to_next_stage,
         ]
 
-    def create_player(self):
-        # create Player objects
-        self.user = User.from_cache()
-        self.player_id = self.user.id
-        self.current_player = Player.create_from_user(self.user)
+    @property
+    def context(self) -> GameContext:
+        return GameContext(self.env, self.player)
 
-        return self.player
+    @property
+    def player(self):
+        state: "State" = self.state
+        print(state)
+        for player in state.players:
+            if player.id == self.user.id:
+                return player
+        return None
 
     def add_shop_interface(self):
         """
@@ -232,7 +235,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         TODO: this is going to change a lot in multiplayer but get something working for now
         Each player should get a unique message stream from the server.
         """
-        #pass
         print(self.messages)
         self.logMessages.setText('\n'.join([msg.msg for msg in self.messages]))
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
@@ -273,18 +275,18 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self,
             env=self.env,
             ctx=self.context,
-            player_model=self.player,
+            user=self.user,
             websocket=self.websocket,
         )
 
     def render_player_stats(self):
-        player: Player = self.current_player
+        player: Player = self.player
         self.pokeBallCount.setText(str(player.balls))
         self.energyCount.setText(str(player.energy))
         self.hitPoints.setText(str(player.hitpoints))
 
     def render_opponent_party(self):
-        player: Player = self.current_player
+        player: Player = self.player
         state: State = self.state
         matchmaker: Matchmaker = self.env.matchmaker
         if state.current_matches is not None:
@@ -303,7 +305,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.opposingPokemon[idx].setDisabled(True)
 
     def render_party(self):
-        player = self.current_player
+        player = self.player
         party = player.party
         for idx, party_member in enumerate(party):
             party_button = self.party_pokemon_buttons[idx]
@@ -319,7 +321,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 item_button.setDisabled(False)
 
     def render_team(self):
-        player = self.current_player
+        player = self.player
         team = player.team
         arr = [x for x in team]
         if len(arr) < 3:
@@ -343,7 +345,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         state: State = self.state
         shop_window: T.Dict[Player, str] = state.shop_window
 
-        for idx, pokemon_name in enumerate(shop_window[self.current_player]):
+        for idx, pokemon_name in enumerate(shop_window[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
             shop_button.render_shop_card(pokemon_name)
 
@@ -358,9 +360,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         """
         # refresh references
         self.env.state = self.state = State.parse_raw(data)
-
-        # TODO: make the below a weakref or something...
-        self.current_player = self.state.get_player_by_id(self.player_id)
+        print(self.state)
 
         for method in self.render_functions:
             method()
@@ -556,7 +556,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def subscribe_pubsub_messages(self):
         msg_global = f"pubsub-msg-all-{self.game_id}"
-        msg_player = f"pubsub-msg-{self.player_id}-{self.game_id}"
+        msg_player = f"pubsub-msg-{self.user.id}-{self.game_id}"
         self.pubsub_client.subscribe(msg_player, callback=self._message_callback)
         self.pubsub_client.subscribe(msg_global, callback=self._message_callback)
 

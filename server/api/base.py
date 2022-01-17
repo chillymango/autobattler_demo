@@ -6,7 +6,7 @@ TODO: look into using fastapi-utils for cbv. For now just define everything expl
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
-from server.api.user import User
+from server.api.player import Player
 from utils.context import GameContext
 
 
@@ -42,7 +42,7 @@ class PlayerContextRequest(BaseModel):
     should always be linked by the same ID.
     """
 
-    user: User
+    player: Player
     game_id: str
 
     @classmethod

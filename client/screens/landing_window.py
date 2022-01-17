@@ -4,14 +4,18 @@ Landing Screen
 Player will choose to create or join a game from here.
 """
 import asyncio
-from distutils.log import error
+import nest_asyncio
+import sys
+import traceback
 import typing as T
+import websockets
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from qasync import asyncSlot
 
+from client.screens.battle_window import Ui as BattleWindow
 from client.screens.lobby_window import Ui as LobbyWindow
 from server.api.lobby import CreateGameResponse
 from utils.error_window import error_window
@@ -20,6 +24,8 @@ from utils.server_config import ServerConfig
 if T.TYPE_CHECKING:
     from utils.client import AsynchronousServerClient
     from server.api.user import User
+
+nest_asyncio.apply()
 
 
 class Ui(QtWidgets.QMainWindow):
@@ -39,6 +45,7 @@ class Ui(QtWidgets.QMainWindow):
         self.configMenu.clicked.connect(self.config_callback)
 
         self._lobby_window = None
+        self._battle_window = None
 
         self.show()
 
@@ -69,51 +76,71 @@ class Ui(QtWidgets.QMainWindow):
             self._lobby_window.start_pubsub_subscription()
             print(self.server_config.pubsub_path)
             self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
+            # do not transfer windows until pubsub connection established
+            await self._lobby_window.pubsub_client.wait_until_ready()
+            self._lobby_window.show()
             self.hide()
-            #await self._lobby_window.pubsub_client.wait_until_done()
         except Exception as exc:
             error_window(str(exc))
         finally:
             self.createMatch.setDisabled(False)
             self.createMatch.setText("Create Match")
 
+    async def open_battle_window(self):
+        # always instantiate a new window
+        # TODO: garbage collect the old window...
+        # try to get a game ID
+        game_id = self._lobby_window.game_id
+
+        # open a WebSocket
+        try:
+            ws_addr = self.server_config.websocket_path
+            print(f'Opening WebSocket connection to {ws_addr}')
+            ws = await websockets.connect(ws_addr)
+        except Exception as exc:
+            error_window(f'Unable to connect to the game: {repr(exc)}')
+            raise
+
+        try:
+            self._battle_window = BattleWindow(user=self.user, client=self.client, game_id=game_id, websocket=ws)
+            self._battle_window.show()
+            self._battle_window.subscribe_pubsub_state()
+            self._battle_window.subscribe_pubsub_messages()
+            self._battle_window.pubsub_client.start_client(self.server_config.pubsub_path)
+        except Exception as exc:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
+            print(f'Failed to open battle window: {repr(exc)}')
+        await self._battle_window.pubsub_client.wait_until_done()
+
     @asyncSlot()
     async def join_match_callback(self):
         # TODO: add a lobby-join screen instead of just taking first game found
-        self.joinMatch.setDisabled(True)
-        self.joinMatch.setText("Joining Match...")
 
-        attempts = 0
-        joined_game = False
-        while attempts < 3:
-            attempts += 1
+        # try joining the first game
+        try:
+            self.joinMatch.setDisabled(True)
+            self.joinMatch.setText("Joining Match...")
+
             games = await self.client.get_joinable_games()
             if not games:
                 error_window("No valid games. Try creating one!")
                 return
 
-            # try joining the first game
-            try:
-                resp = await self.client.join_game(games[0], self.user)
-                if resp.success:
-                    joined_game = True
-                    # create a lobby window with the START GAME button disabled
-                    self._lobby_window = LobbyWindow(self, self.user, self.client, game_id=games[0])
-                    # start subscribing to state updates over pubsub
-                    self._lobby_window.start_pubsub_subscription()
-                    print(self.server_config.pubsub_path)
-                    self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
-                    self.hide()
-                    await self._lobby_window.pubsub_client.wait_until_done()
-            except Exception as exc:
-                print(repr(exc))
-                await asyncio.sleep(1.0)
-            finally:
-                self.joinMatch.setDisabled(False)
-                self.joinMatch.setText("Join Match")
-
-        if not joined_game:
-            error_window("Failed to join a game.")
+            resp = await self.client.join_game(games[0], self.user)
+            if resp.success:
+                # create a lobby window with the START GAME button disabled
+                self._lobby_window = LobbyWindow(self, self.user, self.client, game_id=games[0])
+                # start subscribing to state updates over pubsub
+                self._lobby_window.start_pubsub_subscription()
+                print(self.server_config.pubsub_path)
+                self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
+                self.hide()
+        except Exception as exc:
+            error_window(f'Failed to join game: {repr(exc)}')
+        finally:
+            self.joinMatch.setDisabled(False)
+            self.joinMatch.setText("Join Match")
 
     @asyncSlot()
     async def config_callback(self):

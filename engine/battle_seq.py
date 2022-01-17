@@ -1,6 +1,7 @@
 """
 Battle Manager
 """
+import os
 import typing as T
 from engine.base import Component
 from engine.logger import Logger
@@ -9,11 +10,15 @@ from engine.models.player import EntityType
 from engine.models.player import Player
 
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 import random
 import copy
 
 if T.TYPE_CHECKING:
     from engine.models.state import State
+
+# TODO: set this through options somehow
+os.environ['MOZ_HEADLESS'] = '1'
 
 
 class BattleManager(Component):
@@ -29,7 +34,17 @@ class BattleManager(Component):
         """
         Start selenium
         """
-        self.driver = webdriver.Firefox()
+        # TODO: use this path
+        if 'nt' in os.name:
+            #options = webdriver.FirefoxOptions()
+            options = Options()
+            #options.binary_location = 
+            self.driver = webdriver.Firefox(
+                executable_path='client\\geckodriver.exe',
+                options=options
+            )
+        else:
+            self.driver = webdriver.Firefox()
 
         logger: Logger = self.env.logger
 

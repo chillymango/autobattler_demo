@@ -9,6 +9,7 @@ First checks to see if the User object can be instantiated from cache.
 """
 import asyncio
 import logging
+import os
 import sys
 import typing as T
 from collections import namedtuple
@@ -74,7 +75,11 @@ async def main() -> None:
     """
     Application Entrypoint
     """
-    server_config = ServerConfig.parse_filepath()
+    if os.environ.get('DEVELOPMENT'):
+        print('Using DEV server config')
+        server_config = ServerConfig(bind='http://localhost:8000')
+    else:
+        server_config = ServerConfig.parse_filepath()
     client = AsynchronousServerClient(bind=server_config.bind)
     window = LandingWindow(client, server_config)
     user = await user_name_window()

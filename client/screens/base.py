@@ -4,6 +4,8 @@ from server.api.base import PlayerContextRequest
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
+    from engine.models.player import Player
+    from engine.models.state import State
     from server.api.user import User
 
 

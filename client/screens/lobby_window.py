@@ -41,7 +41,6 @@ class Ui(QtWidgets.QDialog):
         self.client: "AsynchronousServerClient" = client
         uic.loadUi('client/qtassets/lobby.ui', self)
         self.pubsub_client = PubSubClient()
-        self.show()
 
         # player displays
         # TODO: use constant for game size
@@ -68,7 +67,6 @@ class Ui(QtWidgets.QDialog):
     async def _state_callback(self, topic, data):
         # TODO: dep structure is pretty bad
         state = State.parse_raw(data)
-        print(state.players)
         for idx, player in enumerate(state.players):
             button = self.playerButton[idx]
             button.setText('\n'.join(player.name.split()))
@@ -91,9 +89,12 @@ class Ui(QtWidgets.QDialog):
         try:
             self.startGame.setDisabled(True)
             self.lobbyStatus.setText("Starting Game...")
-            await asyncio.sleep(1.0)
             await self.client.start_game(self.game_id)
             # open battle window
+            asyncio.ensure_future(self.parent.open_battle_window())
+
+            # stop subscription
+            await self.pubsub_client.disconnect()
             self.hide()
         finally:
             self.startGame.setDisabled(False)
@@ -101,14 +102,14 @@ class Ui(QtWidgets.QDialog):
     @asyncSlot()
     async def leave_game_callback(self):
         await self.leave_game()
-        self.hide()
 
     def leave_game_callback(self):
         asyncio.ensure_future(self.leave_game())
-        #self.hide()  # TODO: holy shit what a hack
+        self.hide()  # TODO: holy shit what a hack
         self.parent.show()
 
     async def leave_game(self):
+        await self.pubsub_client.disconnect()
         await self.client.leave_game(self.game_id, self.user)
 
     @asyncClose
