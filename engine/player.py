@@ -35,4 +35,5 @@ class PlayerManager(Component):
         """
         for player in self.players:
             if player.hitpoints <= 0:
+                self.log("You have died!", recipient=player)
                 player.is_alive = False

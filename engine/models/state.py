@@ -65,5 +65,9 @@ class State(BaseModel):
         return matches[0]
 
     @property
+    def alive_players(self):
+        return [player for player in self.players]
+
+    @property
     def time_left_in_turn(self):
         return self.t_phase_duration - self.t_phase_elapsed
