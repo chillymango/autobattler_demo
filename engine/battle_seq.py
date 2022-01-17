@@ -105,7 +105,7 @@ class BattleManager(Component):
         Orchestrate a battle between two players
         """
         players = [player1, player2]
-        self.log("Starting battle between {} and {}".format(player1, player2))
+        self.log("Starting battle between {} and {}".format(player1, player2), recipient=players)
         team1 = self.get_team_for_player(player1)
         team2 = self.get_team_for_player(player2)
         self.log("{} sends out {}".format(player1, ", ".join([str(x) for x in team1])), recipient=players)
