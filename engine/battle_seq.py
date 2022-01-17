@@ -104,11 +104,12 @@ class BattleManager(Component):
         """
         Orchestrate a battle between two players
         """
+        players = [player1, player2]
         self.log("Starting battle between {} and {}".format(player1, player2))
         team1 = self.get_team_for_player(player1)
         team2 = self.get_team_for_player(player2)
-        self.log("{} sends out {}".format(player1, ", ".join([str(x) for x in team1])))
-        self.log("{} sends out {}".format(player2, ", ".join([str(x) for x in team2])))
+        self.log("{} sends out {}".format(player1, ", ".join([str(x) for x in team1])), recipient=players)
+        self.log("{} sends out {}".format(player2, ", ".join([str(x) for x in team2])), recipient=players)
         return self.battle(team1, team2)
 
     def oneVone(self,battler1, battler2):
@@ -187,17 +188,17 @@ class BattleManager(Component):
             current_team2 = current_team2_pair[1]
             battle_result = self.oneVone(current_team1, current_team2)
             if battle_result[0] == 0:
-                self.log("Simultaneous KO by " + name1 + " and " + name2, recipients=players)
+                self.log("Simultaneous KO by " + name1 + " and " + name2, recipient=players)
                 current_team1.status = 0
                 current_team2.status = 0
             elif battle_result[0] == 1:
-                self.log(name1 + " knocks out " + name2, recipients=players)
+                self.log(name1 + " knocks out " + name2, recipient=players)
                 current_team2.status = 0
                 current_team1.health = battle_result[1]
                 current_team1.energy = battle_result[2]
                 current_team1.bonus_shield = battle_result[3] - 1
             elif battle_result[0] == 2:
-                self.log(name2 +" knocks out " + name1, recipients=players)
+                self.log(name2 +" knocks out " + name1, recipient=players)
                 current_team1.status = 0
                 current_team2.health = battle_result[1]
                 current_team2.energy = battle_result[2]
