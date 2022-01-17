@@ -70,7 +70,7 @@ class Ui(QtWidgets.QMainWindow):
             print(self.server_config.pubsub_path)
             self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
             self.hide()
-            await self._lobby_window.pubsub_client.wait_until_done()
+            #await self._lobby_window.pubsub_client.wait_until_done()
         except Exception as exc:
             error_window(str(exc))
         finally:
@@ -84,7 +84,6 @@ class Ui(QtWidgets.QMainWindow):
         self.joinMatch.setText("Joining Match...")
 
         attempts = 0
-        attempted = set()
         joined_game = False
         while attempts < 3:
             attempts += 1

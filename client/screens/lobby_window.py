@@ -51,35 +51,52 @@ class Ui(QtWidgets.QDialog):
             button.setText('---')
             button.setDisabled(True)
 
-        # leave game callback
+        # start game
+        self.startGame = self.findChild(QtWidgets.QPushButton, "startGame")
+        self.startGame.clicked.connect(self.start_game_callback)
+        self.lobbyStatus = self.findChild(QtWidgets.QLabel, "lobbyStatus")
+
+        # leave game
         self.leaveGame = self.findChild(QtWidgets.QPushButton, "leaveGame")
         self.leaveGame.clicked.connect(self.leave_game_callback)
 
     def start_pubsub_subscription(self):
-        """
-        heh
-        """
         pubsub_topic = f"pubsub-state-{self.game_id}"
         self.pubsub_client.subscribe(pubsub_topic, callback=self._state_callback)
         print(f'Started pubsub subscription of {pubsub_topic}')
 
     async def _state_callback(self, topic, data):
         # TODO: dep structure is pretty bad
-        print(f'Data: {data}')
         state = State.parse_raw(data)
         print(state.players)
         for idx, player in enumerate(state.players):
-            print(player)
             button = self.playerButton[idx]
             button.setText('\n'.join(player.name.split()))
             button.setDisabled(False)
 
         # TODO: replace 8 with constant
         for num in range(len(state.players), 8):
-            print('empty')
             button = self.playerButton[num]
             button.setText("---")
             button.setDisabled(True)
+
+        # if current player is player0, give them the start button control
+        if state.players and state.players[0].id == self.user.id:
+            self.startGame.setDisabled(False)
+        else:
+            self.startGame.setDisabled(True)
+
+    @asyncSlot()
+    async def start_game_callback(self):
+        try:
+            self.startGame.setDisabled(True)
+            self.lobbyStatus.setText("Starting Game...")
+            await asyncio.sleep(1.0)
+            await self.client.start_game(self.game_id)
+            # open battle window
+            self.hide()
+        finally:
+            self.startGame.setDisabled(False)
 
     @asyncSlot()
     async def leave_game_callback(self):
@@ -88,7 +105,7 @@ class Ui(QtWidgets.QDialog):
 
     def leave_game_callback(self):
         asyncio.ensure_future(self.leave_game())
-        self.hide()  # TODO: holy shit what a hack
+        #self.hide()  # TODO: holy shit what a hack
         self.parent.show()
 
     async def leave_game(self):
