@@ -36,6 +36,11 @@ async def get_all_games():
     return [x for x in ALL_GAMES]
 
 
+@lobby_router.get("/joinable")
+async def get_joinable_games():
+    return [game_id for game_id, game in ALL_GAMES.items() if game.is_joinable]
+
+
 class CreateGameRequest(BaseModel):
     player_id: str
     number_of_players: int = 8

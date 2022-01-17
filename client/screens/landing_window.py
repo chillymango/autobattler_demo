@@ -4,6 +4,7 @@ Landing Screen
 Player will choose to create or join a game from here.
 """
 import asyncio
+from distutils.log import error
 import typing as T
 
 from PyQt5 import QtCore
@@ -78,7 +79,42 @@ class Ui(QtWidgets.QMainWindow):
 
     @asyncSlot()
     async def join_match_callback(self):
-        print('Joining match')
+        # TODO: add a lobby-join screen instead of just taking first game found
+        self.joinMatch.setDisabled(True)
+        self.joinMatch.setText("Joining Match...")
+
+        attempts = 0
+        attempted = set()
+        joined_game = False
+        while attempts < 3:
+            attempts += 1
+            games = await self.client.get_joinable_games()
+            if not games:
+                error_window("No valid games. Try creating one!")
+                return
+
+            # try joining the first game
+            try:
+                resp = await self.client.join_game(games[0], self.user)
+                if resp.success:
+                    joined_game = True
+                    # create a lobby window with the START GAME button disabled
+                    self._lobby_window = LobbyWindow(self, self.user, self.client, game_id=games[0])
+                    # start subscribing to state updates over pubsub
+                    self._lobby_window.start_pubsub_subscription()
+                    print(self.server_config.pubsub_path)
+                    self._lobby_window.pubsub_client.start_client(self.server_config.pubsub_path)
+                    self.hide()
+                    await self._lobby_window.pubsub_client.wait_until_done()
+            except Exception as exc:
+                print(repr(exc))
+                await asyncio.sleep(1.0)
+            finally:
+                self.joinMatch.setDisabled(False)
+                self.joinMatch.setText("Join Match")
+
+        if not joined_game:
+            error_window("Failed to join a game.")
 
     @asyncSlot()
     async def config_callback(self):

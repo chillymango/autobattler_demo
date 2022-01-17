@@ -77,7 +77,7 @@ class Environment:
         if len(self.state.players) >= self.max_players:
             raise ValueError("Player count {} already reached".format(self.max_players))
         if player in self.state.players:
-            print("Player {} already in players".format(player))
+            raise ValueError("Player {} already in players".format(player))
         self.state.players.append(player)
 
     def remove_player_by_id(self, player_id):
@@ -103,6 +103,16 @@ class Environment:
     @property
     def id(self):
         return self._id
+
+    @property
+    def is_joinable(self):
+        """
+        Game is still in `INITIALIZATION` and the number of players has not exceeded yet
+        """
+        return (
+            self.state.phase == GamePhase.INITIALIZATION
+            and len(self.state.players) < self.max_players
+        )
 
     @property
     def is_finished(self):

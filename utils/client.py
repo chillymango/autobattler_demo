@@ -107,7 +107,10 @@ class AsynchronousServerClient:
 
     async def get(self, endpoint, **kwargs) -> aiohttp.ClientResponse:
         addr = '/'.join([self.bind, endpoint])
-        return await self.session.get(addr, **kwargs)
+        response = await self.session.get(addr, **kwargs)
+        response.raise_for_status()
+        # this always assumes a JSON response, may not be a valid assumption...
+        return await response.json()
 
     async def post(self, endpoint: str, data: BaseModel, response_type=BaseModel, **kwargs):
         addr = '/'.join([self.bind, endpoint])
@@ -115,12 +118,6 @@ class AsynchronousServerClient:
             if response.status == 200:
                 return response_type.parse_raw(await response.text())
             response.raise_for_status()
-
-    async def get_games(self):
-        """
-        Issue a request to get all current games
-        """
-        return json.loads(await self.get("lobby/all"))
 
     async def create_game(self, user: User, number_of_players: int = 8):
         """
@@ -280,9 +277,13 @@ class AsynchronousServerClient:
         """
         Issue a request to get all current games
         """
-        response = await self.get("lobby/all")
-        json_res = await response.json()
-        return json_res
+        return await self.get("lobby/all")
+
+    async def get_joinable_games(self):
+        """
+        Issue a request to get all joinable games
+        """
+        return  await self.get("lobby/joinable")
 
     async def advance_turn(self, game_id: T.Union[str, UUID]):
         """
@@ -351,7 +352,8 @@ if __name__ == "__main__":
     async def testing():
         async_client = AsynchronousServerClient()
         #game = await async_client.create_game()
-        await async_client.start_game('a7c0ed20-b580-446d-97cb-3da0ecb3f2a6')
+        #await async_client.start_game('a7c0ed20-b580-446d-97cb-3da0ecb3f2a6')
+        print(await async_client.get_joinable_games())
         #print(game)
         #await async_client.join_game(game.game_id, test_player)
         #await async_client.start_game(game.game_id)
