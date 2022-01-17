@@ -581,14 +581,14 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 await self.client.delete_game(self.game_id, force=True)
 
 async def main():
-    SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'http://localhost:8000')
+    SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'http://76.210.142.219:8000')
     ws_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/game_buttons"
     pubsub_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/pubsub"
     ws = await websockets.connect(ws_addr)
 
     window = Ui(server_addr=SERVER_ADDRESS, websocket=ws)
 
-    if os.environ.get('CREATE_AND_START_GAME', True):
+    if os.environ.get('CREATE_AND_START_GAME', False):
         loop = asyncio.get_event_loop()
         task = loop.create_task(window.client.create_game())
         await task
@@ -598,7 +598,7 @@ async def main():
         window.env._id = game_id
         window.game_id = game_id
     else:
-        game_id = '673b70ca-7ee4-4013-86b3-342eda0d3d02'
+        game_id = '5f087099-5964-4236-8b79-e2f6e148d28e'
 
     # join the game with the current user
     player = window.create_player()

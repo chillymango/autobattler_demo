@@ -347,7 +347,7 @@ if __name__ == "__main__":
     async def testing():
         async_client = AsynchronousServerClient()
         #game = await async_client.create_game()
-        await async_client.start_game('673b70ca-7ee4-4013-86b3-342eda0d3d02')
+        await async_client.start_game('5f087099-5964-4236-8b79-e2f6e148d28e')
         #print(game)
         #await async_client.join_game(game.game_id, test_player)
         #await async_client.start_game(game.game_id)
