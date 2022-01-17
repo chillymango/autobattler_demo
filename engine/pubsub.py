@@ -12,29 +12,21 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from engine.base import Component
+from engine.logger import Logger, Message
 from engine.player import Player
 
 UPDATE_FREQUENCY = 10.0  # hz
-
-
-__ALL_PLAYERS__ = "__ALL_PLAYERS_CONSTANT__"
-
-
-class Message(BaseModel):
-
-    msg: str
-    time: float = Field(default_factory=time.time)
 
 
 class PubSubInterface(Component):
 
     def initialize(self):
         super().initialize()
+        # assumes the logger component is set up first
+        self.logger: Logger = self.env.logger
+
         # do some stuff here to start broadcasting on the correct channels
         # use game ID for namespace
-
-        self.message_player_queue = {player: Queue() for player in self.state.players}
-        self.message_global_queue = Queue()
 
         # broadcast state
         self._pubsub_state_header = f"pubsub-state-{self.env.id}"
@@ -61,59 +53,53 @@ class PubSubInterface(Component):
         print("Doing the thing now")
         while True:
             # broadcast encoded state
-            print('looping')
             await self.endpoint.publish(self._pubsub_state_header, self.state.json())
-            print('published state')
             # broadcast any new messages from message queue
             tasks = [self._flush_global_messages()] + [
                 self._flush_player_messages(p) for p in self.state.players
             ]
-            print(tasks)
 
             await asyncio.gather(*tasks, return_exceptions=True)
-            #await asyncio.gather(*tasks)
 
             await asyncio.sleep(1.0 / UPDATE_FREQUENCY)
+
+    async def _flush_queue(self, topic, queue):
+        """
+        Flush a queue of Message objects
+        """
+        while True:
+            try:
+                item = queue.get_nowait()
+                if not isinstance(item, Message):
+                    # drop the message and print a loud warning
+                    print(f'Message dispatch received invalid item:\n\t{item}')
+                print(f'Queue receives {item}')
+                encoded = item.json()
+                await self.endpoint.publish(topic, encoded)
+            except Empty:
+                break
+            except Exception as exc:
+                print(f'Exception in flushing messages: {repr(exc)}')
+                raise
 
     async def _flush_global_messages(self):
         """
         Flush the message queue for global
         """
-        while True:
-            try:
-                item = self.message_global_queue.get_nowait()
-                if not isinstance(item, Message):
-                    # drop the message and print a loud warning
-                    print(f"Message dispatch received invalid item:\n\t{item}")
-                encoded = item.json()
-                await self.endpoint.publish(self._pubsub_msg_global_header, encoded)
-            except Empty:
-                break
-            except Exception as exc:
-                print(f'Exception in flush g messages: {repr(exc)}')
+        header = self._pubsub_msg_global_header
+        queue=self.logger.message_global_queue
+        await self._flush_queue(
+            topic=header,
+            queue=queue,
+        )
 
     async def _flush_player_messages(self, player: Player):
         """
         Flush the message queue for a player
         """
         header = self._pubsub_msg_headers[player]
-        queue = self.message_player_queue[player]
-        while True:
-            try:
-                await self.endpoint.publish(header, queue.get_nowait())
-            except Empty:
-                break
-            except Exception as exc:
-                print(f'Exception in flush p messages: {repr(exc)}')
-
-    def log(self, message: Message, recipient: T.Union[T.List[Player], Player]=__ALL_PLAYERS__):
-        if recipient == __ALL_PLAYERS__:
-            self.message_global_queue.put(message)
-        if isinstance(recipient, Player):
-            recipient = [recipient]
-        for player in recipient:
-            self.message_player_queue[player].put(message)
-
+        queue = self.logger.message_player_queue[player]
+        await self._flush_queue(topic=header, queue=queue)
 
     def cleanup(self):
         """

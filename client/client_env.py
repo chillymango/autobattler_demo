@@ -13,7 +13,6 @@ class ClientEnvironment(Environment):
     @property
     def component_classes(self):
         return [
-            Logger,  # probably not needed but just in case
             Matchmaker,
             ShopManager,
             SpriteManager,

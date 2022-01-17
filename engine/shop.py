@@ -240,7 +240,7 @@ class ShopManager(Component):
         # as shiny
         # check here if there are already two non-shiny copies of a pokemon in a players
         # combined inventory
-        pokemon_factory.shiny_checker(player,card)
+        pokemon_factory.shiny_checker(player, card)
 
     def roll(self, player: Player):
         """

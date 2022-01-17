@@ -4,8 +4,7 @@ import os
 import sys
 from telnetlib import IP
 import typing as T
-#import websockets
-import aiohttp
+import websockets
 from qasync import asyncSlot
 from qasync import asyncClose
 from qasync import QEventLoop
@@ -17,10 +16,12 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
 from client.screens.base import AsyncCallback, GameWindow
+
 from engine.match import Match
 from engine.match import Matchmaker
 from engine.player import EntityType
 from engine.player import Player
+from engine.pubsub import Message
 from engine.shop import ShopManager
 from engine.state import GamePhase
 from engine.state import State
@@ -80,6 +81,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.add_opposing_party_interface()
         self.add_party_interface()
         self.add_team_interface()
+        self.add_message_interface()
 
         self.render_functions = [
             self.render_party,
@@ -88,7 +90,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.render_player_stats,
             self.render_opponent_party,
             self.render_time_to_next_stage,
-            #self.render_log_messages,
         ]
 
     def create_player(self):
@@ -230,6 +231,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def add_message_interface(self):
         # update log messages
+        self.messages: T.List[Message] = []
         self.logMessages = self.findChild(QtWidgets.QTextBrowser, "logMessages")
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
@@ -240,9 +242,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         TODO: this is going to change a lot in multiplayer but get something working for now
         Each player should get a unique message stream from the server.
         """
-        pass
-        #self.logMessages.setText(self.env.logger.content)
-        #self.logMessages.moveCursor(QtGui.QTextCursor.End)
+        #pass
+        print(self.messages)
+        self.logMessages.setText('\n'.join([msg.msg for msg in self.messages]))
+        self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
     def render_time_to_next_stage(self):
         state: "State" = self.state
@@ -381,6 +384,18 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         if self.debug_window is not None:
             self.debug_window.update_game_phase()
 
+    async def _message_callback(self, topic, data):
+        """
+        Updates the message log
+        """
+        try:
+            msg = Message.parse_raw(data)
+            self.messages.append(msg)
+        except Exception as exc:
+            print(f'Failed to parse message: {repr(exc)}')
+            raise
+        self.render_log_messages()
+
     @asyncSlot()
     async def roll_shop_callback(self):
         print("Rolling shop")
@@ -464,7 +479,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @asyncSlot()
     async def remove_team_member_callback(self, idx):
         print("Removing team member at idx {} from team".format(idx))
-        #self.env.current_player.remove_from_team(idx)
 
     @asyncSlot()
     async def remove_team_member_callback0(self):
@@ -546,9 +560,15 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             return
         return await self.websocket.shift_team_down(self.context, idx)
 
-    def subscribe_pubsub_topic(self):
+    def subscribe_pubsub_state(self):
         pubsub_topic = f"pubsub-state-{self.game_id}"
         self.pubsub_client.subscribe(pubsub_topic, callback=self._state_callback)
+
+    def subscribe_pubsub_messages(self):
+        msg_global = f"pubsub-msg-all-{self.game_id}"
+        msg_player = f"pubsub-msg-{self.player_id}-{self.game_id}"
+        self.pubsub_client.subscribe(msg_player, callback=self._message_callback)
+        self.pubsub_client.subscribe(msg_global, callback=self._message_callback)
 
     @asyncClose
     async def closeEvent(self, *args, **kwargs):
@@ -560,16 +580,11 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 print('Deleting game because last player left')
                 await self.client.delete_game(self.game_id, force=True)
 
-import websockets
 async def main():
     SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'http://localhost:8000')
     ws_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/game_buttons"
     pubsub_addr = f"{SERVER_ADDRESS.replace('http://', 'ws://')}/pubsub"
     ws = await websockets.connect(ws_addr)
-    async def qt_loop():
-        while True:
-            app.processEvents()
-            await asyncio.sleep(0.0)
 
     window = Ui(server_addr=SERVER_ADDRESS, websocket=ws)
 
@@ -594,7 +609,8 @@ async def main():
         print(f"Exception in starting game: {repr(exc)}")
         raise
     window.show()
-    window.subscribe_pubsub_topic()
+    window.subscribe_pubsub_state()
+    window.subscribe_pubsub_messages()
     window.pubsub_client.start_client(pubsub_addr, loop=loop)
     print('started pubsub')
     await window.pubsub_client.wait_until_done()

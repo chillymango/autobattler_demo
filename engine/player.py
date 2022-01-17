@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from engine.base import Component
-from engine.base import _Synchronized
 from engine.pokemon import Pokemon
 from utils.user import User
 from utils.strings import uuid_as_str
@@ -57,9 +56,9 @@ class Player(BaseModel):
             raise
 
     def __eq__(self, other):
-        return (
-            self.name == other.name and self.type == other.type and self.id == other.id
-        )
+        if not isinstance(other, Player):
+            return False
+        return self.name == self.type == other.type and self.id == other.id
 
     @property
     def party_is_full(self):

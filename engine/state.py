@@ -7,7 +7,6 @@ import typing as T
 from enum import Enum
 from pydantic import BaseModel
 
-from engine.base import _Synchronized
 from engine.match import Match
 from engine.player import Player
 from engine.turn import StageConfig

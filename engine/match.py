@@ -9,7 +9,6 @@ from itertools import combinations
 from random import shuffle, sample
 from pydantic import BaseModel
 
-from engine.base import _Synchronized
 from engine.base import Component
 from engine.player import EntityType
 from engine.player import Player

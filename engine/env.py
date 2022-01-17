@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from engine.base import Component
 from engine.battle_seq import BattleManager
+from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
@@ -35,7 +36,7 @@ class Environment:
     @property
     def component_classes(self):
         return [
-            Logger,  # this always has to go first -- TODO: fix this shit
+            #Logger,  # this always has to go first -- TODO: fix this shit
             Turn,
             PlayerManager,
             TmManager,
@@ -55,12 +56,19 @@ class Environment:
         self.state.phase = GamePhase.INITIALIZATION
         self.max_players = max_players
         self.components: T.List[Component] = []
+        self.logger = Logger(env=self, state=self.state)
 
         # uh i don't think we actually use this anymore
         self.current_player = None
 
         for component in self.component_classes:
             self.components.append(component(self, self.state))
+
+    def log(self, msg: str, recipient=__ALL_PLAYERS__):
+        """
+        Stand-in until replaced by the Logger component
+        """
+        self.logger.log(msg, recipient=recipient)
 
     def __del__(self):
         print('Deleting env with id {}'.format(self._id))
@@ -101,6 +109,7 @@ class Environment:
         """
         Step from INITIALIZE into first TURN_SETUP
         """
+        self.log("Starting game")
         if not self.state.phase == GamePhase.INITIALIZATION:
             raise RuntimeError("Attempted to start game while in non-initialize")
         self.state.phase = GamePhase.TURN_SETUP

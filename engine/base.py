@@ -29,46 +29,6 @@ class GuiArray:
 _T = T.TypeVar("_T")
 
 
-class _Synchronized:
-    """
-    Template class for an object whose data needs to be synchronized over the web.
-
-    These objects typically represent game env which must be common between clients, or
-    shared from server to client.
-
-    This object should provide encode / decode methods for transfer over the wire.
-
-    TODO: use BaseModel from pydantic why am i so dumb
-    """
-
-    def encode(self):
-        """
-        Encode object into JSON representation
-        """
-        return json.dumps(self.__dict__, default=default_serialize)
-
-    @classmethod
-    def from_dict(cls, dict_repr):
-        """
-        Generate an object from a dictionary representation.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def decode(cls: T.Type[_T], data) -> _T:
-        """
-        Decode object from JSON string
-        """
-        return cls.from_dict(json.loads(data))
-
-    def update(self, dict_repr):
-        """
-        Update this object with dictionary data values.
-
-        TODO: probably do this eventually when data amounts get large
-        """
-
-
 class Component:
     """
     Template class for adding new game components.
@@ -85,8 +45,7 @@ class Component:
         snakecase = camel_case_to_snake_case(classname)
         # make it a weakref so ref count doesn't increment and the env can be garbage collected
         setattr(self.env, snakecase, weakref.proxy(self))
-
-        # do something here with pubsub channels
+        self.log = self.env.log
 
     def to_dict(self):
         """

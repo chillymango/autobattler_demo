@@ -2,7 +2,8 @@
 WebSockets for reactive buttons
 """
 import json
-from telnetlib import IP
+import sys
+import traceback
 import typing as T
 from fastapi import APIRouter
 from fastapi import WebSocket
@@ -78,6 +79,9 @@ async def websocket_endpoint(websocket: WebSocket):
             break
         except Exception as exc:
             # ignore this request and keep going
+            # TODO: remove this in production to obfuscate internals
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
             print(f'Error in websocket: {repr(exc)}')
 
 

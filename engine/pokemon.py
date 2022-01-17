@@ -11,7 +11,6 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from engine.base import Component
-from engine.base import _Synchronized
 from utils.strings import uuid_as_str
 
 DEFAULT_XP_GAIN = 50.0
@@ -321,6 +320,7 @@ class PokemonFactory(Component):
             if (poke.battle_card.shiny != True) & (poke.name == card):
                 matching_pokes.append(poke)
         if len(matching_pokes) == 3: 
+            self.log(f'Caught a shiny {card}!', recipient=player)
             max_xp = 0
             max_tm_flag = 0
             max_bonus_shield = 0
