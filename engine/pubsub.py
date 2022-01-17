@@ -8,6 +8,7 @@ import typing as T
 from queue import Empty
 
 from engine.base import Component
+from engine.env import Environment
 from engine.logger import Logger, Message
 from engine.player import Player
 
