@@ -37,6 +37,7 @@ class BattleCard(BaseModel):
     energy: int = 0
     bonus_shield: int = 0
     status: int = 1
+    choiced: bool = False
 
     def make_shiny(self):
         """

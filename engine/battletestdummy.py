@@ -26,7 +26,6 @@ d0 = factory.create_pokemon_by_name("bulbasaur")
 e0 = factory.create_pokemon_by_name("squirtle")
 f0 = factory.create_pokemon_by_name("charmander")
 
-
 poke_list = [a0, b0, c0, d0, e0, f0]
 card_list = [x.battle_card for x in poke_list]
 

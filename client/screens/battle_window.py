@@ -113,6 +113,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                     # update and show context
                     self.context_window.set_pokemon(button.pokemon)
                     self.context_window.show()
+                    self.context_window.setWindowState(
+                        self.context_window.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive
+                    )
+                    self.context_window.activateWindow()
                     return
 
         # if no context, hide context window
@@ -158,9 +162,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.shop_pokemon_buttons.append(ShopPokemonButton(button, self.env, ''))
             prop = getattr(self, 'catch_pokemon_callback{}'.format(idx))
             button.clicked.connect(prop)
-        self.shop_pokemon_buttons = [
-            PokemonButton(qbutton, self.env, "") for qbutton in self.shopPokemon
-        ]
 
         self.exploreWilds.clicked.connect(self.roll_shop_callback)
 

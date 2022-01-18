@@ -131,33 +131,38 @@ class ShopPokemonButton(PokemonButton):
         super().__init__(button, state, default_text=default_text)
 
     def set_pokemon(self, pokemon_name: str):
+        if pokemon_name is None:
+            self.clear()
+            self.disable()
+            return
+
         pokemon_factory: PokemonFactory = self.env.pokemon_factory
-        if pokemon_name != self.pokemon.name:
+        if self.pokemon is None or pokemon_name != self.pokemon.name:
             # create new default
             self.pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
         # otherwise can assume it did not change and no need to instantiate a new one
         self.render_pokemon_card(self.pokemon)
 
-#    def render_pokemon_card(self, pokemon_name: str):
-#        """
-#        Render a Pokemon shop card (string)
-#        """
-#        if not pokemon_name:
-#            self.clear()
-#            self.disable()
-#            return
-#
-#        self.enable()
-#        sprite_manager: SpriteManager = self.env.sprite_manager
-#        sprite = sprite_manager.get_normie_sprite(pokemon_name)
-#
-#        if sprite is None:
-#            # set text to pokemon name
-#            clear_button_image(self.button)
-#            self.button.setText(pokemon_name)
-#        else:
-#            self.button.setText('')
-#            shop_manager: ShopManager = self.env.shop_manager
-#            tier = shop_manager.pokemon_tier_lookup[pokemon_name]
-#            color = shop_manager.tier_colors[tier]
-#            set_button_image(self.button, sprite, color)
+    def render_pokemon_card(self, pokemon: Pokemon):
+        """
+        Render a Pokemon shop card (string)
+        """
+        if not pokemon:
+            self.clear()
+            self.disable()
+            return
+
+        self.enable()
+        sprite_manager: SpriteManager = self.env.sprite_manager
+        sprite = sprite_manager.get_normie_sprite(pokemon.name)
+
+        if sprite is None:
+            # set text to pokemon name
+            clear_button_image(self.button)
+            self.button.setText(pokemon.nickname)
+        else:
+            self.button.setText('')
+            shop_manager: ShopManager = self.env.shop_manager
+            tier = shop_manager.pokemon_tier_lookup[pokemon.name]
+            color = shop_manager.tier_colors[tier]
+            set_button_image(self.button, sprite, color)

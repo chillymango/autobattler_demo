@@ -236,7 +236,7 @@ class ShopManager(Component):
             player.balls -= cost
         else:
             player.master_balls += -1
-        self.shop[player][idx] = None
+        self.state.shop_window[player][idx] = None
 
         # shiny logic:
         # if there are three copies of a pokemon, combine them into a superset and mark it

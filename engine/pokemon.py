@@ -27,7 +27,7 @@ class TmManager(Component):
         with open(self.CONFIG_PATH, 'r') as tm_movesets_file:
             tm_movesets_raw = tm_movesets_file.readlines()
 
-        self.tm_movesets = defaultdict(lambda: "RETURN")
+        self.tm_movesets = defaultdict(lambda: None)
         for row in tm_movesets_raw:
             pokemon, tm_move = row.split()
             self.tm_movesets[pokemon] = tm_move.strip().upper()
@@ -102,7 +102,11 @@ class PokemonFactory(Component):
 
         TODO: what's going on here
         """
-        return (self.type_reference[self.type_reference.name == name].type1.iloc[0], None)
+        type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0]
+        type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0]
+        if type2 == 'No Type':
+            type2 = None
+        return (type1, type2)
 
     def get_move_type_reference(self, move: str) -> str:
         return self.move_reference[self.move_reference.move == move].type.iloc[0]
