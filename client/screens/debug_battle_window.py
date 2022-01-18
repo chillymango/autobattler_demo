@@ -1,7 +1,11 @@
 """
 Screen should provide debug functions for the battle window
 """
+import asyncio
+import logging
 import threading
+import typing as T
+from qasync import asyncSlot
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -9,21 +13,34 @@ from engine.battle_seq import BattleManager
 from engine.logger import Logger
 from engine.match import Matchmaker
 from engine.sprites import SpriteManager
-from engine.state import GamePhase
-from engine.state import GameState
+
+from client.screens.base import GameWindow
 from utils.error_window import error_window
+from server.api.base import PlayerContextRequest
+from utils.client import AsynchronousServerClient
+from utils.client import GameServerClient
+from utils.context import GameContext
+
+if T.TYPE_CHECKING:
+    from engine.env import Environment
 
 
-class Ui(QtWidgets.QDialog):
+class Ui(QtWidgets.QDialog, GameWindow):
 
-    def __init__(self, game_state=None):
+    def __init__(self, parent, env: "Environment"):
         super(Ui, self).__init__()
-        self.game_state = game_state
-        logger: Logger = self.game_state.logger
+        self.parent = parent
+        self.env = env
+        logger: Logger = self.env.logger
         self.log = logger.log
         self.runner: threading.Thread = None
         self.stop_game = threading.Event()
-        uic.loadUi('qtassets/debug_battlewindow.ui', self)
+
+        # TODO: probably want to share client with parent window
+        loop = asyncio.get_event_loop()
+        self.client = AsynchronousServerClient(loop=loop)            
+        
+        uic.loadUi('client/qtassets/debug_battlewindow.ui', self)
 
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         #self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
@@ -64,7 +81,7 @@ class Ui(QtWidgets.QDialog):
         self.enableLogTimestamps.clicked.connect(self.enable_log_timestamps)
 
         for callback in [
-            self.update_game_phase
+            #self.update_game_phase
         ]:
             timer = QtCore.QTimer(self)
             timer.timeout.connect(callback)
@@ -72,105 +89,110 @@ class Ui(QtWidgets.QDialog):
 
         self.show()
 
+    @property
+    def context(self):
+        """
+        TODO: probably want to implement something cleaner here
+        """
+        return self.parent.context
+
     def disable_log_timestamps(self):
-        logger: Logger = self.game_state.logger
+        logger: Logger = self.env.logger
         logger.TIMESTAMPS = False
 
     def enable_log_timestamps(self):
-        logger: Logger = self.game_state.logger
+        logger: Logger = self.env.logger
         logger.TIMESTAMPS = True
 
     def disable_sprites(self):
-        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager: SpriteManager = self.env.sprite_manager
         sprite_manager.DISABLED = True
 
     def enable_sprites(self):
-        sprite_manager: SpriteManager = self.game_state.sprite_manager
+        sprite_manager: SpriteManager = self.env.sprite_manager
         sprite_manager.DISABLED = False
 
-    def add_energy_callback(self):
-        if self.game_state is None:
-            error_window("No active game")
-            return
-        
-        print("Adding 100 energy")
-        self.game_state.current_player.energy += 100
-
     def dev_console_callback(self):
-        state: GameState = self.game_state
+        env: Environment = self.env
         import IPython; IPython.embed()
 
-    def start_game_callback(self):
+    @asyncSlot()
+    async def start_game_callback(self):
         """
         Initiate the game.
         """
-        state: GameState = self.game_state
-        state.start_game()
+        #env: Environment = self.env
+        #env.start_game()
 
-        self.stop_game.clear()
+        #self.stop_game.clear()
 
-        def run_loop():
-            while not self.stop_game.is_set():
-                state.step_loop()
-
-        self.runner = threading.Thread(target=run_loop)
-        self.runner.daemon = True
-        self.runner.start()
+#        def run_loop():
+#            while not self.stop_game.is_set():
+#                env.step_loop()
+#
+#        self.runner = threading.Thread(target=run_loop)
+#        self.runner.daemon = True
+#        self.runner.start()
 
     def update_game_phase(self):
         """
         Print the current game state phase
         """
-        state: GameState = self.game_state
-        self.gamePhase.setText(state.phase.name)
+        env: Environment = self.env
+        self.gamePhase.setText(env.state.phase.name)
 
-    def make_new_matches_callback(self):
-        if self.game_state is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def make_new_matches_callback(self):
         print("Making new matches")
-        round = self.game_state.matchmaker.organize_round()
-        self.game_state.matchmaker.matches.append(round)
+        try:
+            await self.client.make_new_matches(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
 
-    def run_battle_callback(self):
-        if self.game_state is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def run_battle_callback(self):
         print("Running battle callback")
-        player = self.game_state.current_player
-        battle_manager: BattleManager = self.game_state.battle_manager
-        matchmaker: Matchmaker = self.game_state.matchmaker
-        opponent = matchmaker.get_player_opponent_in_round(player, matchmaker.current_matches)
-        result = battle_manager.player_battle(player, opponent)
-        if (result == 1):
-            print('player victory')
-        else:
-            print('creep victory')
+        # TODO: implement
+        print("This button doesn't work!!!")
 
-    def step_turn_forward_callback(self):
-        if self.game_state is None:
-            error_window("No active game")
-            return
-
+    @asyncSlot()
+    async def step_turn_forward_callback(self):
         print("Stepping turn forward one.")
-        self.game_state.turn.advance()
-        print("Turn number is now {}".format(self.game_state.turn.number))
+        try:
+            await self.client.advance_turn(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise        
 
-    def step_turn_backward_callback(self):
-        if self.game_state is None:
+    @asyncSlot()
+    async def step_turn_backward_callback(self):
+        print("Stepping turn back one.")
+        try:
+            await self.client.retract_turn(self.env.id)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise
+
+    @asyncSlot()
+    async def add_pokeballs_callback(self):
+        request = PlayerContextRequest(player=self.context.player, game_id=str(self.env.id))
+        try:
+            await self.client.add_pokeballs(request)
+        except Exception as exc:
+            print(f'Exception encountered: {exc}')
+            raise
+        print('Finished adding 100 pokeballs')
+
+    @asyncSlot()
+    async def add_energy_callback(self):
+        if self.env is None:
             error_window("No active game")
             return
+        print("Adding 100 energy")
+        request = PlayerContextRequest(player=self.context.player, game_id=str(self.env.id))
+        await self.client.add_energy(request)
+        print('Finished adding 100 energy')
 
-        print("Stepping turn backward one.")
-        self.game_state.turn.retract()
-        print("Turn number is now {}".format(self.game_state.turn.number))
-
-    def add_pokeballs_callback(self):
-        if self.game_state is None:
-            error_window("No active game")
-            return
-        
-        print("Adding 100 pokeballs")
-        self.game_state.current_player.balls += 100
+    def closeEvent(self, *args, **kwargs):
+        self.parent.debug_window = None
+        super().closeEvent(*args, **kwargs)

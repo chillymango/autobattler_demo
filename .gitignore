@@ -1,2 +1,4 @@
 *__pycache__
 *.log
+*.pyc
+current_player.json
