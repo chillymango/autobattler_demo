@@ -48,9 +48,6 @@ async def websocket_endpoint(websocket: WebSocket):
         try:
             # load a request
             request = await websocket.receive_json()
-            #request = json.loads(raw)
-            #timestamp = request['timestamp']
-            #request_type_name = request['request_type']
             try:
                 endpoint = request['endpoint']
                 print(f'WS {endpoint}')

@@ -5,7 +5,6 @@ import os
 import typing as T
 from engine.base import Component
 from engine.logger import Logger
-from engine.match import Matchmaker
 from engine.logger import __ALL_PLAYERS__
 from engine.models.player import EntityType
 from engine.models.player import Player
@@ -405,7 +404,6 @@ class BattleManager(Component):
         Battle manager also calculates damage for players and will modify player health.
         """
         state: State = self.state
-        matchmaker: Matchmaker = self.env.matchmaker
         if not state.current_matches:
             print("No matches to run")
             return
