@@ -6,11 +6,10 @@ from engine.models.state import State
 from engine.pokemon import EvolutionManager, PokemonFactory
 
 class Item:
+
     def __init__(self, name, state):
         self.name = name
         self.state = state
-        
-
 
     def use(self, player,pokemon ):
         """

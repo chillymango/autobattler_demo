@@ -1,18 +1,31 @@
-import mock
-from engine.player import EntityType, Player
+from engine.env import Environment
+from engine.models.player import EntityType, Player
 from engine.pokemon import PokemonFactory
-from engine.batterulogico import *
+#from engine.batterulogico import *
 
-state = mock.MagicMock()
-state.players = [Player('test_dummy', type_=EntityType.HUMAN)]
+class TestEnvironment(Environment):
+    """
+    Only load the things we care about testing.
 
-factory = PokemonFactory(state)
+    In this case just load the PokemonFactory
+    """
+
+    @property
+    def component_classes(self):
+        return [PokemonFactory]
+
+
+env = TestEnvironment(8)
+env.initialize()
+#factory = PokemonFactory(env, env.state)
+factory = env.pokemon_factory
 a0 = factory.create_pokemon_by_name("charmander")
 b0 = factory.create_pokemon_by_name("squirtle")
 c0 = factory.create_pokemon_by_name("bulbasaur")
 d0 = factory.create_pokemon_by_name("bulbasaur")
 e0 = factory.create_pokemon_by_name("squirtle")
 f0 = factory.create_pokemon_by_name("charmander")
+
 
 poke_list = [a0, b0, c0, d0, e0, f0]
 card_list = [x.battle_card for x in poke_list]
@@ -29,4 +42,5 @@ for index, x in enumerate(card_list):
     else:
         team2.append(x)
 
-battle(team1, team2)
+
+#battle(team1, team2)
