@@ -60,8 +60,8 @@ class Ui(QtWidgets.QMainWindow):
         clear_button_image(self.tmMoveTypeIcon)
         clear_button_image(self.pokemonPicture)
 
-    def set_pokemon(self, pokemon: Pokemon):
-        self.pokemon: Pokemon = pokemon
+    def set_pokemon(self, pokemon: "Pokemon"):
+        self.pokemon: "Pokemon" = pokemon
         if pokemon is None:
             self.clear()
             return
