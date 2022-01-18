@@ -8,11 +8,13 @@ from qasync import asyncClose
 from qasync import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
+from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
 from client.screens.base import GameWindow
+from client.screens.context_window import Ui as ContextWindow
 
 from engine.match import Matchmaker
 from engine.player import Player
@@ -21,7 +23,7 @@ from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
 from utils.buttons import PokemonButton
-from server.api.user import User
+from utils.buttons import ShopPokemonButton
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
@@ -42,6 +44,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def __init__(self, user, client: AsynchronousServerClient = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
+        self.setFixedSize(self.size())
         self.user = user
         self.websocket = WebSocketClient(websocket)
         self.client = client
@@ -59,7 +62,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         # declare child pages
         self.storage_window = None
         self.debug_window = None
-
+        self.context_window = ContextWindow(self.env)
         self.pubsub_client = PubSubClient()
         self.state = None
 
@@ -72,6 +75,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.add_party_interface()
         self.add_team_interface()
         self.add_message_interface()
+
+        # register pokemon buttons for context window
+        self.register_pokemon_buttons()
 
         self.render_functions = [
             self.render_party,
@@ -94,6 +100,46 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 return player
         return None
 
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(event)
+        if event.button() == QtCore.Qt.LeftButton:
+            print('Left Button Clicked')
+        elif event.button() == QtCore.Qt.RightButton:
+            print('Right button clicked')
+            # if the button supports pokedex context, open the window
+            for button in self._pokemon_context_buttons:
+                if button.button.underMouse():
+                    # update and show context
+                    self.context_window.set_pokemon(button.pokemon)
+                    self.context_window.show()
+                    return
+
+        # if no context, hide context window
+        self.context_window.hide()
+
+    def register_pokemon_buttons(self):
+        """
+        Find all Pokemon buttons that are a member of this window.
+
+        Each Pokemon button should support right clicking for a context pop-up (Pokedex)
+        The Pokedex should display information such as ATK, DEF, Primary / Secondary types,
+        fast move type, charged move type, etc.
+        """
+        self._pokemon_context_buttons: T.List[PokemonButton] = []
+        for attrname in dir(self):
+            if attrname.startswith('_'):
+                continue
+            attr = getattr(self, attrname)
+            if isinstance(attr, PokemonButton):
+                self._pokemon_context_buttons.add(attr)
+            elif isinstance(attr, list):
+                for item in attr:
+                    if isinstance(item, PokemonButton):
+                        self._pokemon_context_buttons.add(item)
+            # TODO: handle other kinds of containers
+            else:
+                continue
+
     def add_shop_interface(self):
         """
         Add shop interface buttons
@@ -106,7 +152,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         ]
         self.shop_pokemon_buttons = []
         for idx, button in enumerate(self.shopPokemon):
-            self.shop_pokemon_buttons.append(PokemonButton(button, self.env, ''))
+            self.shop_pokemon_buttons.append(ShopPokemonButton(button, self.env, ''))
             prop = getattr(self, 'catch_pokemon_callback{}'.format(idx))
             button.clicked.connect(prop)
         self.shop_pokemon_buttons = [
@@ -310,17 +356,18 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         player = self.player
         party = player.party
         for idx, party_member in enumerate(party):
-            party_button = self.party_pokemon_buttons[idx]
-            release_button = self.addParty[idx]
+            add_party_button = self.addParty[idx]
             item_button = self.partyItems[idx]
-            party_button.render_pokemon_card(party_member)
-
             if party_member is None:
-                release_button.setDisabled(True)
+                add_party_button.setDisabled(True)
                 item_button.setDisabled(True)
+                continue
             else:
-                release_button.setDisabled(False)
+                add_party_button.setDisabled(False)
                 item_button.setDisabled(False)
+
+            party_button = self.party_pokemon_buttons[idx]
+            party_button.set_pokemon(party_member)
 
     def render_team(self):
         player = self.player
@@ -349,7 +396,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
         for idx, pokemon_name in enumerate(shop_window[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
-            shop_button.render_shop_card(pokemon_name)
+            shop_button.render_pokemon_card(pokemon_name)
 
         # update shop location
         if self.state.turn_number:
