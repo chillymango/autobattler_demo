@@ -1,8 +1,6 @@
 """
 Manage storage and party
 """
-from os import error
-from IPython.core.application import IPYTHON_SUPPRESS_CONFIG_ERRORS
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets

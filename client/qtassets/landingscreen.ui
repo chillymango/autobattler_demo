@@ -31,6 +31,9 @@
     <property name="text">
      <string>Pokemon Auto Battler</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
    </widget>
    <widget class="QPushButton" name="createMatch">
     <property name="geometry">
@@ -68,7 +71,7 @@
      <string>Config</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_3">
+   <widget class="QPushButton" name="joinMatch">
     <property name="geometry">
      <rect>
       <x>280</x>
@@ -93,7 +96,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
