@@ -93,14 +93,14 @@ class Matchmaker(Component):
 
     @property
     def current_matches(self):
-        return self.state.matches[-1]
+        return self.matches[-1]
 
     def initialize(self):
         self.players = {
             EntityType.HUMAN: [x for x in self.state.players if x.type == EntityType.HUMAN],
             EntityType.COMPUTER: [x for x in self.state.players if x.type == EntityType.COMPUTER],
         }
-        self.state.matches = [[]]
+        self.matches = [[]]
         self.opponents_by_player = defaultdict(lambda: [])
 
 
@@ -127,13 +127,13 @@ class Matchmaker(Component):
         NOTE: this could fall out of sync with the game env, may be worth syncing
         with a global or something
         """
-        return len(self.state.matches)
+        return len(self.matches)
 
     def previous_match_between_players(self, player1, player2):
         """
         Determine what round the provided players last played a match in.
         """
-        for idx, matches in enumerate(reversed(self.state.matches)):
+        for idx, matches in enumerate(reversed(self.matches)):
             for match in matches:
                 if match.has_player(player1) and match.has_player(player2):
                     return self.turn - idx - 1
@@ -240,4 +240,4 @@ class Matchmaker(Component):
         """
         Update matches with what was played
         """
-        self.state.matches.append(self.state.current_matches)
+        self.matches.append(self.state.current_matches)

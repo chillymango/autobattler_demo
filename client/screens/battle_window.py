@@ -86,7 +86,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     def context(self):
         return GameContext(self.env, self.player)
 
-    @property   
+    @property
     def player(self):
         state: "State" = self.state
         print(state)

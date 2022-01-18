@@ -32,7 +32,6 @@ class State(BaseModel):
     players: T.List["Player"]  # list of players in the game
     shop_window_raw: T.Dict[str, T.List[T.Optional[str]]]
     current_matches: T.List["Match"]
-    matches: T.List[T.List["Match"]]
     turn_number: int
     stage: StageConfig = StageConfig(stage=0, round=0)
     t_phase_elapsed: float = 0.0
@@ -45,7 +44,6 @@ class State(BaseModel):
             players=[],
             shop_window_raw={},
             current_matches=[],
-            matches=[[]],
             turn_number=0,
         )
 

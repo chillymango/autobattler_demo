@@ -5,7 +5,6 @@ import random
 import pandas as pd
 import typing as T
 from collections import defaultdict
-from pydantic import BaseModel
 
 from engine.base import Component
 from engine.models.pokemon import BattleCard

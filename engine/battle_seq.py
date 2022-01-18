@@ -165,8 +165,8 @@ class BattleManager(Component):
         team1_live = copy.deepcopy(team1_cards)
         team2_live = copy.deepcopy(team2_cards)
 
-        team1_map = {str(x): copy.deepcopy(x.battle_card) for x in team1}
-        team2_map = {str(x): copy.deepcopy(x.battle_card) for x in team2}
+        team1_map = {x: copy.deepcopy(x.battle_card) for x in team1}
+        team2_map = {x: copy.deepcopy(x.battle_card) for x in team2}
 
         # adjust level for fight RNG
         for i in team1_live:
@@ -178,10 +178,10 @@ class BattleManager(Component):
         current_team2_pair = next(((x, y) for x, y in team2_map.items() if y.status == 1), None)
 
         while (current_team1_pair != None) & (current_team2_pair != None):
-            name1 = current_team1_pair[0]
+            name1 = current_team1_pair[0].name
             if player1:
                 name1 = "{}'s {}".format(player1.name, name1)
-            name2 = current_team2_pair[0]
+            name2 = current_team2_pair[0].name
             if player2:
                 name2 = "{}'s {}".format(player2.name, name2)
             current_team1 = current_team1_pair[1]

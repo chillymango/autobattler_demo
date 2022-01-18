@@ -10,6 +10,7 @@ from engine.player import Player
 from datetime import datetime
 from collections import namedtuple
 from engine.base import Component
+from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
@@ -21,6 +22,7 @@ __ALL_PLAYERS__ = "__ALL_PLAYERS_CONSTANT__"
 
 class Message(BaseModel):
 
+    id: str = Field(default_factory=uuid_as_str)
     msg: str
     time: float = Field(default_factory=time.time)
 
@@ -39,7 +41,6 @@ class Logger:
         """
         self.env = weakref.proxy(env)
         self.state = state  # TODO: this probably memory leaks
-        #self.message_player_queue = {player: Queue() for player in self.state.players}
         self.message_player_queue = defaultdict(lambda: Queue())
         self.message_global_queue = Queue()
 

@@ -26,8 +26,8 @@ class PlayerManager(Component):
         # base update
         # TODO: make this scale as the game goes on
         for player in self.players:
-            player.balls += 20
-            player.energy += 10
+            player.balls += 7
+            player.energy += 2
 
     def turn_cleanup(self):
         """
