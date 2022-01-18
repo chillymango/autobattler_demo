@@ -245,7 +245,12 @@ class BattleManager(Component):
             msg = "Match won by {}".format(winning_player)
             # TODO: variable losses, ties
             if losing_player is not None:
-                losing_player.hitpoints -= 2
+                if self.state.turn_number <= 4:
+                    losing_player.hitpoints -= 2
+                elif self.state.turn_number <= 7:
+                    losing_player.hitpoints -= 4
+                else:
+                    losing_player.hitpoints -= 6
 
             # send messages to involved players
             for player in match.players:
