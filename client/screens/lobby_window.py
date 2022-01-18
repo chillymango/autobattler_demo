@@ -67,7 +67,6 @@ class Ui(QtWidgets.QDialog):
 
     async def _state_callback(self, topic, data):
         state = State.parse_raw(data)
-        print(state)
 
         # if game is no longer in INITIALIZATION, open the battle window
         if state.phase not in [GamePhase.ERROR, GamePhase.COMPLETED, GamePhase.INITIALIZATION]:

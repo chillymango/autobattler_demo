@@ -362,7 +362,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         """
         # refresh references
         self.env.state = self.state = State.parse_raw(data)
-        print(self.state)
 
         for method in self.render_functions:
             try:
