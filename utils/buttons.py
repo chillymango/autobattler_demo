@@ -134,7 +134,7 @@ class ShopPokemonButton(PokemonButton):
         pokemon_factory: PokemonFactory = self.env.pokemon_factory
         if pokemon_name != self.pokemon.name:
             # create new default
-            self.pokemon = pokemon_factory.create_pokemon_by_name(pokemon)
+            self.pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
         # otherwise can assume it did not change and no need to instantiate a new one
         self.render_pokemon_card(self.pokemon)
 

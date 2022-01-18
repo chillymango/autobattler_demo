@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import traceback
 import typing as T
 import websockets
 from qasync import asyncSlot
@@ -416,6 +417,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             try:
                 method()
             except Exception as exc:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_tb(exc_traceback)
                 print(f'Failed to run {method}:\n{repr(exc)}')
 
         # if other windows are alive, update those too?

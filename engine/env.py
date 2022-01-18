@@ -147,8 +147,9 @@ class Environment:
         if not self.state.players:
             raise GameOver("No players left in game.")
 
-        if len(self.state.alive_players) == 1:
-            raise GameOver("We have a winner")
+        # TODO: figure out a better way to toggle for dev
+        #if len(self.state.alive_players) == 1:
+        #    raise GameOver("We have a winner")
 
         if self.state.phase == GamePhase.TURN_SETUP:
             # run turn setup actions
