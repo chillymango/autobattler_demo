@@ -38,6 +38,8 @@ class BattleCard(BaseModel):
     bonus_shield: int = 0
     status: int = 1
     choiced: bool = False
+    team_position: int = None
+    berry: str = None
 
     def make_shiny(self):
         """

@@ -45,7 +45,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def __init__(self, user, client: AsynchronousServerClient = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
-        #self.setFixedSize(self.size())
         self.user = user
         self.websocket = WebSocketClient(websocket)
         self.client = client
@@ -103,9 +102,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
-        if event.button() == QtCore.Qt.LeftButton:
-            print('Left Button Clicked')
-        elif event.button() == QtCore.Qt.RightButton:
+        if event.button() == QtCore.Qt.RightButton:
             print('Right button clicked')
             # if the button supports pokedex context, open the window
             for button in self._pokemon_context_buttons:
@@ -157,7 +154,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.findChild(QtWidgets.QPushButton, "shopPokemon{}".format(idx))
             for idx in range(5)
         ]
-        self.shop_pokemon_buttons = []
+        self.shop_pokemon_buttons: T.List[ShopPokemonButton] = []
         for idx, button in enumerate(self.shopPokemon):
             self.shop_pokemon_buttons.append(ShopPokemonButton(button, self.env, ''))
             prop = getattr(self, 'catch_pokemon_callback{}'.format(idx))
@@ -195,7 +192,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             for idx in range(6)
         ]
         for idx, add_party in enumerate(self.addParty):
-            #add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
             add_party.clicked.connect(getattr(self, f"add_to_team_callback{idx}"))
 
     def add_team_interface(self):
@@ -281,8 +277,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         """
         Update log messages
 
-        TODO: this is going to change a lot in multiplayer but get something working for now
-        Each player should get a unique message stream from the server.
+        TODO: don't recompute every time because it's probably getting really slow
         """
         self.logMessages.setText('\n'.join([msg.msg for msg in self.messages]))
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
@@ -345,7 +340,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                     for idx in range(6):
                         button = self.opposing_pokemon_buttons[idx]
                         pokemon = opponent.party[idx]
-                        button.render_pokemon_card(pokemon)
+                        button.set_pokemon(pokemon)
                     return
 
             self.opponentName.setText("No Match Scheduled")
@@ -365,7 +360,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             if party_member is None:
                 add_party_button.setDisabled(True)
                 item_button.setDisabled(True)
-                continue
             else:
                 add_party_button.setDisabled(False)
                 item_button.setDisabled(False)
@@ -384,7 +378,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             remove_team_member = self.removeTeamMember[idx]
             shift_team_up = self.shiftTeamMemberUp[idx]
             shift_team_down = self.shiftTeamMemberDown[idx]
-            team_member_button.render_pokemon_card(team_member)
+            team_member_button.set_pokemon(team_member)
             if team_member is None:
                 remove_team_member.setDisabled(True)
                 shift_team_up.setDisabled(True)

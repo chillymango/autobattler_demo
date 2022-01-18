@@ -135,6 +135,9 @@
      <kerning>true</kerning>
     </font>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
    <property name="readOnly">
     <bool>true</bool>
    </property>
@@ -176,6 +179,9 @@
      <kerning>true</kerning>
     </font>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
    <property name="readOnly">
     <bool>true</bool>
    </property>
@@ -216,6 +222,9 @@
     <font>
      <kerning>true</kerning>
     </font>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
    <property name="readOnly">
     <bool>true</bool>
