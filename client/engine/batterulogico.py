@@ -28,21 +28,66 @@ with open(file_path, 'r') as origin:
     pokedex = {x["speciesId"] : x for x in dataset["pokemon"]} # creates a list of all pokemon
     moves = {x["moveId"] : x for x in dataset["moves"]} # creates a list of all moves
     types = dataset['types'] # creates a list of all types and their attributes
-    
+    # how combat power modifies
+    # cpms = dataset["cpms"] or whatever
+
 # current_team1_hp = current_team1.hp_iv*pokedex[current_team1.name]["baseStats"]["hp"]
 # current_team2_hp = current_team2.hp_iv*pokedex[current_team2.name]["baseStats"]["hp"]
 
 # I assume pokemon health doesn't initialize to 0, but if it does, need to create base stats for the pokemon
 
+class Event:
+    def __init__(self, sequence_number, category, value):
+        self.id = sequence_number
+        self.type = category
+        self.value = value
+
+class Battler:
+    def __init__(self, battle_card, index):
+        self.battlecard = battle_card # so it knows what kind of pokemon it is
+
+        # initialize stats. ignoring iv for now
+        self.a = pokedex[battle_card.name]["baseStats"]["atk"]
+        # in the pokemon.js file, search for "ivs.atk" to find the real assignment variables. 
+        self.d = pokedex[battle_card.name]["baseStats"]["def"]
+        self.hp = pokedex[battle_card.name]["baseStats"]["hp"]
+        self.id = index # keep track of where on the bench it is. for keeping track of how much damage it does
+        
 def battle(team1_cards, team2_cards): # takes two arrays of battlecards
+    # creating a dictionary for output
+    output = {
+        "winner": "none",
+        "team1damagedealt": [0,0,0],
+        "team1damagetaken": [0,0,0],
+        "team2damagedealt": [0,0,0],
+        "team2damagetaken": [0,0,0],
+        "events": []
+    }
+    t1dd = t1dt = t2dd = t2dt = [0,0,0]
+    sequence = []
+    
     team1_live = copy.deepcopy(team1_cards) # create an instance of the team for the battle
     team2_live = copy.deepcopy(team2_cards)
+    
+    for index, x in enumerate(team1_live):
+        
+    team1_live[i].index = i
+    
     current_team1 = team1_live[0] # picks the leading pokemon
     current_team2 = team2_live[0]
 
-    # this breaks if there are not three pokemon
-    bench1 = [team1_live[1], team1_live[2]] # creates the initial bench for the team
-    bench2 = [team2_live[1], team2_live[2]]
+    # bench1 = [0]
+    # bench2 = [0]
+    # for i in range(len(team1_live)):
+    #     if i > 0:
+    #         bench1.append(team1_live[i])
+    # for i in range(len(team2_live)):
+    #     if i > 0:
+    #         bench2.append(team2_live[i])
+    # # this breaks if there are not three pokemon
+    # # bench1 = [team1_live[1], team1_live[2]] # creates the initial bench for the team
+    # # bench2 = [team2_live[1], team2_live[2]]
+    
     team1_switches = 5 # max number of switches the team can make
     team2_switches = 5
     
@@ -90,16 +135,27 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     survivor1 = len(team1_live) # how many pokemon left on the team
     survivor2 = len(team2_live)
     if survivor1 == survivor2 == 0: # if they're equal, then they're both 0
-        print('it was a hard-fought battle but ended in a tie')
-    elif survivor1 == 3:
-        print('you swept the other team')
-    elif survivor2 == 3:
-        print('you got wrecked')
+        # print('it was a hard-fought battle but ended in a tie')
+        output["winner"] = "tie"
+    # elif survivor1 == 3:
+        # print('you swept the other team')
+    # elif survivor2 == 3:
+        # print('you got wrecked')
 
     if survivor1 > 0:
-        print('your team had '+str(survivor1)+' pokemon standing')
+        # print('your team had '+str(survivor1)+' pokemon standing')
+        output["winner"] = "team1"
     elif survivor2 > 0:
-        print('there were still '+str(survivor2)+' enemy pokemon')
+        # print('there were still '+str(survivor2)+' enemy pokemon')
+        output["winner"] = "team2"
+
+    output["team1damagedealt"] = t1dd
+    output["team1damagetaken"] = t1dt
+    output["team2damagedealt"] = t2dd
+    output["team2damagetaken"] = t2dt
+    output["events"] = sequence
+
+    return output
 
 def launch_attack(attacker, defender): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
     fatal = False # if the attack will be fatal
@@ -173,6 +229,7 @@ def swap_pokemon(current, bench, index): # takes in pokemon, bench, and index of
     bench[index] = current
     return holder, bench
 
+# can just simulate a 1v1 to determine how the matchup is
 def check_advantage(attacker, defender, bench): # (attacker's bench). returns -1 if current is best. returns index on bench if better pokemon
     if analyze_type(attacker, defender) < 0: # can change this value if don't want to switch as often
         for i, x in enumerate(bench): # checks pokemon on the bench
