@@ -218,6 +218,7 @@ async def start_game(request: StartGameRequest):
                 try:
                     game.step_loop()
                 except GameOver:
+                    print('Game over man')
                     break
             ALL_GAMES.pop(game.id)
 

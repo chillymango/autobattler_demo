@@ -31,7 +31,6 @@ class WebSocketClient:
 
     def __init__(self, client):
         loop = asyncio.get_event_loop()
-        #self.endpoint = endpoint
         self.session = aiohttp.ClientSession(loop=loop)
         self.client: ClientWebSocketResponse = client
 

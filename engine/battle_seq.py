@@ -37,9 +37,7 @@ class BattleManager(Component):
         """
         # TODO: use this path
         if 'nt' in os.name:
-            #options = webdriver.FirefoxOptions()
             options = Options()
-            #options.binary_location = 
             self.driver = webdriver.Firefox(
                 executable_path='client\\geckodriver.exe',
                 options=options

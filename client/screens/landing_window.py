@@ -111,7 +111,7 @@ class Ui(QtWidgets.QMainWindow):
             self._battle_window.subscribe_pubsub_messages()
             print('Start client')
             self._battle_window.pubsub_client.start_client(self.server_config.pubsub_path)
-            self._battle_window.pubsub_client.wait_until_ready()
+            await self._battle_window.pubsub_client.wait_until_ready()
             self.hide()
             print('done')
         except Exception as exc:
