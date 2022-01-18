@@ -2,6 +2,7 @@ import typing as T
 from collections import namedtuple
 from pydantic import BaseModel
 from pydantic import Field
+from uuid import UUID
 
 from utils.strings import uuid_as_str
 
@@ -110,6 +111,14 @@ class Pokemon(BaseModel):
     nickname: str
     id: str = Field(default_factory=uuid_as_str)
     xp: float = 0.0
+
+    def __hash__(self):
+        try:
+            return int(UUID(self.id))
+        except Exception:
+            print(self.name)
+            print(self.id)
+            raise
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()
