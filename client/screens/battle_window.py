@@ -398,7 +398,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
         for idx, pokemon_name in enumerate(shop_window[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
-            shop_button.render_pokemon_card(pokemon_name)
+            shop_button.set_pokemon(pokemon_name)
 
         # update shop location
         if self.state.turn_number:
@@ -416,7 +416,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             try:
                 method()
             except Exception as exc:
-                print(f'Failed to run {method}')
+                print(f'Failed to run {method}:\n{repr(exc)}')
 
         # if other windows are alive, update those too?
         if self.storage_window is not None:
