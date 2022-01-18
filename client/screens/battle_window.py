@@ -89,7 +89,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @property
     def player(self):
         state: "State" = self.state
-        print(state)
         for player in state.players:
             if player.id == self.user.id:
                 return player
@@ -235,7 +234,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         TODO: this is going to change a lot in multiplayer but get something working for now
         Each player should get a unique message stream from the server.
         """
-        print(self.messages)
         self.logMessages.setText('\n'.join([msg.msg for msg in self.messages]))
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
 
