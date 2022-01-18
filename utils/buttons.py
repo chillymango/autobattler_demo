@@ -125,7 +125,7 @@ class ShopPokemonButton(PokemonButton):
     """
 
     def __init__(self, button, state, default_text=""):
-        super().__init(button, state, default_text=default_text)
+        super().__init__(button, state, default_text=default_text)
 
     def render_pokemon_card(self, pokemon_name: str):
         """

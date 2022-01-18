@@ -44,7 +44,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def __init__(self, user, client: AsynchronousServerClient = None, game_id: str = None, websocket = None):
         super(Ui, self).__init__()
-        self.setFixedSize(self.size())
+        #self.setFixedSize(self.size())
         self.user = user
         self.websocket = WebSocketClient(websocket)
         self.client = client
@@ -129,13 +129,15 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         for attrname in dir(self):
             if attrname.startswith('_'):
                 continue
-            attr = getattr(self, attrname)
+            attr = getattr(self, attrname, None)
+            if not attr:
+                continue
             if isinstance(attr, PokemonButton):
-                self._pokemon_context_buttons.add(attr)
+                self._pokemon_context_buttons.append(attr)
             elif isinstance(attr, list):
                 for item in attr:
                     if isinstance(item, PokemonButton):
-                        self._pokemon_context_buttons.add(item)
+                        self._pokemon_context_buttons.append(item)
             # TODO: handle other kinds of containers
             else:
                 continue
