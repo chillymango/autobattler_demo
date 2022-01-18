@@ -165,14 +165,65 @@ class Berry(CombatItem):
             card.health += self.health_factor * card.hp_iv  # TODO: mark max health here
 
     @classmethod
-    def create_oran_berry(cls):
+    def oran_berry_factory(cls):
         """
         Example oran berry factory
         """
         return cls(name='Oran Berry', health_factor=0.1)
 
 
-# EXAMPLE:
+class TM(InstantPokemonItem):
+
+    def use(self):
+        card: BattleCard = self.pokemon.battle_card
+        if card.tm_flag != True:
+            self.consumed = True
+            self.pokemon.battle_card.tm_flag = True
+    @classmethod
+    def tm_factory(cls):
+        """
+        tm factory
+        """
+        return cls(name = 'TM')
+
+
+class ChoiceItem(InstantPokemonItem):
+
+    def use(self):
+        card: BattleCard = self.pokemon.battle_card
+        if card.choiced == 'No':
+            self.consumed = True
+            if self.name == 'Choice Band':
+                card.choiced = 'Fast'
+                card.move_f = 'YAWN'
+                card.f_move_type = 'Normal'
+                card.attackbuff += 2
+            elif self.name == 'Choice Specs':
+                card.choiced == 'Charged'
+                card.move_ch = 'FRUSTRATION'
+                card.ch_move_type = 'Normal'
+                card.tm_flag = 1
+                card.tm_move_type = 'Normal'
+                card.move_tm = 'STRUGGLE'
+                card.attackbuff += 2
+            elif self.name == 'Choice Scarf':
+                card.choiced = 'Fast-Speed'
+                card.spdbuff = 0.66
+                card.move_f = 'YAWN'
+                card.f_move_type = 'Normal'
+
+    @classmethod
+    def choice_band_factory(cls):
+        return cls(name = 'Choice Band')
+
+    @classmethod
+    def choice_specs_factory(cls):
+        return cls(name = 'Choice Specs')
+
+    @classmethod
+    def choice_scarf_factory(cls):
+        return cls(name = 'Choice Scarf')
+
 # INSTANT ITEM
 class Stone(InstantPokemonItem):
 
