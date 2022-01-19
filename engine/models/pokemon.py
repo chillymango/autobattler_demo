@@ -1,10 +1,15 @@
+from __future__ import annotations
 import typing as T
 from collections import namedtuple
 from pydantic import BaseModel
 from pydantic import Field
 from uuid import UUID
 
+from engine.models.items import Item
 from utils.strings import uuid_as_str
+
+if T.TYPE_CHECKING:
+    from engine.models.player import Player
 
 EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolve"])
 
@@ -39,7 +44,7 @@ class BattleCard(BaseModel):
     status: int = 1
     choiced: bool = False
     team_position: int = None
-    berry: str = None
+    berry: Item = None
 
     def make_shiny(self):
         """
@@ -114,6 +119,7 @@ class Pokemon(BaseModel):
     nickname: str
     id: str = Field(default_factory=uuid_as_str)
     xp: float = 0.0
+    player: T.Any = None  # TODO: break circ import
 
     def __hash__(self):
         try:

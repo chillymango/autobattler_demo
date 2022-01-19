@@ -5,11 +5,13 @@
 # maybe we just do a `mutate` function or something
 import typing as T
 from pydantic import BaseModel
-from engine.match import Match
-from engine.player import Player
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 from engine.models.stage_config import StageConfig
+from engine.models.player import Player
+from engine.models.match import Match
 
+if T.TYPE_CHECKING:
+    pass
 
 SHOP_SIZE = 5
 

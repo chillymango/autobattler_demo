@@ -4,37 +4,100 @@ Item Manager
 import typing as T
 
 from engine.base import Component
+from engine.models.items import Berry, InstantPlayerItem, PersistentPlayerItem, PersistentPokemonItem
+from engine.models.items import CombatItem
+from engine.models.items import InstantPokemonItem
 from engine.models.items import Item
+from engine.models.items import MasterBall
+from engine.models.items import PlayerItem
+from engine.models.items import PokeFlute
 from engine.models.items import PokemonItem
+from engine.models.items import Stone
+from engine.player import PlayerManager
 
 if T.TYPE_CHECKING:
     from engine.models.pokemon import Pokemon
+    from engine.models.player import Player
 
 
 class ItemManager(Component):
     """
-    Manage items
+    Manage items and their relationships to players and Pokemon
     """
 
     def initialize(self):
-        self._player_items: T.List[Item] = []
-        self._pokemon_items: T.List[Item] = []
+        self._items: T.Dict[T.Type, T.Set[Item]] = dict()
+        self._items[InstantPlayerItem] = set()
+        self._items[PersistentPlayerItem] = set()
+        self._items[InstantPokemonItem] = set()
+        self._items[PersistentPokemonItem] = set()
 
-        # input all types of items
+        # initialize factories for all known item types
+        self._item_factory: T.Dict[T.Type, T.Dict[str, T.Callable]] = dict()
+        self._item_factory[InstantPlayerItem] = dict(
+            master_ball=MasterBall,
+        )
+        self._item_factory[PersistentPlayerItem] = dict(
+            poke_flute=PokeFlute,
+        )
+        self._item_factory[InstantPokemonItem] = dict(
+            # stones
+            fire_stone=Stone.fire_stone_factory,
+            water_stone=Stone.water_stone_factory,
+            # ... etc
+        )
+        self._item_factory[PersistentPokemonItem] = dict(
+            # berries
+            oran_berry=Berry.oran_berry_factory,
+            # ... etc
+        )
+
+    @property
+    def combat_items(self) -> T.Set[CombatItem]:
+        """
+        Return a set of all combat items
+        """
+        return set(
+            x for x in self._item_factory[PersistentPokemonItem] if isinstance(x, CombatItem)
+        )
+
+    def remove_orphaned_items(self):
+        """
+        Items that are not in a player inventory or given to a Pokemon are orphaned.
+
+        NOTE: this should just print warnings because it's a sign of sloppy programming
+        """
+        for item_set in self._items.values():
+            for item in item_set:
+                if isinstance(item, PokemonItem):
+                    if item.pokemon is None and item.player is None:
+                        print(f'Item {item} was orphaned and sad')
+                        item_set.remove(item)
+                elif isinstance(item, PlayerItem):
+                    if item.player is None:
+                        print(f'Item {item} was orphaned and sad')
+                        item_set.remove(item)
 
     def remove_consumed_items(self):
         """
         Check all item lists
         """
-        self._remove_consumed_from_item_list(self._player_items)
-        self._remove_consumed_from_item_list(self._pokemon_items)
+        for items in self._items.values():
+            self._remove_consumed_from_item_list(items)
 
-    def _remove_consumed_from_item_list(self, item_list: T.List[Item]):
-        for item in item_list:
+    def _remove_consumed_from_item_list(self, items: T.Set[Item]):
+        for item in items:
             if item.consumed:
-                item_list.remove(item)
+                items.remove(item)
+                if isinstance(item, PokemonItem):
+                    if item.pokemon is not None:
+                        item.pokemon.berry = None
+                elif isinstance(item, PlayerItem):
+                    if item.player is not None:
+                        item.player.inventory.remove(item)
+                        item.player = None
 
-    def create_item(self, item_name):
+    def create_item(self, item_name: str):
         """
         Instantiate an item object
 
@@ -42,13 +105,62 @@ class ItemManager(Component):
         list. This way the correct list of item callbacks can be grabbed when running game state
         changes during phase updates.
         """
-        # TODO: implement LOL
+        if item_name not in self._item_factory:
+            raise Exception(f"Unsupported item {item_name}")
+        instant = self._item_factory[item_name]()
+        if isinstance(instant, PokemonItem):
+            self._pokemon_items.add(instant)
+        elif isinstance(instant, PlayerItem):
+            self._player_items.add(instant)
+        return instant
 
-    def use_instant_pokemon_item(self, item: PokemonItem, pokemon: Pokemon = None):
-        if item.pokemon is None and pokemon is None:
+    def create_item_for_player(self, item_name: str, player: "Player"):
+        """
+        Create an item and give it to a player
+        """
+        item = self.create_item(item_name)
+        # giving logic happens here
+        item.player = player
+        player.inventory.add(item)
+
+    def give_item_to_pokemon(self, item: PokemonItem, pokemon: "Pokemon", force: bool = False):
+        """
+        Give an item to a Pokemon from a player inventory
+
+        When this happens, remove it from player inventory.
+        """
+        # check if pokemon is already holding an item, and force it back into player inventory if
+        # specified to do so
+        player_manager: PlayerManager = self.env.player_manager
+        if pokemon.battle_card.berry:
+            if not force:
+                raise Exception(f"Pokemon {pokemon.nickname} is already holding an item")
+            removed_item = pokemon.battle_card.berry
+            # send back to player inventory
+            pokemon_holder = player_manager.get_pokemon_holder(pokemon)
+            pokemon_holder.inventory.add(removed_item)
+
+        # set object relationships and remove item from player
+        pokemon.battle_card.berry = item
+        item.pokemon = pokemon
+
+    def create_item_for_pokemon(self, item_name: str, pokemon: "Pokemon"):
+        """
+        Create an item and give it to a pokemon
+        """
+        item = self.create_item(item_name)
+        # giving logic happens here
+        item.pokemon = pokemon
+        pokemon.battle_card.berry = item
+
+    def use_instant_pokemon_item(self, item: InstantPokemonItem, pokemon: "Pokemon" = None):
+        if pokemon is not None:
+            item.pokemon = pokemon
+        if item.pokemon is None:
             raise Exception("Item not assigned to anyone")
         item.use()
         # mark as consumed if successful
+        # cleanup collection should remove reference from Pokemon
         item.consumed = True
 
     def assign_item_to_pokemon(self, item: PokemonItem, pokemon: Pokemon):
@@ -78,3 +190,4 @@ class ItemManager(Component):
         for item in self._player_items:
             item.turn_cleanup()
         self.remove_consumed_items()
+        self.remove_orphaned_items()

@@ -19,7 +19,7 @@ from engine.pubsub import PubSubInterface
 from engine.shop import ShopManager
 from engine.models.state import State
 from engine.turn import Turn
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 
 
 class GameOver(Exception):

@@ -1,15 +1,19 @@
 """
 Items and Inventory
+
+TODO: split this into multiple modules
 """
 import typing as T
 
 from pydantic import BaseModel
 from pydantic import Field
-from engine.models.state import State
-from engine.pokemon import EvolutionManager, PokemonFactory
 from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
+    # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
+    # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
+    from engine.env import Environment
+    from engine.pokemon import EvolutionManager, PokemonFactory
     from engine.models.player import Player
     from engine.models.pokemon import BattleCard
     from engine.models.pokemon import Pokemon
@@ -21,9 +25,16 @@ class Item(BaseModel):
     """
 
     name: str  # not unique, all subclasses should define a default here though
-    id: Field(default=uuid_as_str)
+    id: str = Field(default_factory=uuid_as_str)
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
+
+    def __init__(self, env: "Environment", **kwargs):
+        """
+        Hydrate each item instance with any other required keyword inputs and set env
+        """
+        super().__init__(**kwargs)
+        self.env: "Environment" = env
 
 
 class PersistentItemMixin:
@@ -59,9 +70,9 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    def __init__(self, *args, player: Player = None, **kwargs):
+    def __init__(self, *args, player: "Player" = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.player = None
+        self.player: "Player" = None
 
 
 class PokemonItem(Item):
@@ -71,7 +82,8 @@ class PokemonItem(Item):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pokemon = None
+        self.pokemon: "Pokemon" = None
+        self.player: "Player" = None
 
 
 class CombatItem(PokemonItem):
@@ -81,19 +93,35 @@ class CombatItem(PokemonItem):
     The battle sequencer should handle this
     """
 
-    def pre_combat_action(self):
+    def pre_combat_action(self, opponent: "Pokemon"):
         """
         During battle sequencing, run this before each individual combat
         """
-        if not self.pokemon:
-            return
+        pass
 
-    def post_combat_action(self):
+    def on_tick_action(self, opponent: "Pokemon"):
+        """
+        Run this action on all ticks
+        """
+        pass
+
+    def on_fast_move_action(self, opponent: "Pokemon"):
+        """
+        Run this action on all fast hits
+        """
+        pass
+
+    def on_charged_move_action(self, opponent: "Pokemon"):
+        """
+        Run this action on all charged moves
+        """
+        pass
+
+    def post_combat_action(self, opponent: "Pokemon"):
         """
         During battle sequencing, run this after each individual combat
         """
-        if not self.pokemon:
-            return
+        pass
 
 
 class InstantItemMixin:
@@ -157,7 +185,7 @@ class Berry(CombatItem):
         Increment health if Pokemon fought and is still alive
         """
         super().pre_combat_action()  # check if Berry is assigned first
-        card: BattleCard = self.pokemon.battle_card
+        card: "BattleCard" = self.pokemon.battle_card
         if card.health > 0:  # TODO: add a check here on whether the Pokemon fought
             # mark the berry as consumed
             self.consumed = True
@@ -175,10 +203,11 @@ class Berry(CombatItem):
 class TM(InstantPokemonItem):
 
     def use(self):
-        card: BattleCard = self.pokemon.battle_card
+        card: "BattleCard" = self.pokemon.battle_card
         if card.tm_flag != True:
             self.consumed = True
             self.pokemon.battle_card.tm_flag = True
+
     @classmethod
     def tm_factory(cls):
         """
@@ -190,7 +219,7 @@ class TM(InstantPokemonItem):
 class ChoiceItem(InstantPokemonItem):
 
     def use(self):
-        card: BattleCard = self.pokemon.battle_card
+        card: "BattleCard" = self.pokemon.battle_card
         if card.choiced == 'No':
             self.consumed = True
             if self.name == 'Choice Band':
@@ -264,7 +293,7 @@ class PokeFlute(PersistentPlayerItem):
             return
         if self.uses_left > 0:
             self.uses_left -= 1
-            player: Player = self.player
+            player: "Player" = self.player
             player.flute_charges += 1
 
     def turn_cleanup(self):
@@ -280,7 +309,7 @@ class MasterBall(InstantPlayerItem):
 
     ball_count: int = 1
 
-    def use(self, player: Player = None):
+    def use(self, player: "Player" = None):
         """
         Add a masterball
         """
@@ -294,7 +323,7 @@ class MasterBall(InstantPlayerItem):
 
 ## OLDER STUFF BELOW HERE ##
 
-class Berry:
+class _Berry:
     def __init__(self, name, ):
         self.name = name
         
@@ -316,7 +345,7 @@ class Berry:
                 print('None present in inventory')
 
 
-class PlayerItem:
+class _PlayerItem:
     def __init__(self, name, ):
         self.name = name
 
@@ -344,7 +373,7 @@ class PlayerItem:
                 print('None present in inventory')
 
 
-class PokePermItem(BaseModel):
+class _PokePermItem(BaseModel):
 
     name: str
 
@@ -358,14 +387,14 @@ class PokePermItem(BaseModel):
                 player.remove_item(self.name)
 
 
-class OldItemClass:
+class _OldItemClass:
     # OLDER DEFINITIONS
     def use(self, player, pokemon):
         """
         check to see if the item is in the inventory, then use it if it is there
         """
-        evolution_manager: EvolutionManager = self.state.evolution_manager
-        pokemon_factory: PokemonFactory = self.state.pokemon_factory
+        evolution_manager: "EvolutionManager" = self.state.evolution_manager
+        pokemon_factory: "PokemonFactory" = self.state.pokemon_factory
         if self.name in player.inventory.keys():
             if player.inventory[self.name] > 0:
                 """
@@ -540,3 +569,7 @@ class OldItemClass:
                 print('None present in inventory')
         else:
                 print('None present in inventory')
+
+# type annotations
+AllPokemonItems = T.Union[PersistentPokemonItem, InstantPokemonItem]
+AllPlayerItems = T.Union[PersistentPlayerItem, InstantPlayerItem]
