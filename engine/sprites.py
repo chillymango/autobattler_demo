@@ -49,5 +49,5 @@ class SpriteManager(Component):
 
     def get_type_sprite(self, type_name):
         if not self.DISABLED:
-            return self.shiny_sprites[type_name]
+            return self.type_sprites[type_name]
         return None

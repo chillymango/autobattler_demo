@@ -1,0 +1,23 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>../sprites/blank_filler.png</file>
+    <file>../sprites/typeicons/Bug.png</file>
+    <file>../sprites/typeicons/Dark.png</file>
+    <file>../sprites/typeicons/Dragon.png</file>
+    <file>../sprites/typeicons/Electric.png</file>
+    <file>../sprites/typeicons/Fairy.png</file>
+    <file>../sprites/typeicons/Fighting.png</file>
+    <file>../sprites/typeicons/Fire.png</file>
+    <file>../sprites/typeicons/Flying.png</file>
+    <file>../sprites/typeicons/Ghost.png</file>
+    <file>../sprites/typeicons/Grass.png</file>
+    <file>../sprites/typeicons/Ground.png</file>
+    <file>../sprites/typeicons/Ice.png</file>
+    <file>../sprites/typeicons/Normal.png</file>
+    <file>../sprites/typeicons/Poison.png</file>
+    <file>../sprites/typeicons/Psychic.png</file>
+    <file>../sprites/typeicons/Rock.png</file>
+    <file>../sprites/typeicons/Steel.png</file>
+    <file>../sprites/typeicons/Water.png</file>
+  </qresource>
+</RCC>

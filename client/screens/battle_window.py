@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import traceback
 import typing as T
 import websockets
 from qasync import asyncSlot
@@ -8,11 +9,13 @@ from qasync import asyncClose
 from qasync import QEventLoop
 from fastapi_websocket_pubsub import PubSubClient
 from fastapi_websocket_rpc.logger import logging_config, LoggingModes
+from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment
 from client.screens.base import GameWindow
+from client.screens.context_window import Ui as ContextWindow
 
 from engine.match import Matchmaker
 from engine.player import Player
@@ -21,7 +24,7 @@ from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
 from utils.buttons import PokemonButton
-from server.api.user import User
+from utils.buttons import ShopPokemonButton
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
@@ -59,7 +62,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         # declare child pages
         self.storage_window = None
         self.debug_window = None
-
+        self.context_window = ContextWindow(self.env)
         self.pubsub_client = PubSubClient()
         self.state = None
 
@@ -72,6 +75,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.add_party_interface()
         self.add_team_interface()
         self.add_message_interface()
+
+        # register pokemon buttons for context window
+        self.register_pokemon_buttons()
 
         self.render_functions = [
             self.render_party,
@@ -94,6 +100,50 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 return player
         return None
 
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(event)
+        if event.button() == QtCore.Qt.RightButton:
+            print('Right button clicked')
+            # if the button supports pokedex context, open the window
+            for button in self._pokemon_context_buttons:
+                if button.button.underMouse():
+                    # update and show context
+                    self.context_window.set_pokemon(button.pokemon)
+                    self.context_window.show()
+                    self.context_window.setWindowState(
+                        self.context_window.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive
+                    )
+                    self.context_window.activateWindow()
+                    return
+
+        # if no context, hide context window
+        self.context_window.hide()
+
+    def register_pokemon_buttons(self):
+        """
+        Find all Pokemon buttons that are a member of this window.
+
+        Each Pokemon button should support right clicking for a context pop-up (Pokedex)
+        The Pokedex should display information such as ATK, DEF, Primary / Secondary types,
+        fast move type, charged move type, etc.
+        """
+        self._pokemon_context_buttons: T.List[PokemonButton] = []
+        for attrname in dir(self):
+            if attrname.startswith('_'):
+                continue
+            attr = getattr(self, attrname, None)
+            if not attr:
+                continue
+            if isinstance(attr, PokemonButton):
+                self._pokemon_context_buttons.append(attr)
+            elif isinstance(attr, list):
+                for item in attr:
+                    if isinstance(item, PokemonButton):
+                        self._pokemon_context_buttons.append(item)
+            # TODO: handle other kinds of containers
+            else:
+                continue
+
     def add_shop_interface(self):
         """
         Add shop interface buttons
@@ -104,14 +154,11 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.findChild(QtWidgets.QPushButton, "shopPokemon{}".format(idx))
             for idx in range(5)
         ]
-        self.shop_pokemon_buttons = []
+        self.shop_pokemon_buttons: T.List[ShopPokemonButton] = []
         for idx, button in enumerate(self.shopPokemon):
-            self.shop_pokemon_buttons.append(PokemonButton(button, self.env, ''))
+            self.shop_pokemon_buttons.append(ShopPokemonButton(button, self.env, ''))
             prop = getattr(self, 'catch_pokemon_callback{}'.format(idx))
             button.clicked.connect(prop)
-        self.shop_pokemon_buttons = [
-            PokemonButton(qbutton, self.env, "") for qbutton in self.shopPokemon
-        ]
 
         self.exploreWilds.clicked.connect(self.roll_shop_callback)
 
@@ -145,7 +192,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             for idx in range(6)
         ]
         for idx, add_party in enumerate(self.addParty):
-            #add_party.clicked.connect(functools.partial(self.add_to_team_callback, idx))
             add_party.clicked.connect(getattr(self, f"add_to_team_callback{idx}"))
 
     def add_team_interface(self):
@@ -231,8 +277,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         """
         Update log messages
 
-        TODO: this is going to change a lot in multiplayer but get something working for now
-        Each player should get a unique message stream from the server.
+        TODO: don't recompute every time because it's probably getting really slow
         """
         self.logMessages.setText('\n'.join([msg.msg for msg in self.messages]))
         self.logMessages.moveCursor(QtGui.QTextCursor.End)
@@ -295,7 +340,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                     for idx in range(6):
                         button = self.opposing_pokemon_buttons[idx]
                         pokemon = opponent.party[idx]
-                        button.render_pokemon_card(pokemon)
+                        button.set_pokemon(pokemon)
                     return
 
             self.opponentName.setText("No Match Scheduled")
@@ -310,17 +355,17 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         player = self.player
         party = player.party
         for idx, party_member in enumerate(party):
-            party_button = self.party_pokemon_buttons[idx]
-            release_button = self.addParty[idx]
+            add_party_button = self.addParty[idx]
             item_button = self.partyItems[idx]
-            party_button.render_pokemon_card(party_member)
-
             if party_member is None:
-                release_button.setDisabled(True)
+                add_party_button.setDisabled(True)
                 item_button.setDisabled(True)
             else:
-                release_button.setDisabled(False)
+                add_party_button.setDisabled(False)
                 item_button.setDisabled(False)
+
+            party_button = self.party_pokemon_buttons[idx]
+            party_button.set_pokemon(party_member)
 
     def render_team(self):
         player = self.player
@@ -333,7 +378,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             remove_team_member = self.removeTeamMember[idx]
             shift_team_up = self.shiftTeamMemberUp[idx]
             shift_team_down = self.shiftTeamMemberDown[idx]
-            team_member_button.render_pokemon_card(team_member)
+            team_member_button.set_pokemon(team_member)
             if team_member is None:
                 remove_team_member.setDisabled(True)
                 shift_team_up.setDisabled(True)
@@ -349,7 +394,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
         for idx, pokemon_name in enumerate(shop_window[self.player]):
             shop_button = self.shop_pokemon_buttons[idx]
-            shop_button.render_shop_card(pokemon_name)
+            shop_button.set_pokemon(pokemon_name)
 
         # update shop location
         if self.state.turn_number:
@@ -367,7 +412,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             try:
                 method()
             except Exception as exc:
-                print(f'Failed to run {method}')
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_tb(exc_traceback)
+                print(f'Failed to run {method}:\n{repr(exc)}')
 
         # if other windows are alive, update those too?
         if self.storage_window is not None:
