@@ -6,6 +6,7 @@ TODO: split this into multiple modules
 import typing as T
 
 from pydantic import BaseModel
+from pydantic import PrivateAttr
 from engine.models.base import Entity
 
 if T.TYPE_CHECKING:
@@ -27,13 +28,14 @@ class Item(Entity):
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
     holder: Entity = None
+    _env: "Environment" = PrivateAttr()
 
     def __init__(self, env: "Environment", **kwargs):
         """
         Hydrate each item instance with any other required keyword inputs and set env
         """
         super().__init__(**kwargs)
-        self.env: "Environment" = env
+        self._env = env
 
 
 class PersistentItemMixin:
@@ -69,11 +71,15 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
+    holder: "Player" = None
+
 
 class PokemonItem(Item):
     """
     Base class for items which get assigned to Pokemon
     """
+
+    holder: "Pokemon" = None
 
 
 class CombatItem(PokemonItem):
@@ -131,20 +137,38 @@ class InstantItemMixin:
     Item that gets used immediately
     """
 
-    def immediate_action(self, player=None):
+    def can_use(self):
+        """
+        TODO: implement defaults
+
+        Probably want to set this on game phase, e.g cannot activate pokemon upgrades
+        during combat phases
+        """
+        return True
+
+    def immediate_action(self):
         """
         Use item
         """
-        if player is not None:
-            self.player = player
-        if self.player is None:
-            raise Exception(f"No action target for item {self.name} ({self.id})")
-
+        if not self.can_use():
+            return
         self.use()
+        self.record_consumption()
+
+    def record_consumption(self):
+        """
+        By default this just sets the consumed flag to True.
+
+        More complex consumption criteria could count number of uses or something like that.
+        """
+        self.consumed = True
 
     def use(self):
         """
         Child classes define usage actions
+
+        The target should be available at self.pokemon if the target is a Pokemon, or
+        at self.player if the target is a Player.
         """
         raise NotImplementedError
 
@@ -179,7 +203,7 @@ class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
 class Berry(CombatItem):
 
     name: str = "Berry"  # assign a default name here
-    consumed: bool = False  # instantiate to True, garbage collect
+    consumed: bool = False  # set to True, garbage collect
     health_factor: float = 0.0
 
     def post_combat_action(self):
@@ -195,11 +219,11 @@ class Berry(CombatItem):
             card.health += self.health_factor * card.hp_iv  # TODO: mark max health here
 
     @classmethod
-    def oran_berry_factory(cls):
+    def oran_berry_factory(cls, env: "Environment"):
         """
         Example oran berry factory
         """
-        return cls(name='Oran Berry', health_factor=0.1)
+        return cls(env, name='Oran Berry', health_factor=0.1)
 
 
 class TM(InstantPokemonItem):
@@ -273,17 +297,18 @@ class Stone(InstantPokemonItem):
             raise Exception("Unsupported stone type {}".format())
 
     @classmethod
-    def fire_stone_factory(cls):
-        return cls(name="Fire Stone", target_type="Fire")
+    def fire_stone_factory(cls, env: "Environment"):
+        return cls(env, name="Fire Stone", target_type="Fire")
 
     @classmethod
-    def water_stone_factory(cls):
-        return cls(name="Water Stone", target_type="Water")
+    def water_stone_factory(cls, env: "Environment"):
+        return cls(env, name="Water Stone", target_type="Water")
 
 
 # EXAMPLE: PERSISTENT PLAYER ITEM
 class PokeFlute(PersistentPlayerItem):
 
+    name: str = "Poke Flute"
     # can define additional fields for item flexibility
     uses_left: int = 5  # can be passed as construction argument
 
@@ -309,6 +334,7 @@ class PokeFlute(PersistentPlayerItem):
 # EXAMPLE: INSTANT PLAYER ITEM
 class MasterBall(InstantPlayerItem):
 
+    name: str = "Master Ball"
     ball_count: int = 1
 
     def use(self, player: "Player" = None):

@@ -14,6 +14,13 @@ class PlayerInventoryManager(Component):
     Manages relationships between players and items
     """
 
+    ENV_PROXY = "inventory"
+
+    def dependencies(self) -> T.List:
+        return [
+            ItemManager,  # need to build items with this
+        ]
+
     def initialize(self):
         """
         Instantiate player / item relationships
@@ -63,5 +70,18 @@ class PlayerInventoryManager(Component):
 
         # after validation checks pass we should move the item out of player inventory, move it
         # into the Pokemon battle card, and then change the item holder
-        # NOTE: transactions should be atomic
-        pass
+        # TODO: make this block of operations atomic to prevent lost items
+        player.inventory.remove(item)
+        pokemon.battle_card.berry = item
+        item.holder = pokemon
+
+    def take_item_from_pokemon(self, pokemon: Pokemon):
+        """
+        Remove an item from a Pokemon and put it in its players inventory.
+        """
+        player: Player = pokemon.player
+        item = pokemon.battle_card.berry
+        # TODO: make this block of operations atomic to prevent lost items
+        pokemon.battle_card.berry = None
+        player.inventory.add(item)
+        item.holder = player
