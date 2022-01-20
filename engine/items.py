@@ -13,7 +13,6 @@ from engine.models.items import PlayerItem
 from engine.models.items import PokeFlute
 from engine.models.items import PokemonItem
 from engine.models.items import Stone
-from engine.player import PlayerManager
 
 if T.TYPE_CHECKING:
     from engine.models.pokemon import Pokemon

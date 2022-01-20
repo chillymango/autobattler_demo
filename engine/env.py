@@ -10,6 +10,7 @@ from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
+from engine.items import ItemManager
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import PlayerManager
@@ -44,6 +45,7 @@ class Environment:
         return [
             #Logger,  # this always has to go first -- TODO: fix this shit
             Turn,
+            ItemManager,
             PlayerManager,
             TmManager,
             PokemonFactory,

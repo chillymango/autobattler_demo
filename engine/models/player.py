@@ -101,7 +101,7 @@ class Player(BaseModel):
                 if member is None:
                     self.party[idx] = pokemon
                     return True
-        
+
         return False
 
     def release_from_party(self, idx):

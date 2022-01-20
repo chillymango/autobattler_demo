@@ -122,11 +122,12 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     team2_switches = 5
     
     while (len(team1_live) != 0 and len(team2_live) != 0): # while there are pokemon alive for a team
+        # STATE: START TURN
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
 
         # if bad matchup, switch
-# THIS NEEDS WORK, IF WANT TO TRY 1V1        
+# THIS NEEDS WORK, IF WANT TO TRY 1V1
         index1 = check_advantage(current_team1, current_team2, bench1) # the index on bench for best pokemon
         index2 = check_advantage(current_team2, current_team1, bench2)
 #        index1 = matchup(current_team1, current_team2, bench1)
@@ -144,7 +145,7 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
             sequence.append(Event(-1, "switch", "team 2"))
             can_attack_2 = False
             team2_switches -= 1
-       
+
         # was considering making array of possible moves, but handled in optimal moves function
 
         pokemon1_dead = False # at the resolution of a turn, will decide if pokemon is switched   

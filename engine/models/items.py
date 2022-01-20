@@ -83,33 +83,45 @@ class CombatItem(PokemonItem):
     The battle sequencer should handle this
     """
 
-    def pre_combat_action(self, opponent: "Pokemon"):
+    def pre_battle_action(self, context: T.Dict):
+        """
+        Run this before any fighting happens
+        """
+        pass
+
+    def pre_combat_action(self, context: T.Dict):
         """
         During battle sequencing, run this before each individual combat
         """
         pass
 
-    def on_tick_action(self, opponent: "Pokemon"):
+    def on_tick_action(self, context: T.Dict):
         """
         Run this action on all ticks
         """
         pass
 
-    def on_fast_move_action(self, opponent: "Pokemon"):
+    def on_fast_move_action(self, context: T.Dict):
         """
         Run this action on all fast hits
         """
         pass
 
-    def on_charged_move_action(self, opponent: "Pokemon"):
+    def on_charged_move_action(self, context: T.Dict):
         """
         Run this action on all charged moves
         """
         pass
 
-    def post_combat_action(self, opponent: "Pokemon"):
+    def post_combat_action(self, context: T.Dict):
         """
         During battle sequencing, run this after each individual combat
+        """
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        Run this after all fighting happens
         """
         pass
 

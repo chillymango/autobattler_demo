@@ -40,6 +40,13 @@ class Component:
 
     ENV_PROXY = None
 
+    @property
+    def dependencies(self) -> T.List:
+        """
+        TODO: implement
+        """
+        return []
+
     def __init__(self, env: "Environment", state: "State"):
         self.env = weakref.proxy(env)
         self.state = state  # TODO: this probably memory leaks

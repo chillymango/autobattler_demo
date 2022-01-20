@@ -6,6 +6,7 @@ import typing as T
 from engine.base import Component
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
+from engine.items import ItemManager
 
 
 class PlayerManager(Component):
