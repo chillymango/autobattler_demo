@@ -43,6 +43,8 @@ class ItemManager(Component):
     Manage items and their relationships to players and Pokemon
     """
 
+    ENV_PROXY = "item"
+
     def initialize(self):
         # set up submanagers
         self._items = set()

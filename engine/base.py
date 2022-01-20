@@ -43,7 +43,7 @@ class Component:
     @property
     def dependencies(self) -> T.List:
         """
-        TODO: implement
+        TODO: implement this to make components declare components that this one depends on
         """
         return []
 

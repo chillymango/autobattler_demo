@@ -18,6 +18,10 @@ import json
 import copy
 
 import os.path
+import typing as T
+from pydantic import BaseModel
+from engine.models.items import CombatItem
+from engine.models.pokemon import BattleCard
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
 parent_directory = os.path.split(parent_directory)[0]
@@ -46,7 +50,28 @@ class Event:
         self.type = category
         self.value = value
 
-class Battler:
+
+class Battler(BaseModel):
+
+    atk: float
+    defn: float
+    hp: float
+    idx: int
+    damage_dealt: float = 0
+    damage_taken: float = 0
+    ready: bool = False
+    timer: int = 0
+    battlecard: BattleCard = None
+
+    @classmethod
+    def create_from_battle_card(cls, battle_card, index):
+        attack = pokedex[battle_card.name]["baseStats"]["atk"]
+        defense = pokedex[battle_card.name]["baseStats"]["def"]
+        hitpoints = pokedex[battle_card.name]["baseStats"]["hp"]
+        return cls(atk=attack, defn=defense, hp=hitpoints, idx=index, battlecard=battle_card)
+
+
+class OldBattler:
     def __init__(self, battle_card, index):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
 
@@ -62,7 +87,19 @@ class Battler:
         self.timer = 0
 
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
-        
+
+# this would fail
+#json.dumps(OldBattler())
+
+
+class BattleContext(BaseModel):
+
+    pokemon1: Battler
+    pokemon2: Battler
+    team1: T.List[Battler]
+    team2: T.List[Battler]
+
+
 def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     # creating a dictionary for output
     output = {
@@ -78,7 +115,9 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     t2_dmg_dealt = []
     t2_dmg_taken = []
     sequence = []
-    
+
+    context = {}
+
     team1_live = copy.deepcopy(team1_cards) # create an instance of the team for the battle
     team2_live = copy.deepcopy(team2_cards)
     
@@ -120,9 +159,32 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     
     team1_switches = 5 # max number of switches the team can make
     team2_switches = 5
-    
+
+    # pre-battle hooks go here
+
+    # STATE: PRE_BATTLE
+    # step 1: determine what the relevant items are and who they belong to
+    team1_items: T.Set[CombatItem] = set(x.berry for x in team1_cards)
+    team2_items: T.Set[CombatItem] = set(x.berry for x in team2_cards)
+
+    # step 2: update context with current battle information
+    context.update({})
+
+    # step 3: for items, run the pre_battle_actions method
+    for item in team1_items:
+        item.pre_battle_action(context)
+
+    for item in team2_items:
+        item.pre_battle_action(context)
+
     while (len(team1_live) != 0 and len(team2_live) != 0): # while there are pokemon alive for a team
-        # STATE: START TURN
+        # STATE: PRE_COMBAT
+        context.update({"pokemon1": team1_live[0], "pokemon2": team2_live[0]})
+        for item in team1_items:
+            item.pre_combat_action(context)
+        for item in team2_items:
+            item.pre_combat_action(context)
+
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
 
