@@ -413,7 +413,8 @@ def analyze_type(attacker, defender): # >0 is good, <0 is bad
         if x in attacker_immunities:
             balance += 2
     return balance
-    
+
+
 def calculate_optimal_move(attacker, defender): # returns string, the name of best move
     # can consider passing back a flag for if the move was effective or not, to print. or change in calculate_damage
     fast_damage = calculate_damage(attacker, attacker.battlecard.move_f, defender)[0]

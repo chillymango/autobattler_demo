@@ -5,16 +5,29 @@ import unittest
 
 from pydantic import BaseModel
 from engine.env import Environment
-from engine.player import EntityType, Player
-from engine.pokemon import BattleCard, Pokemon, PokemonFactory
+from engine.models.player import EntityType
+from engine.models.player import Player
+from engine.pokemon import PokemonFactory
 from engine.models.state import State
+
+
+class TestEnvironment(Environment):
+    """
+    Only load the components we are interested in
+    """
+
+    @property
+    def component_classes(self):
+        return [
+            PokemonFactory
+        ]
 
 
 class TestEncodeDecode(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.env = Environment(4)
+        self.env = TestEnvironment(4)
 
         self.player1 = Player(name='test player', type=EntityType.HUMAN)
         self.player2 = Player(name='someone else')

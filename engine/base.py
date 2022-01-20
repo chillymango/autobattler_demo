@@ -38,6 +38,8 @@ class Component:
     The default action will be no-op.
     """
 
+    ENV_PROXY = None
+
     def __init__(self, env: "Environment", state: "State"):
         self.env = weakref.proxy(env)
         self.state = state  # TODO: this probably memory leaks
@@ -45,6 +47,10 @@ class Component:
         snakecase = camel_case_to_snake_case(classname)
         # make it a weakref so ref count doesn't increment and the env can be garbage collected
         setattr(self.env, snakecase, weakref.proxy(self))
+        if self.ENV_PROXY is not None:
+            # also set a weakref here
+            setattr(self.env, self.ENV_PROXY, weakref.proxy(self))
+
         self.log = self.env.log
 
     def to_dict(self):

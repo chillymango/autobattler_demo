@@ -5,10 +5,11 @@ from pydantic import BaseModel
 from pydantic import Field
 from uuid import UUID
 
+from engine.models.base import Entity
 from engine.models.items import Item
-from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
+    from engine.models.items import Item
     from engine.models.player import Player
 
 EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolve"])
@@ -109,7 +110,7 @@ class BattleCard(BaseModel):
         return "BattleCard({}): {}".format(self.name, self.to_string())
 
 
-class Pokemon(BaseModel):
+class Pokemon(Entity):
     """
     Instantiate unique object based on name
     """
@@ -117,9 +118,8 @@ class Pokemon(BaseModel):
     name: str
     battle_card: BattleCard
     nickname: str
-    id: str = Field(default_factory=uuid_as_str)
     xp: float = 0.0
-    player: T.Any = None  # TODO: break circ import
+    player: Entity = None  # TODO: break circ import
 
     def __hash__(self):
         try:
@@ -157,3 +157,18 @@ class Pokemon(BaseModel):
         Add experience to a Pokemon
         """
         self.xp += amount
+
+    def give_item(self, item: "Item"):
+        """
+        Give an item to a Pokemon
+        """
+        self.battle_card.berry = item
+        item.holder = self
+
+    def remove_item(self) -> T.Optional[Item]:
+        """
+        Takes item from Pokemon. Returns it if there is one.
+        """
+        if self.battle_card.berry is not None:
+            self.battle_card.berry.holder = None
+            return self.battle_card.berry

@@ -20,37 +20,74 @@ if T.TYPE_CHECKING:
     from engine.models.player import Player
 
 
+class ItemSubManager:
+    """
+    Manages a set of items
+    """
+
+    def __init__(self, item_type: T.Type, factory: T.Dict[str, T.Callable]):
+        self._item_type = item_type
+        self._items: T.Set = set()
+
+        # validate factory
+        self.validate_factory(factory)
+        self.factory: T.Dict[str, T.Callable] = factory
+
+    def validate_factory(self, factory) -> None:
+        for factory_method in factory.values():
+            if not isinstance(factory_method(), self.ITEMTYPE):
+                raise Exception("Invalid factory method")
+
+
 class ItemManager(Component):
     """
     Manage items and their relationships to players and Pokemon
     """
 
     def initialize(self):
-        self._items: T.Dict[T.Type, T.Set[Item]] = dict()
-        self._items[InstantPlayerItem] = set()
-        self._items[PersistentPlayerItem] = set()
-        self._items[InstantPokemonItem] = set()
-        self._items[PersistentPokemonItem] = set()
+        # set up submanagers
+        self._items = set()
+        self.supported_types = [
+            InstantPlayerItem,
+            PersistentPlayerItem,
+            InstantPokemonItem,
+            PersistentPokemonItem,
+        ]
+        self._factories: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
+            InstantPlayerItem: dict(
+                master_ball=MasterBall,
+            ),
+            PersistentPlayerItem: dict(
+                poke_flute=PokeFlute,
+            ),
+            InstantPokemonItem: dict(
+                fire_stone=Stone.fire_stone_factory,
+                water_stone=Stone.water_stone_factory,
+            ),
+            PersistentPokemonItem: dict(
+                oran_berry=Berry.oran_berry_factory,
+            )
+        }
 
-        # initialize factories for all known item types
-        self._item_factory: T.Dict[T.Type, T.Dict[str, T.Callable]] = dict()
-        self._item_factory[InstantPlayerItem] = dict(
-            master_ball=MasterBall,
-        )
-        self._item_factory[PersistentPlayerItem] = dict(
-            poke_flute=PokeFlute,
-        )
-        self._item_factory[InstantPokemonItem] = dict(
-            # stones
-            fire_stone=Stone.fire_stone_factory,
-            water_stone=Stone.water_stone_factory,
-            # ... etc
-        )
-        self._item_factory[PersistentPokemonItem] = dict(
-            # berries
-            oran_berry=Berry.oran_berry_factory,
-            # ... etc
-        )
+        self.submanagers: T.Dict[T.Type, ItemSubManager] = {
+            type_: ItemSubManager(type_, self._factories[type_])
+            for type_ in self.supported_types
+        }
+        # create reverse associations for items
+        self.item_to_manager: T.Dict[str, ItemSubManager] = dict()
+        for submgr in self.submanagers.values():
+            for item_name in submgr.factory:
+                self.item_to_manager[item_name] = submgr
+
+    def create_item(self, item_name: str) -> Item:
+        """
+        Create an item by item name
+        """
+        # dispatch create request to submanager
+        submanager: ItemSubManager = self.item_to_manager[item_name]
+        item = submanager.factory[item_name](self.env)
+        self._items.add(item)
+        return item
 
     @property
     def combat_items(self) -> T.Set[CombatItem]:

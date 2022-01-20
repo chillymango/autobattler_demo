@@ -5,8 +5,6 @@ from pydantic import BaseModel
 from pydantic import Field
 from uuid import UUID
 
-from engine.models.containers import PokemonParty
-from engine.models.containers import PokemonStorage
 from engine.models.items import Item
 from engine.models.pokemon import Pokemon
 from utils.strings import uuid_as_str

@@ -1,6 +1,7 @@
 """
 Abstract Base Classes for Mapping and Containers
 """
+import json
 import typing as T
 from collections import abc
 from pydantic import BaseModel
@@ -9,10 +10,10 @@ if T.TYPE_CHECKING:
     from engine.models.player import Player
 # i have no idea what i'm doing here please help
 
-class PokemonAssociatedContainer(abc.MutableSequence):
+class PlayerAssociatedContainer(abc.MutableSequence):
     """
     Generic base class that implements MutableSequence abstract base class to provide
-    relationship association between player and pokemon.
+    relationship association between player and some object a player is determined to `own`.
 
     Intended for use in the pokemon party and pokemon storage.
     """
@@ -59,12 +60,12 @@ class PokemonAssociatedContainer(abc.MutableSequence):
     def append(self, value):
         self._check_unique(value)
         if len(self.list) >= self.size:
-            raise IndexError("Container size exceeded")
+            raise ValueError("Container size exceeded")
         self.list.append(value)
         value.player = self.player
 
 
-class PokemonStorage(PokemonAssociatedContainer):
+class PokemonStorage(PlayerAssociatedContainer):
     """
     On adding Pokemon into storage or removing from storage, should update the `player` field
     in the Pokemon to reflect the update.
@@ -82,7 +83,7 @@ class PokemonStorage(PokemonAssociatedContainer):
         self.list = []
 
 
-class PokemonParty(PokemonAssociatedContainer):
+class PokemonParty(PlayerAssociatedContainer):
     """
     Fixed-size mutable sequence that implements association between player and pokemon
     """
@@ -137,16 +138,38 @@ class PokemonParty(PokemonAssociatedContainer):
             self.list[index] = None
 
 
-class PokemonItemRegistry(abc.MutableSet):
+class PlayerInventory(abc.MutableSet):
     """
-    Unordered association of items to Pokemon
+    Unordered association of items to players
     """
 
+    def __init__(self, player):
+        self.player = player
+        self.set = set()
 
-class PlayerItemRegistry(abc.MutableSet):
-    """
-    Unordered association of items to Players
-    """
+    def __contains__(self, value):
+        return value in self.set
+
+    def __iter__(self):
+        return iter(self.set)
+
+    def __len__(self):
+        return len(self.set)
+
+    def add(self, item):
+        # when adding an item to the registry, assign a reference to player
+        self.set.add(item)
+        item.player = self.player
+
+    def discard(self, item):
+        if item in self.set:
+            item.player = None
+            self.set.remove(item)
+
+    def remove(self, item):
+        if item not in self.set:
+            raise ValueError(f"Item {item} not in inventory")
+        self.discard(item)
 
 
 if __name__ == "__main__":

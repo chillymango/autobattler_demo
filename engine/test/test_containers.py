@@ -52,7 +52,7 @@ class TestContainers(unittest.TestCase):
         self.assertEqual(rai.player, self.player)
 
         # try to add a third and verify it fails
-        with self.assertRaises(IndexError):
+        with self.assertRaises(ValueError):
             container.append(mewtwo)
 
         # then remove the pokemon from the container and verify the container unsets
@@ -68,21 +68,26 @@ class TestContainers(unittest.TestCase):
         mewtwo = self.test_pokemon['mewtwo']
         ryry = self.test_pokemon['rhydon']
         party.append(pika)
+        self.assertEqual(pika.player, self.player)
         self.assertListEqual(party.list, [pika, None, None])
         party.append(rai)
+        self.assertEqual(rai.player, self.player)
         self.assertListEqual(party.list, [pika, rai, None])
         party.append(mewtwo)
+        self.assertEqual(mewtwo.player, self.player)
         self.assertListEqual(party.list, [pika, rai, mewtwo])
         # test max size
         with self.assertRaises(Exception):
             party.append(ryry)
+        self.assertIsNone(ryry.player)
         # remove and make sure the ordering stays the same
         party.remove(rai)
+        self.assertIsNone(rai.player)
         self.assertListEqual(party.list, [pika, None, mewtwo])
 
     def test_json_encode(self):
         """
-        Try and create a Player object with inventories
+        Try and create a Player object with inventories, then test encode/decode
         """
         pika = self.test_pokemon['pikachu']
         self.player.add_to_party(pika)

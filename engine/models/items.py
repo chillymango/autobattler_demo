@@ -6,8 +6,7 @@ TODO: split this into multiple modules
 import typing as T
 
 from pydantic import BaseModel
-from pydantic import Field
-from utils.strings import uuid_as_str
+from engine.models.base import Entity
 
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
@@ -19,15 +18,15 @@ if T.TYPE_CHECKING:
     from engine.models.pokemon import Pokemon
 
 
-class Item(BaseModel):
+class Item(Entity):
     """
     Base Class for Item
     """
 
     name: str  # not unique, all subclasses should define a default here though
-    id: str = Field(default_factory=uuid_as_str)
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
+    holder: Entity = None
 
     def __init__(self, env: "Environment", **kwargs):
         """
@@ -70,20 +69,11 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    def __init__(self, *args, player: "Player" = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.player: "Player" = None
-
 
 class PokemonItem(Item):
     """
     Base class for items which get assigned to Pokemon
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pokemon: "Pokemon" = None
-        self.player: "Player" = None
 
 
 class CombatItem(PokemonItem):
