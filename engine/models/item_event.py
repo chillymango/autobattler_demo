@@ -141,6 +141,10 @@ class ItemSchedule(BaseModel):
         dips below the max item cost in the current item set, re-evaluate the allowed items.
         Continue until the score is met.
         """
+        if turn not in self.turn_configs:
+            # no item events this turn
+            return
+
         # initialize the current set of items we can draw
         current_turn_config = self.turn_configs[turn]
         if not score and not current_turn_config.score:
