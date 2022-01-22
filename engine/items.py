@@ -108,6 +108,15 @@ class ItemManager(Component):
     def supported_items(self):
         return list(self.item_to_manager.keys())
 
+    def get_item_class_by_name(self, item_name: str):
+        """
+        Get the item class for an item
+
+        NOTE: this should be re-evaluated at call time so imported factories will show up
+        """
+        manager = self.item_to_manager[item_name]
+        return manager.factory[item_name]
+
     def get_item_by_id(self, item_id: T.Union[str, UUID]):
         if isinstance(item_id, str):
             item_id = UUID(item_id)
@@ -177,11 +186,10 @@ class ItemManager(Component):
         Run this only for Persistent items
         """
         for persistent_itype in self.persistent_item_types:
-            for submgr in self.submanagers[persistent_itype]:
-                submgr: ItemSubManager
-                for item in submgr._items:
-                    item: items.PersistentItemMixin
-                    item.turn_setup()
+            submgr = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_setup()
         self.remove_consumed_items()
 
     def turn_execute(self):

@@ -84,3 +84,5 @@ def build_basic_item_schedule(blocklisted_items: T.List[str] = None):
 if __name__ == "__main__":
     sched = build_basic_item_schedule()
     import IPython; IPython.embed()
+    with open('data/default_item_schedule.json', 'w+') as default_sched_file:
+        default_sched_file.write(sched.json())

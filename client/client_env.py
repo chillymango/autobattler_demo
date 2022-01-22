@@ -11,7 +11,7 @@ from engine.sprites import SpriteManager
 class ClientEnvironment(Environment):
 
     @property
-    def component_classes(self):
+    def default_component_classes(self):
         return [
             Matchmaker,
             PokemonFactory,
