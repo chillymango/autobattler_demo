@@ -141,6 +141,15 @@ class Pokemon(Entity):
         except AttributeError:
             return False
 
+    def is_type(self, poketype: str):
+        """
+        Check if a Pokemon is of a type
+
+        References the battle card
+        """
+        poketype = poketype.lower()
+        return poketype in (self.battle_card.poke_type1, self.battle_card.poke_type2)
+
     @classmethod
     def from_dict(cls, data):
         pokemon = cls(

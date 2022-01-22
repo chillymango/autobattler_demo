@@ -5,15 +5,7 @@ import typing as T
 from uuid import UUID
 
 from engine.base import Component
-from engine.models.items import Berry, InstantPlayerItem, PersistentItemMixin, PersistentPlayerItem, PersistentPokemonItem
-from engine.models.items import CombatItem
-from engine.models.items import InstantPokemonItem
-from engine.models.items import Item
-from engine.models.items import MasterBall
-from engine.models.items import PlayerItem
-from engine.models.items import PokeFlute
-from engine.models.items import PokemonItem
-from engine.models.items import Stone
+from engine.models import items
 
 if T.TYPE_CHECKING:
     from engine.models.pokemon import Pokemon
@@ -27,11 +19,11 @@ class ItemSubManager:
 
     def __init__(self, item_type: T.Type, factory: T.Dict[str, T.Callable]):
         self._item_type = item_type
-        self._items: T.Set[Item] = set()
+        self._items: T.Set[items.Item] = set()
 
         # validate factory
         self.validate_factory(factory)
-        self.factory: T.Dict[str, T.Callable] = factory
+        self.factory: T.Dict[str, T.Type[items.Item]] = factory
 
     def validate_factory(self, factory) -> None:
         for factory_method in factory.values():
@@ -51,32 +43,35 @@ class ItemManager(Component):
     def initialize(self):
         # set up submanagers
         self.supported_types = [
-            InstantPlayerItem,
-            PersistentPlayerItem,
-            InstantPokemonItem,
-            PersistentPokemonItem,
-            CombatItem,
+            items.InstantPlayerItem,
+            items.PersistentPlayerItem,
+            items.InstantPokemonItem,
+            items.PersistentPokemonItem,
+            items.CombatItem,
         ]
 
         # TODO: dynamic evaluation
-        self.persistent_item_types = (PersistentPlayerItem, PersistentPokemonItem)
-        self.instant_item_types = (InstantPlayerItem, InstantPokemonItem)
+        self.persistent_item_types = (items.PersistentPlayerItem, items.PersistentPokemonItem)
+        self.instant_item_types = (items.InstantPlayerItem, items.InstantPokemonItem)
 
         self._factories: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
-            InstantPlayerItem: dict(
-                master_ball=MasterBall,
+            items.InstantPlayerItem: dict(
+                master_ball=items.MasterBall,
             ),
-            PersistentPlayerItem: dict(
-                poke_flute=PokeFlute,
+            items.PersistentPlayerItem: dict(
+                poke_flute=items.PokeFlute,
             ),
-            InstantPokemonItem: dict(
-                fire_stone=Stone.fire_stone_factory,
-                water_stone=Stone.water_stone_factory,
+            items.InstantPokemonItem: dict(
+                fire_stone=items.FireStone,
+                water_stone=items.WaterStone,
             ),
-            CombatItem: dict(
-                oran_berry=Berry.oran_berry_factory,
+            items.CombatItem: dict(
+                small_sitrus_berry=items.SmallSitrusBerry,
+                large_sitrus_berry=items.LargeSitrusBerry,
+                small_leppa_berry=items.SmallLeppaBerry,
+                large_leppa_berry=items.LargeLeppaBerry,
             ),
-            PersistentPokemonItem: dict()
+            items.PersistentPokemonItem: dict()
         }
 
         self.submanagers: T.Dict[T.Type, ItemSubManager] = {
@@ -84,11 +79,21 @@ class ItemManager(Component):
             for type_ in self.supported_types
         }
         # create reverse associations for items
-        self.id_to_item: T.Dict[UUID, Item] = dict()
+        self.id_to_item: T.Dict[UUID, items.Item] = dict()
         self.item_to_manager: T.Dict[str, ItemSubManager] = dict()
         for submgr in self.submanagers.values():
             for item_name in submgr.factory:
                 self.item_to_manager[item_name] = submgr
+
+        # expose a mapping of costs for each item
+        self.item_costs: T.Dict[str, int] = {}
+        for submgr in self.submanagers.values():
+            for item_name, item_class in submgr.factory.items():
+                # instantiate an ephemeral, immediately consume
+                item = item_class(self.env)
+                self.item_costs[item_name] = item.cost
+                item.consumed = True
+                del item
 
     def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
         """
@@ -108,18 +113,25 @@ class ItemManager(Component):
             item_id = UUID(item_id)
         return self.id_to_item[item_id]
 
-    def create_item(self, item_name: str) -> Item:
+    def get_item_factory_by_name(self, item_name: str):
+        """
+        Get the item factory for a specific item name.
+        """
+        manager = self.item_to_manager[item_name]
+        return manager.factory[item_name]
+
+    def create_item(self, item_name: str) -> items.Item:
         """
         Create an item by item name
         """
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
-        item: Item = submanager.factory[item_name](self.env)
+        item: items.Item = submanager.factory[item_name](self.env)
         submanager._items.add(item)
         self.id_to_item[item.id] = item
         return item
 
-    def remove_item(self, item: Item) -> None:
+    def remove_item(self, item: items.Item) -> None:
         """
         Remove an item from existence
         """
@@ -128,12 +140,13 @@ class ItemManager(Component):
         self.id_to_item.pop(item.id)
 
     @property
-    def combat_items(self) -> T.Set[CombatItem]:
+    def combat_items(self) -> T.Set[items.CombatItem]:
         """
         Return a set of all combat items
         """
         return set(
-            x for x in self._item_factory[PersistentPokemonItem] if isinstance(x, CombatItem)
+            x for x in self._item_factory[items.PersistentPokemonItem]
+            if isinstance(x, items.CombatItem)
         )
 
     def remove_orphaned_items(self):
@@ -167,7 +180,7 @@ class ItemManager(Component):
             for submgr in self.submanagers[persistent_itype]:
                 submgr: ItemSubManager
                 for item in submgr._items:
-                    item: PersistentItemMixin
+                    item: items.PersistentItemMixin
                     item.turn_setup()
         self.remove_consumed_items()
 
@@ -181,7 +194,7 @@ class ItemManager(Component):
             for submgr in self.submanagers[persistent_itype]:
                 submgr: ItemSubManager
                 for item in submgr._items:
-                    item: PersistentItemMixin
+                    item: items.PersistentItemMixin
                     item.turn_execute()
         self.remove_consumed_items()
 
@@ -190,7 +203,7 @@ class ItemManager(Component):
             for submgr in self.submanagers[persistent_itype]:
                 submgr: ItemSubManager
                 for item in submgr._items:
-                    item: PersistentItemMixin
+                    item: items.PersistentItemMixin
                     item.turn_cleanup()
         self.remove_consumed_items()
         self.remove_orphaned_items()

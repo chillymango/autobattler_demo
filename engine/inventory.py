@@ -32,7 +32,7 @@ class PlayerInventoryManager(Component):
             player: player.inventory for player in self.state.players
         }
 
-    def create_and_give_item_to_player(self, item_name: str, player: Player):
+    def create_and_give_item_to_player(self, item_name: str, player: Player) -> Item:
         """
         Create an item by item name and give it to a player
         """
@@ -42,6 +42,9 @@ class PlayerInventoryManager(Component):
         # update item state
         self.player_inventories[player].add(item)
         item.holder = player
+
+        # return the item that was created
+        return item
 
     def remove_item_from_player(self, item_name: str, player: Player):
         """
@@ -75,7 +78,7 @@ class PlayerInventoryManager(Component):
         pokemon.battle_card.berry = item
         item.holder = pokemon
 
-    def take_item_from_pokemon(self, pokemon: Pokemon):
+    def take_item_from_pokemon(self, pokemon: Pokemon) -> Item:
         """
         Remove an item from a Pokemon and put it in its players inventory.
         """
@@ -85,3 +88,5 @@ class PlayerInventoryManager(Component):
         pokemon.battle_card.berry = None
         player.inventory.add(item)
         item.holder = player
+
+        return item

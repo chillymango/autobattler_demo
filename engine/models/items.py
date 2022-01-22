@@ -8,6 +8,7 @@ import typing as T
 from pydantic import BaseModel
 from pydantic import PrivateAttr
 from engine.models.base import Entity
+from engine.models.stats import Stats
 
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
@@ -17,6 +18,22 @@ if T.TYPE_CHECKING:
     from engine.models.player import Player
     from engine.models.pokemon import BattleCard
     from engine.models.pokemon import Pokemon
+
+# DEFAULT ITEM COSTS
+# TODO: store somewhere else for clarity, or make configurable
+SMALL_BERRY_COST = 2
+LARGE_BERRY_COST = 4
+
+L1_CONSUMABLE_COST = 1
+L2_CONSUMABLE_COST = 2
+L3_CONSUMABLE_COST = 3
+L4_CONSUMABLE_COST = 4
+L5_CONSUMABLE_COST = 5
+
+COMMON_STONE_COST = 3
+RARE_STONE_COST = 6
+
+TM_COST = 1
 
 
 class Item(Entity):
@@ -28,6 +45,8 @@ class Item(Entity):
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
     holder: Entity = None
+    cost: int = 1  # the "value" of a specific item
+    level: int = 0  # the "power" of a specific item
     _env: "Environment" = PrivateAttr()
 
     def __init__(self, env: "Environment", **kwargs):
@@ -46,6 +65,8 @@ class PersistentItemMixin:
     * item that updates Player state before every turn (e.g adds balls, hp, energy)
     * item that updates Player state after every battle phase (e.g gives energy if you win battle)
     """
+
+    active: bool = False
 
     def turn_setup(self):
         """
@@ -202,28 +223,64 @@ class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
 # COMBAT ITEM
 class Berry(CombatItem):
 
+    stat: Stats = None  # stat the Berry adjusts
     name: str = "Berry"  # assign a default name here
-    consumed: bool = False  # set to True, garbage collect
-    health_factor: float = 0.0
 
-    def post_combat_action(self):
-        """
-        Increment health if Pokemon fought and is still alive
-        """
-        super().pre_combat_action()  # check if Berry is assigned first
-        card: "BattleCard" = self.pokemon.battle_card
-        if card.health > 0:  # TODO: add a check here on whether the Pokemon fought
-            # mark the berry as consumed
-            self.consumed = True
-            # execute action here
-            card.health += self.health_factor * card.hp_iv  # TODO: mark max health here
 
-    @classmethod
-    def oran_berry_factory(cls, env: "Environment"):
+class SmallSitrusBerry(Berry):
+    """
+    Small Sitrus Berry
+
+    Grants a small amount of health upon exiting successful combat
+    """
+    name = 'Small Sitrus Berry'
+    stat = Stats.HP
+    cost = SMALL_BERRY_COST
+    level = 1
+
+    def post_combat_action(self, context: T.Dict):
         """
-        Example oran berry factory
+        If Pokemon still alive, gain 10% HP
         """
-        return cls(env, name='Oran Berry', health_factor=0.1)
+        pass
+
+
+class LargeSitrusBerry(Berry):
+    """
+    Large Sitrus Berry
+
+    Grants a large amount of health upon exiting successful combat
+    """
+    name = 'Large Sitrus Berry'
+    stat = Stats.HP
+    cost = LARGE_BERRY_COST
+    level = 2
+
+
+class SmallLeppaBerry(Berry):
+    """
+    Small Leppa Berry
+
+    Grants a small amount of energy at combat start
+    """
+    name = 'Small Leppa Berry'
+    stat = Stats.ENG
+    cost = SMALL_BERRY_COST
+    level = 1
+
+
+class LargeLeppaBerry(Berry):
+    """
+    Large Leppa Berry
+
+    Grants a large amount of energy at combat start
+    """
+    name = 'Large Leppa Berry'
+    stat = Stats.ENG
+    cost = LARGE_BERRY_COST
+    level = 2
+
+# TODO: implement the rest of the berry classes
 
 
 class TM(InstantPokemonItem):
@@ -283,26 +340,64 @@ class ChoiceItem(InstantPokemonItem):
 class Stone(InstantPokemonItem):
 
     target_type: str
+    cost = COMMON_STONE_COST
 
     def use(self):
-        if self.target_type == "Fire":
-            # do fire stone actions here
-            pass
-        elif self.target_type == "Water":
-            # do water stone actions here
-            pass
-        # TODO: add other stone types
-        else:
-            # invalid stone type
-            raise Exception("Unsupported stone type {}".format())
+        if not isinstance(self.holder, Pokemon):
+            return
+        if not self.holder.is_type(self.target_type):
+            return
+        self.stone_evo()
 
-    @classmethod
-    def fire_stone_factory(cls, env: "Environment"):
-        return cls(env, name="Fire Stone", target_type="Fire")
+    def stone_evo(self):
+        """
+        Subclasses define this abstract method
+        """
+        raise NotImplementedError
 
-    @classmethod
-    def water_stone_factory(cls, env: "Environment"):
-        return cls(env, name="Water Stone", target_type="Water")
+
+class CommonStone(Stone):
+    """
+    Fire, Water, Thunder, Leaf Stones
+    """
+
+    def stone_evo(self):
+        evo_manager: EvolutionManager = self.env.evolution_manager
+        # handle eevee specially
+        # TODO: make choice evolution types more generic
+        if self.holder.name == "eevee":
+            if self.target_type == "leaf":
+                # invalid Eeveelution (for now!!)
+                return
+            evo_manager.evolve(self.holder, choice=self.target_type)
+            self.consumed = True
+            return
+
+        # try and evolve
+        if not evo_manager.get_evolution(self.holder.name):
+            return
+        evo_manager.evolve(self.holder)
+        self.consumed = True
+
+
+class FireStone(CommonStone):
+    """
+    Used to evolve fire-type Pokemon (and Eevee!)
+    """
+
+    name = 'Fire Stone'
+    target_type = "fire"
+    cost = COMMON_STONE_COST
+
+
+class WaterStone(CommonStone):
+    """
+    Used to evolve fire-type Pokemon (and Eevee!)
+    """
+
+    name = 'Water Stone'
+    target_type = 'water'
+    cost = COMMON_STONE_COST
 
 
 # EXAMPLE: PERSISTENT PLAYER ITEM
@@ -335,7 +430,7 @@ class PokeFlute(PersistentPlayerItem):
 class MasterBall(InstantPlayerItem):
 
     name: str = "Master Ball"
-    ball_count: int = 1
+    ball_count: int = 0
 
     def use(self, player: "Player" = None):
         """
@@ -347,6 +442,13 @@ class MasterBall(InstantPlayerItem):
             raise Exception("Cannot use a MasterBall on a null player")
 
         self.player.master_balls += self.ball_count
+
+    @classmethod
+    def level1_masterball(cls, env: "Environment"):
+        """
+        Level 1 Masterball
+        """
+        return cls()
 
 
 ## OLDER STUFF BELOW HERE ##

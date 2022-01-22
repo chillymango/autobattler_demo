@@ -1,7 +1,9 @@
 """
 Setup a test environment and create items
 """
+import typing as T
 import unittest
+
 from engine.env import Environment
 from engine.items import ItemManager
 from engine.models.player import Player
@@ -11,6 +13,7 @@ from engine.models.items import PersistentPlayerItem
 from engine.models.items import InstantPokemonItem
 from engine.models.items import InstantPlayerItem
 from engine.models.pokemon import Pokemon
+
 
 class TestEnvironment(Environment):
 
@@ -91,6 +94,14 @@ class TestPersistentPlayerItem(PersistentPlayerItem):
         self.holder.flute_charges += 1
 
 
+TEST_FACTORIES: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
+    PersistentPokemonItem: dict(test_xp_trinket=TestPersistentPokemonItem.test_factory_method),
+    PersistentPlayerItem: dict(test_poke_flute=TestPersistentPlayerItem.test_factory_method),
+    InstantPokemonItem: dict(test_evo_stone=TestInstantPokemonItem.test_factory_method),
+    InstantPlayerItem: dict(test_master_ball=TestInstantPlayerItem.test_factory_method),
+}
+
+
 class TestItemManager(unittest.TestCase):
 
     def setUp(self):
@@ -100,22 +111,8 @@ class TestItemManager(unittest.TestCase):
 
         # create a test factory and inject it
         im: ItemManager = self.env.item_manager
-        im.import_factory(
-            PersistentPlayerItem,
-            dict(test_poke_flute=TestPersistentPlayerItem.test_factory_method)
-        )
-        im.import_factory(
-            InstantPlayerItem,
-            dict(test_master_ball=TestInstantPlayerItem.test_factory_method)
-        )
-        im.import_factory(
-            PersistentPokemonItem,
-            dict(test_xp_trinket=TestPersistentPokemonItem.test_factory_method)
-        )
-        im.import_factory(
-            InstantPokemonItem,
-            dict(test_evo_stone=TestInstantPokemonItem.test_factory_method)
-        )
+        for itemtype, factory in TEST_FACTORIES.items():
+            im.import_factory(itemtype, factory)
 
     def test_item_creation(self):
         item_manager: ItemManager = self.env.item_manager
