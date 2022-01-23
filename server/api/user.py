@@ -4,7 +4,8 @@ Cache player credentials and information and what not locally.
 import os
 from pydantic import BaseModel
 from pydantic import Field
-from utils.strings import uuid_as_str
+
+from engine.models.base import Entity
 
 DEFAULT_PATH = "current_player.json"
 
@@ -15,13 +16,12 @@ class NoCachedUser(ValueError):
     """
 
 
-class User(BaseModel):
+class User(Entity):
     """
     (Human) User Abstraction
     """
 
     name: str
-    id: str = Field(default_factory=uuid_as_str)
 
     @classmethod
     def from_cache(cls, path=DEFAULT_PATH):

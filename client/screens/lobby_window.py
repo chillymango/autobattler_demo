@@ -11,7 +11,7 @@ from qasync import asyncClose
 from qasync import asyncSlot
 
 from engine.models.state import State
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 
 if T.TYPE_CHECKING:
     from utils.client import AsynchronousServerClient

@@ -1,3 +1,4 @@
+import typing as T
 from engine.base import Component
 from engine.models.stage_config import StageConfig
 
@@ -36,7 +37,7 @@ class Turn(Component):
         with open(self.CONFIG_PATH, 'r') as stages_file:
             stages_raw = stages_file.readlines()
 
-        self.stages = {}
+        self.stages: T.Dict[int, StageConfig] = {}
         turn_number = 1
         for line in stages_raw:
             # turn is unit indexed

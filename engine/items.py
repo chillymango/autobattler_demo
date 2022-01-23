@@ -2,66 +2,194 @@
 Item Manager
 """
 import typing as T
+from uuid import UUID
 
 from engine.base import Component
-from engine.models.items import Item
-from engine.models.items import PokemonItem
+from engine.models import items
 
 if T.TYPE_CHECKING:
     from engine.models.pokemon import Pokemon
+    from engine.models.player import Player
+
+
+class ItemSubManager:
+    """
+    Manages a set of items
+    """
+
+    def __init__(self, item_type: T.Type, factory: T.Dict[str, T.Callable]):
+        self._item_type = item_type
+        self._items: T.Set[items.Item] = set()
+
+        # validate factory
+        self.validate_factory(factory)
+        self.factory: T.Dict[str, T.Type[items.Item]] = factory
+
+    def validate_factory(self, factory) -> None:
+        for factory_method in factory.values():
+            # use a mock fillin for env
+            env = None
+            if not isinstance(factory_method(env), self._item_type):
+                raise Exception("Invalid factory method")
 
 
 class ItemManager(Component):
     """
-    Manage items
+    Manage items and their relationships to players and Pokemon
     """
 
-    def initialize(self):
-        self._player_items: T.List[Item] = []
-        self._pokemon_items: T.List[Item] = []
+    ENV_PROXY = "item"
 
-        # input all types of items
+    def initialize(self):
+        # set up submanagers
+        self.supported_types = [
+            items.InstantPlayerItem,
+            items.PersistentPlayerItem,
+            items.InstantPokemonItem,
+            items.PersistentPokemonItem,
+            items.CombatItem,
+        ]
+
+        # TODO: dynamic evaluation
+        self.persistent_item_types = (items.PersistentPlayerItem, items.PersistentPokemonItem)
+        self.instant_item_types = (items.InstantPlayerItem, items.InstantPokemonItem)
+
+        self._factories: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
+            items.InstantPlayerItem: dict(
+                master_ball=items.MasterBall,
+            ),
+            items.PersistentPlayerItem: dict(
+                poke_flute=items.PokeFlute,
+            ),
+            items.InstantPokemonItem: dict(
+                fire_stone=items.FireStone,
+                water_stone=items.WaterStone,
+            ),
+            items.CombatItem: dict(
+                small_sitrus_berry=items.SmallSitrusBerry,
+                large_sitrus_berry=items.LargeSitrusBerry,
+                small_leppa_berry=items.SmallLeppaBerry,
+                large_leppa_berry=items.LargeLeppaBerry,
+            ),
+            items.PersistentPokemonItem: dict()
+        }
+
+        self.submanagers: T.Dict[T.Type, ItemSubManager] = {
+            type_: ItemSubManager(type_, self._factories[type_])
+            for type_ in self.supported_types
+        }
+        # create reverse associations for items
+        self.id_to_item: T.Dict[UUID, items.Item] = dict()
+        self.item_to_manager: T.Dict[str, ItemSubManager] = dict()
+        for submgr in self.submanagers.values():
+            for item_name in submgr.factory:
+                self.item_to_manager[item_name] = submgr
+
+        # expose a mapping of costs for each item
+        self.item_costs: T.Dict[str, int] = {}
+        for submgr in self.submanagers.values():
+            for item_name, item_class in submgr.factory.items():
+                # instantiate an ephemeral, immediately consume
+                item = item_class(self.env)
+                self.item_costs[item_name] = item.cost
+                item.consumed = True
+                del item
+
+    def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
+        """
+        Import a factory specification for an itemtype
+        """
+        submgr = self.submanagers[itemtype]
+        submgr.factory.update(factory)
+        for item_name in factory:
+            self.item_to_manager[item_name] = submgr
+
+    @property
+    def supported_items(self):
+        return list(self.item_to_manager.keys())
+
+    def get_item_class_by_name(self, item_name: str):
+        """
+        Get the item class for an item
+
+        NOTE: this should be re-evaluated at call time so imported factories will show up
+        """
+        manager = self.item_to_manager[item_name]
+        return manager.factory[item_name]
+
+    def get_item_by_id(self, item_id: T.Union[str, UUID]):
+        if isinstance(item_id, str):
+            item_id = UUID(item_id)
+        return self.id_to_item[item_id]
+
+    def get_item_factory_by_name(self, item_name: str):
+        """
+        Get the item factory for a specific item name.
+        """
+        manager = self.item_to_manager[item_name]
+        return manager.factory[item_name]
+
+    def create_item(self, item_name: str) -> items.Item:
+        """
+        Create an item by item name
+        """
+        # dispatch create request to submanager
+        submanager: ItemSubManager = self.item_to_manager[item_name]
+        item: items.Item = submanager.factory[item_name](self.env)
+        submanager._items.add(item)
+        self.id_to_item[item.id] = item
+        return item
+
+    def remove_item(self, item: items.Item) -> None:
+        """
+        Remove an item from existence
+        """
+        submanager: ItemSubManager = self.item_to_manager[item.name]
+        submanager._items.remove(item)
+        self.id_to_item.pop(item.id)
+
+    @property
+    def combat_items(self) -> T.Set[items.CombatItem]:
+        """
+        Return a set of all combat items
+        """
+        return set(
+            x for x in self._item_factory[items.PersistentPokemonItem]
+            if isinstance(x, items.CombatItem)
+        )
+
+    def remove_orphaned_items(self):
+        """
+        Items that are not in a player inventory or given to a Pokemon are orphaned.
+
+        NOTE: this should just print warnings because it's a sign of sloppy programming
+        """
+        for submgr in self.submanagers.values():
+            for item in submgr._items:
+                if item.holder is None:
+                    print(f'Item {item} was orphaned and sad')
+                    self.remove_item(item)
 
     def remove_consumed_items(self):
         """
         Check all item lists
         """
-        self._remove_consumed_from_item_list(self._player_items)
-        self._remove_consumed_from_item_list(self._pokemon_items)
+        for submgr in self.submanagers.values():
+            for item in submgr._items:
+                if item.consumed:
+                    self.remove_item(item)
 
-    def _remove_consumed_from_item_list(self, item_list: T.List[Item]):
-        for item in item_list:
-            if item.consumed:
-                item_list.remove(item)
-
-    def create_item(self, item_name):
-        """
-        Instantiate an item object
-
-        Items should be created with this interface as a factory and get assigned to the correct
-        list. This way the correct list of item callbacks can be grabbed when running game state
-        changes during phase updates.
-        """
-        # TODO: implement LOL
-
-    def use_instant_pokemon_item(self, item: PokemonItem, pokemon: Pokemon = None):
-        if item.pokemon is None and pokemon is None:
-            raise Exception("Item not assigned to anyone")
-        item.use()
-        # mark as consumed if successful
-        item.consumed = True
-
-    def assign_item_to_pokemon(self, item: PokemonItem, pokemon: Pokemon):
-        if not isinstance(item, PokemonItem):
-            raise Exception("Invalid assignment request")
-        # TODO: update pokemon with item object
-
-    def turn_setup(self):
+    def turn_setup(self) -> None:
         """
         Run item actions in turn_setup
+
+        Run this only for Persistent items
         """
-        for item in self._player_items:
-            item.turn_setup()
+        for persistent_itype in self.persistent_item_types:
+            submgr = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_setup()
         self.remove_consumed_items()
 
     def turn_execute(self):
@@ -70,11 +198,20 @@ class ItemManager(Component):
 
         NOTE: this should run before battle manager executes
         """
-        for item in self._player_items:
-            item.turn_execute()
+        for persistent_itype in self.persistent_item_types:
+            for submgr in self.submanagers[persistent_itype]:
+                submgr: ItemSubManager
+                for item in submgr._items:
+                    item: items.PersistentItemMixin
+                    item.turn_execute()
         self.remove_consumed_items()
 
     def turn_cleanup(self):
-        for item in self._player_items:
-            item.turn_cleanup()
+        for persistent_itype in self.persistent_item_types:
+            for submgr in self.submanagers[persistent_itype]:
+                submgr: ItemSubManager
+                for item in submgr._items:
+                    item: items.PersistentItemMixin
+                    item.turn_cleanup()
         self.remove_consumed_items()
+        self.remove_orphaned_items()

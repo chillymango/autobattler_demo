@@ -1,9 +1,11 @@
+from __future__ import annotations
 import typing as T
 from enum import Enum
 from pydantic import BaseModel
 from pydantic import Field
 from uuid import UUID
 
+from engine.models.items import Item
 from engine.models.pokemon import Pokemon
 from utils.strings import uuid_as_str
 
@@ -29,7 +31,7 @@ class Player(BaseModel):
     name: str
     type: EntityType = EntityType.COMPUTER
     is_alive: bool = True
-    inventory: T.Dict = {}
+    inventory: T.Set[Item] = set()
     party: T.List[T.Union[Pokemon, None]] = [None] * 6
     storage: T.List[Pokemon] = []
     team: T.List[Pokemon] = []
@@ -85,7 +87,7 @@ class Player(BaseModel):
         """
         return [x for x in self.party if x is not None] + self.storage
 
-    def add_to_party(self, pokemon):
+    def add_to_party(self, pokemon: "Pokemon"):
         """
         Add Pokemon to first free party spot
 
@@ -99,7 +101,7 @@ class Player(BaseModel):
                 if member is None:
                     self.party[idx] = pokemon
                     return True
-        
+
         return False
 
     def release_from_party(self, idx):
@@ -265,3 +267,7 @@ class Player(BaseModel):
         if self.type == EntityType.CREEP:
             return "Creep Player"
         return "{} Player: {} ({})".format(self.type.name.capitalize(), self.name, livestr)
+
+
+from engine.models.pokemon import Pokemon
+Player.update_forward_refs()

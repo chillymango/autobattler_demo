@@ -10,6 +10,7 @@ from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
+from engine.items import ItemManager
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import PlayerManager
@@ -19,7 +20,7 @@ from engine.pubsub import PubSubInterface
 from engine.shop import ShopManager
 from engine.models.state import State
 from engine.turn import Turn
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 
 
 class GameOver(Exception):
@@ -40,10 +41,10 @@ class Environment:
     """
 
     @property
-    def component_classes(self):
+    def default_component_classes(self):
         return [
-            #Logger,  # this always has to go first -- TODO: fix this shit
             Turn,
+            ItemManager,
             PlayerManager,
             TmManager,
             PokemonFactory,
@@ -55,7 +56,8 @@ class Environment:
             PubSubInterface,  # this should probably go last
         ]
 
-    def __init__(self, max_players: int, id=None):
+    def __init__(self, max_players: int, id=None, component_classes: T.List[Component]=None):
+        self.component_classes = component_classes or self.default_component_classes
         self._id = UUID(id) if id else uuid4()
         print("Created env with id {}".format(self._id))
         self.state: State = State.default()

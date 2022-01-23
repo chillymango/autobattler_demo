@@ -1,29 +1,60 @@
 """
 Items and Inventory
+
+TODO: split this into multiple modules
 """
 import typing as T
 
 from pydantic import BaseModel
-from pydantic import Field
-from engine.models.state import State
-from engine.pokemon import EvolutionManager, PokemonFactory
-from utils.strings import uuid_as_str
+from pydantic import PrivateAttr
+from engine.models.base import Entity
+from engine.models.stats import Stats
 
 if T.TYPE_CHECKING:
+    # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
+    # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
+    from engine.env import Environment
+    from engine.pokemon import EvolutionManager, PokemonFactory
     from engine.models.player import Player
     from engine.models.pokemon import BattleCard
     from engine.models.pokemon import Pokemon
 
+# DEFAULT ITEM COSTS
+# TODO: store somewhere else for clarity, or make configurable
+SMALL_BERRY_COST = 2
+LARGE_BERRY_COST = 4
 
-class Item(BaseModel):
+L1_CONSUMABLE_COST = 1
+L2_CONSUMABLE_COST = 2
+L3_CONSUMABLE_COST = 3
+L4_CONSUMABLE_COST = 4
+L5_CONSUMABLE_COST = 5
+
+COMMON_STONE_COST = 3
+RARE_STONE_COST = 6
+
+TM_COST = 1
+
+
+class Item(Entity):
     """
     Base Class for Item
     """
 
     name: str  # not unique, all subclasses should define a default here though
-    id: Field(default=uuid_as_str)
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
+    holder: Entity = None
+    cost: int = 1  # the "value" of a specific item
+    level: int = 0  # the "power" of a specific item
+    _env: "Environment" = PrivateAttr()
+
+    def __init__(self, env: "Environment", **kwargs):
+        """
+        Hydrate each item instance with any other required keyword inputs and set env
+        """
+        super().__init__(**kwargs)
+        self._env = env
 
 
 class PersistentItemMixin:
@@ -34,6 +65,8 @@ class PersistentItemMixin:
     * item that updates Player state before every turn (e.g adds balls, hp, energy)
     * item that updates Player state after every battle phase (e.g gives energy if you win battle)
     """
+
+    active: bool = False
 
     def turn_setup(self):
         """
@@ -59,9 +92,7 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    def __init__(self, *args, player: Player = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.player = None
+    holder: "Player" = None
 
 
 class PokemonItem(Item):
@@ -69,9 +100,7 @@ class PokemonItem(Item):
     Base class for items which get assigned to Pokemon
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pokemon = None
+    holder: "Pokemon" = None
 
 
 class CombatItem(PokemonItem):
@@ -81,19 +110,47 @@ class CombatItem(PokemonItem):
     The battle sequencer should handle this
     """
 
-    def pre_combat_action(self):
+    def pre_battle_action(self, context: T.Dict):
+        """
+        Run this before any fighting happens
+        """
+        pass
+
+    def pre_combat_action(self, context: T.Dict):
         """
         During battle sequencing, run this before each individual combat
         """
-        if not self.pokemon:
-            return
+        pass
 
-    def post_combat_action(self):
+    def on_tick_action(self, context: T.Dict):
+        """
+        Run this action on all ticks
+        """
+        pass
+
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        Run this action on all fast hits
+        """
+        pass
+
+    def on_charged_move_action(self, context: T.Dict):
+        """
+        Run this action on all charged moves
+        """
+        pass
+
+    def post_combat_action(self, context: T.Dict):
         """
         During battle sequencing, run this after each individual combat
         """
-        if not self.pokemon:
-            return
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        Run this after all fighting happens
+        """
+        pass
 
 
 class InstantItemMixin:
@@ -101,20 +158,38 @@ class InstantItemMixin:
     Item that gets used immediately
     """
 
-    def immediate_action(self, player=None):
+    def can_use(self):
+        """
+        TODO: implement defaults
+
+        Probably want to set this on game phase, e.g cannot activate pokemon upgrades
+        during combat phases
+        """
+        return True
+
+    def immediate_action(self):
         """
         Use item
         """
-        if player is not None:
-            self.player = player
-        if self.player is None:
-            raise Exception(f"No action target for item {self.name} ({self.id})")
-
+        if not self.can_use():
+            return
         self.use()
+        self.record_consumption()
+
+    def record_consumption(self):
+        """
+        By default this just sets the consumed flag to True.
+
+        More complex consumption criteria could count number of uses or something like that.
+        """
+        self.consumed = True
 
     def use(self):
         """
         Child classes define usage actions
+
+        The target should be available at self.pokemon if the target is a Pokemon, or
+        at self.player if the target is a Player.
         """
         raise NotImplementedError
 
@@ -148,37 +223,74 @@ class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
 # COMBAT ITEM
 class Berry(CombatItem):
 
+    stat: Stats = None  # stat the Berry adjusts
     name: str = "Berry"  # assign a default name here
-    consumed: bool = False  # instantiate to True, garbage collect
-    health_factor: float = 0.0
 
-    def post_combat_action(self):
-        """
-        Increment health if Pokemon fought and is still alive
-        """
-        super().pre_combat_action()  # check if Berry is assigned first
-        card: BattleCard = self.pokemon.battle_card
-        if card.health > 0:  # TODO: add a check here on whether the Pokemon fought
-            # mark the berry as consumed
-            self.consumed = True
-            # execute action here
-            card.health += self.health_factor * card.hp_iv  # TODO: mark max health here
 
-    @classmethod
-    def oran_berry_factory(cls):
+class SmallSitrusBerry(Berry):
+    """
+    Small Sitrus Berry
+
+    Grants a small amount of health upon exiting successful combat
+    """
+    name = 'Small Sitrus Berry'
+    stat = Stats.HP
+    cost = SMALL_BERRY_COST
+    level = 1
+
+    def post_combat_action(self, context: T.Dict):
         """
-        Example oran berry factory
+        If Pokemon still alive, gain 10% HP
         """
-        return cls(name='Oran Berry', health_factor=0.1)
+        pass
+
+
+class LargeSitrusBerry(Berry):
+    """
+    Large Sitrus Berry
+
+    Grants a large amount of health upon exiting successful combat
+    """
+    name = 'Large Sitrus Berry'
+    stat = Stats.HP
+    cost = LARGE_BERRY_COST
+    level = 2
+
+
+class SmallLeppaBerry(Berry):
+    """
+    Small Leppa Berry
+
+    Grants a small amount of energy at combat start
+    """
+    name = 'Small Leppa Berry'
+    stat = Stats.ENG
+    cost = SMALL_BERRY_COST
+    level = 1
+
+
+class LargeLeppaBerry(Berry):
+    """
+    Large Leppa Berry
+
+    Grants a large amount of energy at combat start
+    """
+    name = 'Large Leppa Berry'
+    stat = Stats.ENG
+    cost = LARGE_BERRY_COST
+    level = 2
+
+# TODO: implement the rest of the berry classes
 
 
 class TM(InstantPokemonItem):
 
     def use(self):
-        card: BattleCard = self.pokemon.battle_card
+        card: "BattleCard" = self.pokemon.battle_card
         if card.tm_flag != True:
             self.consumed = True
             self.pokemon.battle_card.tm_flag = True
+
     @classmethod
     def tm_factory(cls):
         """
@@ -190,7 +302,7 @@ class TM(InstantPokemonItem):
 class ChoiceItem(InstantPokemonItem):
 
     def use(self):
-        card: BattleCard = self.pokemon.battle_card
+        card: "BattleCard" = self.pokemon.battle_card
         if card.choiced == 'No':
             self.consumed = True
             if self.name == 'Choice Band':
@@ -228,31 +340,70 @@ class ChoiceItem(InstantPokemonItem):
 class Stone(InstantPokemonItem):
 
     target_type: str
+    cost = COMMON_STONE_COST
 
     def use(self):
-        if self.target_type == "Fire":
-            # do fire stone actions here
-            pass
-        elif self.target_type == "Water":
-            # do water stone actions here
-            pass
-        # TODO: add other stone types
-        else:
-            # invalid stone type
-            raise Exception("Unsupported stone type {}".format())
+        if not isinstance(self.holder, Pokemon):
+            return
+        if not self.holder.is_type(self.target_type):
+            return
+        self.stone_evo()
 
-    @classmethod
-    def fire_stone_factory(cls):
-        return cls(name="Fire Stone", target_type="Fire")
+    def stone_evo(self):
+        """
+        Subclasses define this abstract method
+        """
+        raise NotImplementedError
 
-    @classmethod
-    def water_stone_factory(cls):
-        return cls(name="Water Stone", target_type="Water")
+
+class CommonStone(Stone):
+    """
+    Fire, Water, Thunder, Leaf Stones
+    """
+
+    def stone_evo(self):
+        evo_manager: EvolutionManager = self.env.evolution_manager
+        # handle eevee specially
+        # TODO: make choice evolution types more generic
+        if self.holder.name == "eevee":
+            if self.target_type == "leaf":
+                # invalid Eeveelution (for now!!)
+                return
+            evo_manager.evolve(self.holder, choice=self.target_type)
+            self.consumed = True
+            return
+
+        # try and evolve
+        if not evo_manager.get_evolution(self.holder.name):
+            return
+        evo_manager.evolve(self.holder)
+        self.consumed = True
+
+
+class FireStone(CommonStone):
+    """
+    Used to evolve fire-type Pokemon (and Eevee!)
+    """
+
+    name = 'Fire Stone'
+    target_type = "fire"
+    cost = COMMON_STONE_COST
+
+
+class WaterStone(CommonStone):
+    """
+    Used to evolve fire-type Pokemon (and Eevee!)
+    """
+
+    name = 'Water Stone'
+    target_type = 'water'
+    cost = COMMON_STONE_COST
 
 
 # EXAMPLE: PERSISTENT PLAYER ITEM
 class PokeFlute(PersistentPlayerItem):
 
+    name: str = "Poke Flute"
     # can define additional fields for item flexibility
     uses_left: int = 5  # can be passed as construction argument
 
@@ -264,7 +415,7 @@ class PokeFlute(PersistentPlayerItem):
             return
         if self.uses_left > 0:
             self.uses_left -= 1
-            player: Player = self.player
+            player: "Player" = self.player
             player.flute_charges += 1
 
     def turn_cleanup(self):
@@ -278,9 +429,10 @@ class PokeFlute(PersistentPlayerItem):
 # EXAMPLE: INSTANT PLAYER ITEM
 class MasterBall(InstantPlayerItem):
 
-    ball_count: int = 1
+    name: str = "Master Ball"
+    ball_count: int = 0
 
-    def use(self, player: Player = None):
+    def use(self, player: "Player" = None):
         """
         Add a masterball
         """
@@ -291,10 +443,17 @@ class MasterBall(InstantPlayerItem):
 
         self.player.master_balls += self.ball_count
 
+    @classmethod
+    def level1_masterball(cls, env: "Environment"):
+        """
+        Level 1 Masterball
+        """
+        return cls()
+
 
 ## OLDER STUFF BELOW HERE ##
 
-class Berry:
+class _Berry:
     def __init__(self, name, ):
         self.name = name
         
@@ -316,7 +475,7 @@ class Berry:
                 print('None present in inventory')
 
 
-class PlayerItem:
+class _PlayerItem:
     def __init__(self, name, ):
         self.name = name
 
@@ -344,7 +503,7 @@ class PlayerItem:
                 print('None present in inventory')
 
 
-class PokePermItem(BaseModel):
+class _PokePermItem(BaseModel):
 
     name: str
 
@@ -358,14 +517,14 @@ class PokePermItem(BaseModel):
                 player.remove_item(self.name)
 
 
-class OldItemClass:
+class _OldItemClass:
     # OLDER DEFINITIONS
     def use(self, player, pokemon):
         """
         check to see if the item is in the inventory, then use it if it is there
         """
-        evolution_manager: EvolutionManager = self.state.evolution_manager
-        pokemon_factory: PokemonFactory = self.state.pokemon_factory
+        evolution_manager: "EvolutionManager" = self.state.evolution_manager
+        pokemon_factory: "PokemonFactory" = self.state.pokemon_factory
         if self.name in player.inventory.keys():
             if player.inventory[self.name] > 0:
                 """
@@ -540,3 +699,7 @@ class OldItemClass:
                 print('None present in inventory')
         else:
                 print('None present in inventory')
+
+# type annotations
+AllPokemonItems = T.Union[PersistentPokemonItem, InstantPokemonItem]
+AllPlayerItems = T.Union[PersistentPlayerItem, InstantPlayerItem]

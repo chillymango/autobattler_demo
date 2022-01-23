@@ -5,6 +5,8 @@ import typing as T
 
 from engine.base import Component
 from engine.models.player import Player
+from engine.models.pokemon import Pokemon
+from engine.items import ItemManager
 
 
 class PlayerManager(Component):
@@ -18,6 +20,14 @@ class PlayerManager(Component):
             player.is_alive = True
             player.hitpoints = 20
             player.balls = 10
+
+    def get_pokemon_holder(self, pokemon: Pokemon) -> T.Optional[Player]:
+        """
+        Get the player that currently holds a Pokemon
+        """
+        for player in self.players:
+            if pokemon in player.roster:
+                return player
 
     def turn_setup(self):
         """

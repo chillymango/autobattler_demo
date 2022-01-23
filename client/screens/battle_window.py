@@ -28,7 +28,7 @@ from utils.buttons import ShopPokemonButton
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 from utils.error_window import error_window
 from utils.websockets_client import WebSocketClient
 

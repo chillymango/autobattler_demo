@@ -11,14 +11,11 @@ from pydantic import BaseModel
 from server.api.base import ReportingResponse
 from server.api.base import PlayerContextRequest
 from server.api.lobby import get_request_context
-from utils.phase import GamePhase
+from engine.models.phase import GamePhase
 
 if T.TYPE_CHECKING:
     from engine.battle import BattleManager
-    from engine.env import Environment
     from engine.match import Matchmaker
-    from engine.player import Player
-    from engine.shop import ShopManager
     from engine.models.state import State
     from engine.turn import Turn
 

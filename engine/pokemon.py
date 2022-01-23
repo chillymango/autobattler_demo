@@ -239,7 +239,7 @@ class EvolutionManager(Component):
             return None
         return self.evolution_config[pokemon_name].turns_to_evolve * self.XP_PER_TURN
 
-    def evolve(self, pokemon: Pokemon):
+    def evolve(self, pokemon: Pokemon, choice: str = None):
         """
         Perform an in-place evolution operation on a Pokemon
 
@@ -253,6 +253,11 @@ class EvolutionManager(Component):
         # check evolution
         evolved_form = self.get_evolution(pokemon.name)
         if evolved_form is None:
+            return
+
+        if choice is not None:
+            # check choice evolutions
+            # TODO: implement
             return
 
         # reset xp
