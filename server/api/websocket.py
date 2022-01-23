@@ -55,7 +55,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f'WS ERROR: {repr(exc)}')
             api = get_request_endpoint_by_name(endpoint)
             payload = request['payload']
-    
+
             # TODO: drop requests that are too time-different
 
             request_type = api.REQUEST_TYPE

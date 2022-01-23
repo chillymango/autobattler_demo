@@ -406,6 +406,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         Updates the state every time a pubsub message is received
         """
         # refresh references
+        print(data)
         self.env.state = self.state = State.parse_raw(data)
 
         for method in self.render_functions:
