@@ -19,8 +19,8 @@ from engine.turn import Turn
 def build_basic_item_schedule(blocklisted_items: T.List[str] = None):
     """
     Item schedule generation rules:
-    * at the end of each stage, give 10 +/- 2 in value
-    * at the end of each creep round, give 3 +/- 1 in value
+    * at the beginning of each stage, give 10 +/- 2 in value
+    * at the beginning of each creep round, give 3 +/- 1 in value
     """
     # create subenvironment for item and turn determination
     env = Environment(
