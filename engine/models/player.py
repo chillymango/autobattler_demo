@@ -181,7 +181,14 @@ class Player(BaseModel):
     def release_from_storage(self, idx):
         """
         Release pokemon by index in storage.
+
+        If the Pokemon was holding items, put them in player inventory.
         """
+        poke: Pokemon = self.storage[idx]
+        # TODO: this is an example of a non-associative interaction being shitty
+        if poke.battle_card.berry is not None:
+            self.inventory.add(poke.battle_card.berry)
+            poke.battle_card.berry = None
         self.storage.remove(self.storage[idx])
 
     def release_by_id(self, id):
