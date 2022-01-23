@@ -10,7 +10,9 @@ from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
+from engine.item_event import ItemEventManager
 from engine.items import ItemManager
+from engine.inventory import PlayerInventoryManager
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import PlayerManager
@@ -46,6 +48,7 @@ class Environment:
             Turn,
             ItemManager,
             PlayerManager,
+            PlayerInventoryManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
@@ -53,6 +56,7 @@ class Environment:
             ShopManager,
             BattleManager,
             EvolutionManager,
+            ItemEventManager,
             PubSubInterface,  # this should probably go last
         ]
 
@@ -71,6 +75,25 @@ class Environment:
 
         for component in self.component_classes:
             self.components.append(component(self, self.state))
+
+    @classmethod
+    def create_webless_game(cls, max_players: int):
+        # add all non-web components
+        component_classes = [
+            Turn,
+            ItemManager,
+            PlayerManager,
+            PlayerInventoryManager,
+            TmManager,
+            PokemonFactory,
+            Matchmaker,
+            CreepRoundManager,
+            ShopManager,
+            BattleManager,
+            ItemEventManager,
+            EvolutionManager,
+        ]
+        return cls(max_players, component_classes=component_classes)
 
     def log(self, msg: str, recipient=__ALL_PLAYERS__):
         """

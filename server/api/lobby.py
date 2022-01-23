@@ -210,6 +210,7 @@ async def start_game(request: StartGameRequest):
         # call initialize on the game and then start the game loop
         game.initialize()
         # TODO: insert game loop stuff here
+        asyncio.sleep(10.0)
         game.phase = GamePhase.TURN_SETUP
 
         # start a game thread???

@@ -199,11 +199,10 @@ class ItemManager(Component):
         NOTE: this should run before battle manager executes
         """
         for persistent_itype in self.persistent_item_types:
-            for submgr in self.submanagers[persistent_itype]:
-                submgr: ItemSubManager
-                for item in submgr._items:
-                    item: items.PersistentItemMixin
-                    item.turn_execute()
+            submgr = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_execute()
         self.remove_consumed_items()
 
     def turn_cleanup(self):

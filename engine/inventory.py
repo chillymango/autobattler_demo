@@ -14,7 +14,7 @@ class PlayerInventoryManager(Component):
     Manages relationships between players and items
     """
 
-    ENV_PROXY = "inventory"
+    ENV_PROXY = "inventory_manager"
 
     def dependencies(self) -> T.List:
         return [

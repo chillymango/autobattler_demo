@@ -56,12 +56,10 @@ class ItemEventManager(Component):
             return
 
         inv: PlayerInventoryManager = self.env.inventory_manager
-        item_manager: ItemManager = self.env.item_manager
         for player in self.state.players:
             player_items = self.item_schedule.roll_items(self.state.turn_number)
             # TODO: implement choices
             # give items to players
-            for item in player_items:
-                item_class = item_manager.get_item_class_by_name(item)
-                self.log(f"Received a {item_class.name}!", recipient=player)
-                inv.create_and_give_item_to_player(item, player)
+            for item_name in player_items:
+                item = inv.create_and_give_item_to_player(item_name, player)
+                self.log(f"Received a {item.name}!", recipient=player)
