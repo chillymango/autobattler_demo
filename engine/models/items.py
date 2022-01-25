@@ -494,7 +494,7 @@ class IronBarb(CombinedItem):
     Iron Barb
     Deals damage on hit
     """
-    name = "EXP Share"
+    name = "Iron Barb"
     stat_contribution = [0,1,0,1,0]
     stat_atk = Stats.ATK * stat_contribution[0]
     stat_def = Stats.DEF * stat_contribution[1]
