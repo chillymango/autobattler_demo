@@ -21,8 +21,8 @@ if T.TYPE_CHECKING:
 
 # DEFAULT ITEM COSTS
 # TODO: store somewhere else for clarity, or make configurable
-SMALL_BERRY_COST = 2
-LARGE_BERRY_COST = 4
+SMALL_SHARD_COST = 2
+LARGE_SHARD_COST = 4
 
 L1_CONSUMABLE_COST = 1
 L2_CONSUMABLE_COST = 2
@@ -134,6 +134,18 @@ class CombatItem(PokemonItem):
         """
         pass
 
+    def on_enemy_fast_move_action(self, context: T.Dict):
+        """
+        Run this action on all enemy fast hits
+        """
+        pass
+
+    def on_enemy_charged_move_action(self, context: T.Dict):
+        """
+        Run this action on all enemy charged hits
+        """
+        pass
+
     def on_charged_move_action(self, context: T.Dict):
         """
         Run this action on all charged moves
@@ -221,66 +233,419 @@ class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
 
 # EXAMPLES:
 # COMBAT ITEM
-class Berry(CombatItem):
+class Shard(CombatItem):
 
-    stat: Stats = None  # stat the Berry adjusts
-    name: str = "Berry"  # assign a default name here
+    stat: Stats = None  # stat the Shard adjusts
+    name: str = "Shard"  # assign a default name here
 
 
-class SmallSitrusBerry(Berry):
+class SmallHPShard(Shard):
     """
-    Small Sitrus Berry
+    Small HP Shard
 
-    Grants a small amount of health upon exiting successful combat
+    Grants a small amount of health at combat start
     """
-    name = 'Small Sitrus Berry'
+    name = 'Small HP Shard'
     stat = Stats.HP
-    cost = SMALL_BERRY_COST
+    cost = SMALL_SHARD_COST
     level = 1
 
-    def post_combat_action(self, context: T.Dict):
+
+
+
+class LargeHPShard(Shard):
+    """
+    Large HP Shard
+
+    Grants a large amount of health at combat start
+    """
+    name = 'Large HP Shard'
+    stat = Stats.HP
+    cost = LARGE_SHARD_COST
+    level = 2
+
+
+class SmallEnergyShard(Shard):
+    """
+    Small Energy Shard
+
+    Grants a small amount of energy at combat start
+    """
+    name = 'Small Energy Shard'
+    stat = Stats.ENG
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeEnergyShard(Shard):
+    """
+    Large Energy Shard
+
+    Grants a large amount of energy at combat start
+    """
+    name = 'Large Energy Shard'
+    stat = Stats.ENG
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallDefenseShard(Shard):
+    """
+    Small Defense Shard
+
+    Grants a small amount of Defense at combat start
+    """
+    name = 'Small Defense Shard'
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeDefenseShard(Shard):
+    """
+    Large Defense Shard
+
+    Grants a large amount of Defense at combat start
+    """
+    name = 'Large Defense Shard'
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallAttackShard(Shard):
+    """
+    Small Attack Shard
+
+    Grants a small amount of Attack at combat start
+    """
+    name = 'Small Attack Shard'
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeAttackShard(Shard):
+    """
+    Large Attack Shard
+
+    Grants a large amount of Attack at combat start
+    """
+    name = 'Large Attack Shard'
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallSpeedShard(Shard):
+    """
+    Small Speed Shard
+
+    Grants a small amount of Speed at combat start
+    """
+    name = 'Small Speed Shard'
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeSpeedShard(Shard):
+    """
+    Large Speed Shard
+
+    Grants a large amount of Speed at combat start
+    """
+    name = 'Large Speed Shard'
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+# COMBAT ITEM
+class CombinedItem(CombatItem):
+
+    name: str = "CombinedItem"  # assign a default name here
+    stat_contribution = [0,0,0,0,0] #contribution of ATK,DEF,ENG,HP,SPD
+    
+class LifeOrb(CombinedItem):
+    """
+    Life Orb
+    Significantly increases damage, deals damage per tick to holder
+    """
+    name = "Life Orb"
+    stat_contribution = [1,0,0,0,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    bonus_stat = None
+    def on_tick_action(self, context: T.Dict):
         """
-        If Pokemon still alive, gain 10% HP
+        deal damage to self 
+        """
+        pass
+class LightClay(CombinedItem):
+    """
+    Light Clay
+    Provide extra shield
+    """
+    name = "Light Clay"
+    stat_contribution = [0,1,0,0,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def pre_battle_action(self, context: T.Dict):
+        """
+        give shields to teammates 
+        """
+        pass
+
+class CellBattery(CombinedItem):
+    """
+    Cell Battery
+    Provide energy per tick
+    """
+    name = "Cell Battery"
+    stat_contribution = [0,0,1,0,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def on_tick_action(self, context: T.Dict):
+        """
+        energy per tick 
+        """
+        pass
+class Leftovers(CombinedItem):
+    """
+    Leftovers
+    Provide energy per tick
+    """
+    name = "Leftovers"
+    stat_contribution = [0,0,0,1,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def on_tick_action(self, context: T.Dict):
+        """
+        HP per tick 
+        """
+        pass
+class Metronome(CombinedItem):
+    """
+    Metronome
+    Provide attack speed on hit
+    """
+    name = "Metronome"
+    stat_contribution = [0,0,0,0,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        atk spd per tick 
+        """
+        pass
+
+class ExpShare(CombinedItem):
+    """
+    EXP Share
+    Provide bonus XP at end of battle
+    """
+    name = "EXP Share"
+    stat_contribution = [0,1,0,0,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def post_battle_action(self, context: T.Dict):
+        """
+        xp post battle 
         """
         pass
 
 
-class LargeSitrusBerry(Berry):
+class IntimidatingMask(CombinedItem):
     """
-    Large Sitrus Berry
-
-    Grants a large amount of health upon exiting successful combat
+    Intimidating Mask
+    Lowers enemy attack at battle start
     """
-    name = 'Large Sitrus Berry'
-    stat = Stats.HP
-    cost = LARGE_BERRY_COST
-    level = 2
+    name = "EXP Share"
+    stat_contribution = [1,1,0,0,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    def pre_combat_action(self, context: T.Dict):
+        """
+        debuff enemy attack 
+        """
+        pass
 
-
-class SmallLeppaBerry(Berry):
+class IronBarb(CombinedItem):
     """
-    Small Leppa Berry
-
-    Grants a small amount of energy at combat start
+    Iron Barb
+    Deals damage on hit
     """
-    name = 'Small Leppa Berry'
-    stat = Stats.ENG
-    cost = SMALL_BERRY_COST
-    level = 1
+    name = "EXP Share"
+    stat_contribution = [0,1,0,1,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+    def on_enemy_fast_move_action(self, context: T.Dict):
+        """
+        deal damage
+        """
+        pass
 
-
-class LargeLeppaBerry(Berry):
+class FocusSash(CombinedItem):
     """
-    Large Leppa Berry
-
-    Grants a large amount of energy at combat start
+    Focus Sash
+    Revive after battle at low health
     """
-    name = 'Large Leppa Berry'
-    stat = Stats.ENG
-    cost = LARGE_BERRY_COST
-    level = 2
+    name = "Focus Sash"
+    stat_contribution = [1,0,1,0,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+    def post_combat_action(self, context: T.Dict):
+        """
+        revive
+        """
+        pass
 
-# TODO: implement the rest of the berry classes
+class ShellBell(CombinedItem):
+    """
+    Shell Bell
+    Lifesteal
+    """
+    name = "Shell Bell"
+    stat_contribution = [1,0,0,1,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        heal
+        """
+        pass
+
+class EjectButton(CombinedItem):
+    """
+    Eject Button
+    Swaps out to a favorable matchup
+    """
+    name = "Eject Button"
+    stat_contribution = [0,0,1,1,0]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+    def on_tick_action(self, context: T.Dict):
+        """
+        check HP, then terminate the battle
+        """
+        pass
+class ExpertBelt(CombinedItem):
+    """
+    Expert Belt
+    boosts power of super effective hits
+    """
+    name = "Expert Belt"
+    stat_contribution = [1,0,0,0,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        check damage type, then boost power
+        """
+        pass
+    def on_charged_move_action(self, context: T.Dict):
+        """
+        check damage type, then boost power
+        """
+        pass
+
+class AssaultVest(CombinedItem):
+    """
+    Assault Vest
+    reduces power of enemy charged moves
+    """
+    name = "Assault Vest"
+    stat_contribution = [0,1,0,0,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+  
+    def on_enemy_charged_move_action(self, context: T.Dict):
+        """
+        reduce power
+        """
+        pass
+
+class QuickPowder(CombinedItem):
+    """
+    Quick Powder
+    boosts attack speed of teammates
+    """
+    name = "Quick Powder"
+    stat_contribution = [0,0,0,1,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+  
+    def pre_battle_action(self, context: T.Dict):
+        """
+        boost speed of team
+        """
+        pass
+
+class ChoiceBand(CombinedItem):
+    """
+    Choice Band
+    Your fast move becomes lock on
+    """
+    name = "Quick Powder"
+    stat_contribution = [0,0,1,0,1]
+    stat_atk = Stats.ATK * stat_contribution[0]
+    stat_def = Stats.DEF * stat_contribution[1]
+    stat_eng = Stats.ENG * stat_contribution[2]
+    stat_hp = Stats.HP * stat_contribution[3]
+    stat_spd = Stats.SPD * stat_contribution[4]
+    
+  
+    def pre_battle_action(self, context: T.Dict):
+        """
+        change your fast move
+        """
+        pass
 
 
 class TM(InstantPokemonItem):
@@ -299,42 +664,7 @@ class TM(InstantPokemonItem):
         return cls(name = 'TM')
 
 
-class ChoiceItem(InstantPokemonItem):
 
-    def use(self):
-        card: "BattleCard" = self.pokemon.battle_card
-        if card.choiced == 'No':
-            self.consumed = True
-            if self.name == 'Choice Band':
-                card.choiced = 'Fast'
-                card.move_f = 'YAWN'
-                card.f_move_type = 'Normal'
-                card.attackbuff += 2
-            elif self.name == 'Choice Specs':
-                card.choiced == 'Charged'
-                card.move_ch = 'FRUSTRATION'
-                card.ch_move_type = 'Normal'
-                card.tm_flag = 1
-                card.tm_move_type = 'Normal'
-                card.move_tm = 'STRUGGLE'
-                card.attackbuff += 2
-            elif self.name == 'Choice Scarf':
-                card.choiced = 'Fast-Speed'
-                card.spdbuff = 0.66
-                card.move_f = 'YAWN'
-                card.f_move_type = 'Normal'
-
-    @classmethod
-    def choice_band_factory(cls):
-        return cls(name = 'Choice Band')
-
-    @classmethod
-    def choice_specs_factory(cls):
-        return cls(name = 'Choice Specs')
-
-    @classmethod
-    def choice_scarf_factory(cls):
-        return cls(name = 'Choice Scarf')
 
 # INSTANT ITEM
 class Stone(InstantPokemonItem):
@@ -358,7 +688,7 @@ class Stone(InstantPokemonItem):
 
 class CommonStone(Stone):
     """
-    Fire, Water, Thunder, Leaf Stones
+    Fire, Water, Thunder, Leaf, Moon Stones
     """
 
     def stone_evo(self):
