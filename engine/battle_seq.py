@@ -308,6 +308,8 @@ class BattleManager(Component):
         return([winner, survivorhp, survivorenergy,survivorshields])
 
     def battle(self, team1, team2, player1=None, player2=None):
+        # TODO(albert): put real battle here :)
+        return random.randint(0, 2)
         players = [player1, player2]
         # team_cards is a dict of nickname to battle card
         team1_cards = [x.battle_card for x in team1]

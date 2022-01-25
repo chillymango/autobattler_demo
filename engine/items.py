@@ -136,6 +136,7 @@ class ItemManager(Component):
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
         item: items.Item = submanager.factory[item_name](self.env)
+        self.state._item_registry.append(item)
         submanager._items.add(item)
         self.id_to_item[item.id] = item
         return item

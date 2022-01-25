@@ -179,31 +179,6 @@ class PokemonFactory(Component):
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         return Pokemon(name=pokemon_name, battle_card=battle_card, nickname=nickname)
 
-    def shiny_checker(self, player, card):
-        roster_pokes = player.roster
-        matching_pokes = []
-        for poke in roster_pokes:
-            if (poke.battle_card.shiny != True) & (poke.name == card):
-                matching_pokes.append(poke)
-        if len(matching_pokes) == 3: 
-            self.log(f'Caught a shiny {card}!', recipient=player)
-            max_xp = 0
-            max_tm_flag = 0
-            max_bonus_shield = 0
-            max_choice = 0
-            for mp in matching_pokes:
-                max_xp = max(mp.xp, max_xp)
-                max_tm_flag = max(mp.battle_card.tm_flag, max_tm_flag)
-                max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
-                player.release_by_id(mp.id)
-            shiny_poke = self.create_pokemon_by_name(card)
-            shiny_poke.battle_card.shiny = True
-            shiny_poke.xp = max_xp
-            shiny_poke.battle_card.tm_flag = max_tm_flag
-            shiny_poke.battle_card.bonus_shield = max_bonus_shield
-            shiny_poke.battle_card.choiced = max_choice
-            player.add_to_roster(shiny_poke)
-
 
 class EvolutionManager(Component):
     """

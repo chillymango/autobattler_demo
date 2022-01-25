@@ -119,15 +119,6 @@ class Pokemon(Entity):
     battle_card: BattleCard
     nickname: str
     xp: float = 0.0
-    player: Entity = None  # TODO: break circ import
-
-    def __hash__(self):
-        try:
-            return int(UUID(self.id))
-        except Exception:
-            print(self.name)
-            print(self.id)
-            raise
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()

@@ -6,6 +6,7 @@ TODO: split this into multiple modules
 import typing as T
 
 from pydantic import BaseModel
+from pydantic import Field
 from pydantic import PrivateAttr
 from engine.models.base import Entity
 from engine.models.stats import Stats
@@ -44,7 +45,7 @@ class Item(Entity):
     name: str  # not unique, all subclasses should define a default here though
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
-    holder: Entity = None
+    holder: Entity = Field(default=None, exclude={"inventory"})
     cost: int = 1  # the "value" of a specific item
     level: int = 0  # the "power" of a specific item
     _env: "Environment" = PrivateAttr()
@@ -92,7 +93,7 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    holder: "Player" = None
+    holder: "Player" = Field(default=None, exclude={"inventory"})
 
 
 class PokemonItem(Item):
@@ -100,7 +101,7 @@ class PokemonItem(Item):
     Base class for items which get assigned to Pokemon
     """
 
-    holder: "Pokemon" = None
+    holder: "Pokemon" = Field(default=None, exclude={"battle_card"})
 
 
 class CombatItem(PokemonItem):

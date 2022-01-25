@@ -12,6 +12,7 @@ from engine.base import Component
 from engine.models.match import Match
 from engine.models.player import EntityType
 from engine.models.player import Player
+from engine.player import PlayerManager
 
 if T.TYPE_CHECKING:
     from engine.pokemon import PokemonFactory
@@ -59,11 +60,20 @@ class CreepRoundManager(Component):
     def create_creep_player(self):
         # do a lookup based on the current run
         creep_player = Player(name="Creep Round", type=EntityType.CREEP)
+        self.state.creeps.append(creep_player)
+        player_manager: PlayerManager = self.env.player_manager
         turn = self.state.turn_number
-        for idx, pokemon in enumerate(self.creep_round_pokemon[turn]):
-            creep_player.add_to_party(pokemon)
-            creep_player.add_party_to_team(idx)
+        for pokemon in self.creep_round_pokemon[turn]:
+            player_manager.give_pokemon_to_player(creep_player, pokemon)
         return creep_player
+
+    def remove_creeps(self):
+        """
+        Wipe all creep round players
+        """
+        for creep in self.state.creeps:
+            creep.delete()
+        self.state.creeps = []
 
     def organize_creep_round(self):
         """
@@ -100,7 +110,7 @@ class Matchmaker(Component):
             EntityType.HUMAN: [x for x in self.state.players if x.type == EntityType.HUMAN],
             EntityType.COMPUTER: [x for x in self.state.players if x.type == EntityType.COMPUTER],
         }
-        self.matches = [[]]
+        self.matches: T.List[T.List[Match]] = [[]]
         self.opponents_by_player = defaultdict(lambda: [])
 
 
@@ -234,6 +244,8 @@ class Matchmaker(Component):
             self.state.current_matches = self.organize_round()
         else:
             print('Trying to organize creep round')
+            # remove any existing creeps first
+            creep_round_manager.remove_creeps()
             self.state.current_matches = creep_round_manager.organize_creep_round()
 
     def turn_cleanup(self):

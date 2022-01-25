@@ -4,8 +4,13 @@
 
 # maybe we just do a `mutate` function or something
 import typing as T
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
+from pydantic import Field
+from engine.models.association import Association, PlayerRoster, PlayerShop
+from engine.models.association import PlayerInventory
+from engine.models.items import Item
 from engine.models.phase import GamePhase
+from engine.models.pokemon import Pokemon
 from engine.models.stage_config import StageConfig
 from engine.models.player import Player
 from engine.models.match import Match
@@ -32,25 +37,94 @@ class State(BaseModel):
 
     phase: "GamePhase"
     players: T.List["Player"]  # list of players in the game
-    shop_window_raw: T.Dict[str, T.List[T.Optional[str]]]
+    creeps: T.List["Player"] = list()  # list of creep players in the game
+
     current_matches: T.List["Match"]
     turn_number: int
     stage: StageConfig = StageConfig(stage=0, round=0)
     t_phase_elapsed: float = 0.0
     t_phase_duration: float = float('inf')
 
+    # NOTE: registries are to ensure that these objects do not garbage collected until
+    # the state object is destructed. They should not be transmitted over the wire.
+    # TODO: figure out why pydantic breaks if the type is set
+    _pokemon_registry: T.List[Pokemon] = PrivateAttr(default_factory=list)
+    _item_registry: T.List[T.Any] = PrivateAttr(default_factory=list)  # TODO: fix type annotation
+    _associations: T.List[Association] = PrivateAttr(default_factory=list)
+
+    # server keeps track of associations and instances
+    # client just gets object copies
+
+    # Shop Containers
+    shop_window_raw: T.Dict[str, T.List[T.Optional[str]]] = dict()
+
+    # Pokemon Containers
+    player_roster_raw: T.Dict[str, T.List[Pokemon]] = dict()
+
+    # Inventory Containers
+    player_inventory_raw: T.Dict[str, T.List[T.Any]] = dict()  # maps player ID to a list of items
+
+    def load_containers(self):
+        self.shop_window_raw = {p.id: PlayerShop.get_shop(p) for p in self.players}
+        self.player_roster_raw = {p.id: PlayerRoster.get_roster(p) for p in self.players}
+        self.player_inventory_raw = {p.id: PlayerInventory.get_inventory(p) for p in self.players}
+
+    def for_player(self, player: Player):
+        """
+        Generate a state object to transmit over the wire to a player.
+
+        Should be isolated to only the information a specific player requires.
+
+        For example, a player only needs to know about what is in their shop specifically.
+        Information pertaining to another players' shop is not required.
+
+        Isolated components:
+        * shop_window
+        * pokemon
+        * items
+        """
+        shop_window = {player.id: self.shop_window_raw[player.id]}
+        player_inventory = {player.id: self.player_inventory_raw[player.id]}
+        player_roster = {player.id: self.player_roster_raw[player.id]}
+        return self.__class__(
+            phase=self.phase,
+            players=self.players,
+            creeps=self.creeps,
+            shop_window_raw=shop_window,
+            current_matches=self.current_matches,
+            turn_number=self.turn_number,
+            player_inventory_raw=player_inventory,
+            player_roster_raw=player_roster
+        )
+
     @classmethod
     def default(cls):
         return cls(
             phase=GamePhase.INITIALIZATION,
             players=[],
-            shop_window_raw={},
             current_matches=[],
             turn_number=0,
         )
 
     @property
+    def player_inventory(self):
+        """
+        Return all player inventories
+        """
+        self.load_containers()
+        return {p: self.player_inventory_raw.get(p.id) for p in self.players}
+
+    @property
+    def player_roster(self):
+        """
+        Return all player rosters
+        """
+        self.load_containers()
+        return {p: self.player_roster_raw.get(p.id) for p in self.players}
+
+    @property
     def shop_window(self):
+        self.load_containers()
         return {
             player: self.shop_window_raw.get(player.id, [None] * SHOP_SIZE)
             for player in self.players
@@ -63,10 +137,6 @@ class State(BaseModel):
         if len(matches) > 1:
             raise ValueError("More than 1 matching player???")
         return matches[0]
-
-    @property
-    def alive_players(self):
-        return [player for player in self.players]
 
     @property
     def time_left_in_turn(self):

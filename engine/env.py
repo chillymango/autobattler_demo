@@ -6,6 +6,7 @@ import typing as T
 from uuid import UUID
 from uuid import uuid4
 
+from engine.association import AssociationManager
 from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import __ALL_PLAYERS__
@@ -46,6 +47,7 @@ class Environment:
     def default_component_classes(self):
         return [
             Turn,
+            AssociationManager,
             ItemManager,
             PlayerManager,
             PlayerInventoryManager,
@@ -81,15 +83,16 @@ class Environment:
         # add all non-web components
         component_classes = [
             Turn,
+            AssociationManager,
             ItemManager,
             PlayerManager,
-            PlayerInventoryManager,
+            #PlayerInventoryManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
             CreepRoundManager,
             ShopManager,
-            BattleManager,
+            #BattleManager,
             ItemEventManager,
             EvolutionManager,
         ]
@@ -127,6 +130,7 @@ class Environment:
         """
         Perform game environment initialization
         """
+        self.state.load_containers()
         for component in self.components:
             component.initialize()
         self.state.phase = GamePhase.READY_TO_START

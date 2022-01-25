@@ -10,8 +10,11 @@ from collections import defaultdict
 from collections import namedtuple
 
 from engine.base import Component
+from engine.models.association import associate
+from engine.models.association import PlayerShop
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
+from engine.player import PlayerManager
 from engine.pokemon import PokemonFactory
 from engine.turn import Turn
 
@@ -73,7 +76,7 @@ class Shop:
         shop_size. Depending on which intervals these numbers fall into, a Pokemon
         will be selected.
         """
-        shop = []
+        shop: T.List[str] = []
         randoms = [random.random() for _ in range(shop_size)]
         for val in randoms:
             for pokemon, interval in self._intervals:
@@ -135,6 +138,12 @@ class ShopManager(Component):
         self.tier_colors.update(
             {1: "grey", 2: "green", 3: "blue", 4: "purple", 5: "orange", 6: "red"}
         )
+
+    def get_pokemon_by_id(self, poke_id: str) -> Pokemon:
+        """
+        Get a Pokemon by ID
+        """
+        return Pokemon.get_by_id(id=poke_id)
 
     @property
     def route(self):
@@ -217,7 +226,7 @@ class ShopManager(Component):
             else:
                 self.state.shop_window_raw[player.id] = [None] * DEFAULT_SHOP_SIZE
 
-    def catch(self, player, idx):
+    def catch(self, player: Player, idx: int):
         """
         Catch the Pokemon at index in shop for player
 
@@ -230,31 +239,62 @@ class ShopManager(Component):
             return
 
         pokemon_factory: PokemonFactory = self.env.pokemon_factory
-        caught = pokemon_factory.create_pokemon_by_name(self.state.shop_window[player][idx])
-        player.add_to_roster(caught)
+        player_manager: PlayerManager = self.env.player_manager
+        player_manager.create_and_give_pokemon_to_player(player, card)
+
         if player.master_balls == 0:
             player.balls -= cost
+
         else:
-            player.master_balls += -1
+            player.master_balls -= -1
+
         self.state.shop_window[player][idx] = None
 
-        # shiny logic:
-        # if there are three copies of a pokemon, combine them into a superset and mark it
-        # as shiny
-        # check here if there are already two non-shiny copies of a pokemon in a players
-        # combined inventory
-        pokemon_factory.shiny_checker(player, card)
+        self.check_shiny(player, card)
+
+    def check_shiny(self, player: Player, card: str):
+        """
+        Check if a player has 3 instances of the same Pokemon.
+
+        If they do, remove all 3 and give a Shiny Pokemon.
+        """
+        player_manager: PlayerManager = self.env.player_manager
+        roster_pokes = player_manager.player_roster(player)
+        matching_pokes = []
+        for poke in roster_pokes:
+            if (poke.battle_card.shiny != True) & (poke.name == card):
+                matching_pokes.append(poke)
+        if len(matching_pokes) == 3: 
+            self.log(f'Caught a shiny {card}!', recipient=player)
+            max_xp = 0
+            max_tm_flag = 0
+            max_bonus_shield = 0
+            max_choice = 0
+            for mp in matching_pokes:
+                max_xp = max(mp.xp, max_xp)
+                max_tm_flag = max(mp.battle_card.tm_flag, max_tm_flag)
+                max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
+                player_manager.release_pokemon(player, mp)
+            shiny_poke = self.create_pokemon_by_name(card)
+            shiny_poke.battle_card.shiny = True
+            shiny_poke.xp = max_xp
+            shiny_poke.battle_card.tm_flag = max_tm_flag
+            shiny_poke.battle_card.bonus_shield = max_bonus_shield
+            shiny_poke.battle_card.choiced = max_choice
+            player.add_to_roster(shiny_poke)
 
     def roll(self, player: Player):
         """
         Load a new shop for a player based on their route
         """
         if player.flute_charges > 0:
-            self.shop[player] = self.route[player].roll_shop()
-            player.flute_charges += -1
-
+            player.flute_charges -= -1
         elif player.energy > 0:
             player.energy -= 1
-            self.state.shop_window_raw[player.id] = self.route[player].roll_shop()
         else:
             print("Cannot roll shop with no energy")
+            return
+
+        # create shop associations
+        for rolled in self.route[player].roll_shop():
+            associate(PlayerShop, player, rolled)

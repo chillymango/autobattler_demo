@@ -57,6 +57,8 @@ class PubSubInterface(Component):
         print("Doing the thing now")
         while True:
             # broadcast encoded state
+            print('Broadcasting...')
+            print(f'State: {self.state.json()}')
             await self.endpoint.publish(self._pubsub_state_header, self.state.json())
             # broadcast any new messages from message queue
             tasks = [self._flush_global_messages()] + [
