@@ -508,12 +508,12 @@ class IronBarb(CombinedItem):
         """
         pass
 
-class FocusSash(CombinedItem):
+class FocusBand(CombinedItem):
     """
-    Focus Sash
+    Focus Band
     Revive after battle at low health
     """
-    name = "Focus Sash"
+    name = "Focus Band"
     stat_contribution = [1,0,1,0,0]
     stat_atk = Stats.ATK * stat_contribution[0]
     stat_def = Stats.DEF * stat_contribution[1]
@@ -628,12 +628,12 @@ class QuickPowder(CombinedItem):
         """
         pass
 
-class ChoiceBand(CombinedItem):
+class ChoiceSpecs(CombinedItem):
     """
-    Choice Band
+    Choice Specs
     Your fast move becomes lock on
     """
-    name = "Quick Powder"
+    name = "Choice Specs"
     stat_contribution = [0,0,1,0,1]
     stat_atk = Stats.ATK * stat_contribution[0]
     stat_def = Stats.DEF * stat_contribution[1]
