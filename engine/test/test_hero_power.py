@@ -43,7 +43,7 @@ class TestHeroPower(PlayerHeroPower):
     """
     Test function to use lance's hero power
     """
-
+    success: bool = False
     hp_cost: int = 2
 
     @classmethod
@@ -55,8 +55,8 @@ class TestHeroPower(PlayerHeroPower):
         get a dragon scale item 
         """
         if player.balls > self.hp_cost :
-            player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "Test Dragon Scale")
+            player_manager: PlayerManager = self._env.player_manager
+            player_manager.create_and_give_item_to_player(player, "test_dragon_scale")
             self.success = True
 
 TEST_FACTORIES: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
@@ -91,7 +91,8 @@ class TestItemManager(unittest.TestCase):
 
         test_hp.use(player)
         state = self.env.state
-        player_inventory_names = set(item.name for item in state.player_inventory[player])
+        print(state.player_inventory)
+        player_inventory_names = set(item.name for item in state.player_inventory[player.name])
         self.assertTrue("Test Dragon Scale" in player_inventory_names)
 
         dragon_scale = state.player_inventory[player][0]
@@ -102,7 +103,7 @@ class TestItemManager(unittest.TestCase):
 
         test_hp.use(player)
         state = self.env.state
-        player_inventory_names = set(item.name for item in state.player_inventory[player])
+        player_inventory_names = set(item.name for item in state.player_inventory[player.name])
         self.assertFalse("Test Dragon Scale" in player_inventory_names)
 
 
