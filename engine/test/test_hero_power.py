@@ -61,7 +61,7 @@ class TestHeroPower(PlayerHeroPower):
 
 TEST_FACTORIES: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
     InstantPokemonItem: dict(test_dragon_scale=TestInstantPokemonItem.test_factory_method),
-    TestHeroPower: dict(test_lance_fetish=TestHeroPower.test_factory_method)
+    PlayerHeroPower: dict(test_lance_fetish=TestHeroPower.test_factory_method)
 }
 
 
@@ -88,18 +88,19 @@ class TestItemManager(unittest.TestCase):
         test_hp: PlayerHeroPower = item_manager.create_item("test_lance_fetish")
         test_hp.holder = player
         player.balls = 5
-        test_hp.use()
+
+        test_hp.use(player)
         state = self.env.state
         player_inventory_names = set(item.name for item in state.player_inventory[player])
         self.assertTrue("Test Dragon Scale" in player_inventory_names)
 
         dragon_scale = state.player_inventory[player][0]
         dragon_scale.holder = poke
-        dragon_scale.use()
+        dragon_scale.use(poke)
         self.assertEqual(poke.battle_card.poke_type1, "dragon")
         self.assertTrue(player.balls == 3)
 
-        test_hp.use()
+        test_hp.use(player)
         state = self.env.state
         player_inventory_names = set(item.name for item in state.player_inventory[player])
         self.assertFalse("Test Dragon Scale" in player_inventory_names)

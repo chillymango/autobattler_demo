@@ -48,6 +48,7 @@ class ItemManager(Component):
             items.InstantPokemonItem,
             items.PersistentPokemonItem,
             items.CombatItem,
+            items.PlayerHeroPower
         ]
 
         # TODO: dynamic evaluation
@@ -67,7 +68,8 @@ class ItemManager(Component):
             ),
             items.CombatItem: dict(
             ),
-            items.PersistentPokemonItem: dict()
+            items.PersistentPokemonItem: dict(), 
+            items.PlayerHeroPower: dict()
         }
 
         self.submanagers: T.Dict[T.Type, ItemSubManager] = {
