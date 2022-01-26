@@ -103,7 +103,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     @property
     def party(self):
-        return [Pokemon.get_by_id(party_id) for party_id in self.player.party_config.party]
+        party = [Pokemon.get_by_id(party_id) for party_id in self.player.party_config.party]
+        if len(party) < 6:
+            party += [None] * (6 - len(party))
+        return party
 
     @property
     def team(self):
@@ -348,7 +351,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                     self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
                     opponent_party = [Pokemon.get_by_id(_id) for _id in opponent.party_config.party]
                     if len(opponent_party) < 6:
-                        opponent_party += [None] * 6 - len(opponent_party)
+                        opponent_party += [None] * (6 - len(opponent_party))
                     for idx in range(6):
                         button = self.opposing_pokemon_buttons[idx]
                         pokemon = opponent_party[idx]

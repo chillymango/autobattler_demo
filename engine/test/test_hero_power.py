@@ -13,16 +13,6 @@ from engine.models.items import PlayerHeroPower
 from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
 
-class TestEnvironment(Environment):
-
-    @property
-    def component_classes(self):
-        return [
-            ItemManager,
-            PokemonFactory,
-            EvolutionManager,
-        ]
-
 
 class TestInstantPokemonItem(InstantPokemonItem):
     """
@@ -79,7 +69,7 @@ class TestItemManager(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.env = TestEnvironment(8)
+        self.env = Environment.create_webless_game(8)
         self.env.initialize()
 
         # create a test factory and inject it
@@ -107,6 +97,7 @@ class TestItemManager(unittest.TestCase):
         dragon_scale.holder = poke
         dragon_scale.use()
         self.assertEqual(poke.battle_card.poke_type1, "dragon")
+        self.assertTrue(player.balls == 3)
 
         test_hp.use()
         state = self.env.state
