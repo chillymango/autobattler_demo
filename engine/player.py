@@ -4,7 +4,7 @@ Player Manager Component
 import typing as T
 
 from engine.base import Component
-from engine.models.association import PlayerInventory, PlayerRoster, PokemonHeldItem, associate, dissociate
+from engine.models.association import PlayerInventory, PlayerRoster, PlayerShop, PokemonHeldItem, associate, dissociate
 from engine.models.items import Item
 from engine.models.party import PartyConfig
 from engine.models.player import Player
@@ -42,6 +42,7 @@ class PlayerManager(Component):
             if player.hitpoints <= 0:
                 self.log("You have died!", recipient=player)
                 player.is_alive = False
+                # TODO: remove all shop and pokemon
 
     def player_roster(self, player: Player) -> T.List[Pokemon]:
         return PlayerRoster.get_roster(player)
@@ -50,7 +51,14 @@ class PlayerManager(Component):
         """
         Use the players party config and their current roster to generate a party.
         """
-        return [Pokemon.get_by_id(x)() if x else None for x in player.party_config.party]
+        party: T.List[T.Union[Pokemon, None]] = []
+        for party_id in player.party_config.party:
+            poke = Pokemon.get_by_id(party_id)
+            if poke is None:
+                party.append(None)
+                continue
+            party.append(poke())
+        return party
 
     def player_storage(self, player: Player) -> T.List[Pokemon]:
         """
@@ -103,9 +111,10 @@ class PlayerManager(Component):
 
     def remove_item_from_player(self, player: Player, item: Item):
         """
-        Remove an item from a player
+        Remove an item from a player. This will destroy the item.
         """
         dissociate(PlayerInventory, player, item)
+        item.delete()
 
     def give_item_to_pokemon(self, pokemon: Pokemon, item: Item):
         """
@@ -143,3 +152,4 @@ class PlayerManager(Component):
         """
         dissociate(PlayerRoster, player, pokemon)
         self.state._pokemon_registry.remove(pokemon)
+        pokemon.delete()

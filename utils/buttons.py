@@ -25,6 +25,7 @@ def set_button_image(button, image, color):
     """
     Set a scaled image with background color
     """
+    button.setText('')
     button.setStyleSheet(
         "border-image: url('{image}');"
         "background-color: {color};"

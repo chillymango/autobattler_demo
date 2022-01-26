@@ -133,19 +133,7 @@ class ItemManager(Component):
         """
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
-        item: items.Item = submanager.factory[item_name](self.env)
-        self.state._item_registry.append(item)
-        submanager._items.add(item)
-        self.id_to_item[item.id] = item
-        return item
-
-    def remove_item(self, item: items.Item) -> None:
-        """
-        Remove an item from existence
-        """
-        submanager: ItemSubManager = self.item_to_manager[item.name]
-        submanager._items.remove(item)
-        self.id_to_item.pop(item.id)
+        return submanager.factory[item_name](self.env)
 
     @property
     def combat_items(self) -> T.Set[items.CombatItem]:
@@ -163,20 +151,13 @@ class ItemManager(Component):
 
         NOTE: this should just print warnings because it's a sign of sloppy programming
         """
-        for submgr in self.submanagers.values():
-            for item in submgr._items:
-                if item.holder is None:
-                    print(f'Item {item} was orphaned and sad')
-                    self.remove_item(item)
+        pass
 
     def remove_consumed_items(self):
         """
         Check all item lists
         """
-        for submgr in self.submanagers.values():
-            for item in submgr._items:
-                if item.consumed:
-                    self.remove_item(item)
+        pass
 
     def turn_setup(self) -> None:
         """
@@ -206,10 +187,9 @@ class ItemManager(Component):
 
     def turn_cleanup(self):
         for persistent_itype in self.persistent_item_types:
-            for submgr in self.submanagers[persistent_itype]:
-                submgr: ItemSubManager
-                for item in submgr._items:
-                    item: items.PersistentItemMixin
-                    item.turn_cleanup()
+            submgr: ItemSubManager = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_cleanup()
         self.remove_consumed_items()
         self.remove_orphaned_items()

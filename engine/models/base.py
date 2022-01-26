@@ -69,7 +69,7 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         """
         if id is None:
             raise ValueError("Cannot hash NoneType")
-        return cls._INSTANCES.get(hash(id))
+        return cls._INSTANCES.get(hash(id))()
 
     @classmethod
     def all(cls, **params) -> T.List[EntityType]:

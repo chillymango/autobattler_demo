@@ -11,6 +11,10 @@ from engine.models.pokemon import BattleCard
 from engine.models.pokemon import EvolutionConfig
 from engine.models.pokemon import Pokemon
 
+if T.TYPE_CHECKING:
+    from engine.player import PlayerManager
+    from engine.shop import ShopManager
+
 
 class TmManager(Component):
     """
@@ -259,7 +263,8 @@ class EvolutionManager(Component):
         for player in self.state.players:
             if not player.is_alive:
                 continue
-            for party_member in player.party:
+            player_manager: "PlayerManager" = self.env.player_manager
+            for party_member in player_manager.player_party(player):
                 if party_member is None or party_member.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)
@@ -270,5 +275,5 @@ class EvolutionManager(Component):
                         .format(party_member.name, party_member.xp, threshold)
                     )
                     self.evolve(party_member)
-                    pokemon_factory: PokemonFactory = self.env.pokemon_factory
-                    pokemon_factory.shiny_checker(player, party_member.name)
+                    shop_manager: "ShopManager" = self.env.shop_manager
+                    shop_manager.shiny_checker(player, party_member.name)

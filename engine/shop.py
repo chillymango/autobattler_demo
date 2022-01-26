@@ -6,14 +6,16 @@ TODO: fix private variable access into state._shop_window
 """
 import os
 import random
+import typing as T
 from collections import defaultdict
 from collections import namedtuple
 
 from engine.base import Component
-from engine.models.association import associate
+from engine.models.association import associate, dissociate
 from engine.models.association import PlayerShop
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
+from engine.models.shop import ShopOffer
 from engine.player import PlayerManager
 from engine.pokemon import PokemonFactory
 from engine.turn import Turn
@@ -223,8 +225,6 @@ class ShopManager(Component):
         for player in self.state.players:
             if player.is_alive:
                 self.roll(player)
-            else:
-                self.state.shop_window_raw[player.id] = [None] * DEFAULT_SHOP_SIZE
 
     def catch(self, player: Player, idx: int):
         """
@@ -232,7 +232,8 @@ class ShopManager(Component):
 
         Do not refresh shop entry (leave as None).
         """
-        card = self.state.shop_window[player][idx]
+        shop_offer: ShopOffer = self.state.shop_window[player][idx]
+        card = shop_offer.pokemon
         cost = self.pokemon_tier_lookup[card]
         if cost > player.balls:
             print("Not enough Poke Balls to catch this Pokemon")
@@ -247,7 +248,8 @@ class ShopManager(Component):
         else:
             player.master_balls -= -1
 
-        self.state.shop_window[player][idx] = None
+        dissociate(PlayerShop, player, shop_offer)
+        shop_offer.delete()
 
         self.check_shiny(player, card)
 
@@ -257,6 +259,7 @@ class ShopManager(Component):
 
         If they do, remove all 3 and give a Shiny Pokemon.
         """
+        poke_factory: PokemonFactory = self.env.pokemon_factory
         player_manager: PlayerManager = self.env.player_manager
         roster_pokes = player_manager.player_roster(player)
         matching_pokes = []
@@ -274,13 +277,13 @@ class ShopManager(Component):
                 max_tm_flag = max(mp.battle_card.tm_flag, max_tm_flag)
                 max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
                 player_manager.release_pokemon(player, mp)
-            shiny_poke = self.create_pokemon_by_name(card)
+            shiny_poke = poke_factory.create_pokemon_by_name(card)
             shiny_poke.battle_card.shiny = True
             shiny_poke.xp = max_xp
             shiny_poke.battle_card.tm_flag = max_tm_flag
             shiny_poke.battle_card.bonus_shield = max_bonus_shield
             shiny_poke.battle_card.choiced = max_choice
-            player.add_to_roster(shiny_poke)
+            player_manager.give_pokemon_to_player(player, shiny_poke)
 
     def roll(self, player: Player):
         """
@@ -294,6 +297,11 @@ class ShopManager(Component):
             print("Cannot roll shop with no energy")
             return
 
+        # if there are old associations, remove them
+        for card in self.state.shop_window[player]:
+            if card is not None:
+                dissociate(PlayerShop, player, card)
+
         # create shop associations
         for rolled in self.route[player].roll_shop():
-            associate(PlayerShop, player, rolled)
+            associate(PlayerShop, player, ShopOffer(pokemon=rolled))
