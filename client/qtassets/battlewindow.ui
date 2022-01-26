@@ -37,7 +37,7 @@ Wilds
    <widget class="QPushButton" name="shopPokemon1">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>400</x>
       <y>680</y>
       <width>141</width>
       <height>111</height>
@@ -55,7 +55,7 @@ Wilds
    <widget class="QPushButton" name="shopPokemon2">
     <property name="geometry">
      <rect>
-      <x>410</x>
+      <x>550</x>
       <y>680</y>
       <width>141</width>
       <height>111</height>
@@ -73,7 +73,7 @@ Wilds
    <widget class="QPushButton" name="shopPokemon3">
     <property name="geometry">
      <rect>
-      <x>560</x>
+      <x>700</x>
       <y>680</y>
       <width>141</width>
       <height>111</height>
@@ -91,7 +91,7 @@ Wilds
    <widget class="QPushButton" name="shopPokemon4">
     <property name="geometry">
      <rect>
-      <x>710</x>
+      <x>850</x>
       <y>680</y>
       <width>141</width>
       <height>111</height>
@@ -109,7 +109,7 @@ Wilds
    <widget class="QPushButton" name="shopPokemon0">
     <property name="geometry">
      <rect>
-      <x>860</x>
+      <x>250</x>
       <y>680</y>
       <width>141</width>
       <height>111</height>
@@ -129,7 +129,7 @@ Wilds
      <rect>
       <x>20</x>
       <y>610</y>
-      <width>981</width>
+      <width>931</width>
       <height>23</height>
      </rect>
     </property>
@@ -1248,7 +1248,7 @@ p, li { white-space: pre-wrap; }
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="label_5">
+   <widget class="QLabel" name="playerNameLabel">
     <property name="geometry">
      <rect>
       <x>1050</x>
@@ -1294,7 +1294,7 @@ p, li { white-space: pre-wrap; }
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLineEdit" name="hitPoints_2">
+   <widget class="QLineEdit" name="masterBalls">
     <property name="geometry">
      <rect>
       <x>400</x>
@@ -1312,7 +1312,7 @@ p, li { white-space: pre-wrap; }
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QPushButton" name="opposingPokemon5_2">
+   <widget class="QPushButton" name="playerArchetypeIcon">
     <property name="geometry">
      <rect>
       <x>1030</x>
@@ -1322,10 +1322,10 @@ p, li { white-space: pre-wrap; }
      </rect>
     </property>
     <property name="text">
-     <string>Archetype Icon</string>
+     <string>Hero Icon</string>
     </property>
    </widget>
-   <widget class="QLabel" name="shopLocationLabel_2">
+   <widget class="QLabel" name="playerArchetypeName">
     <property name="geometry">
      <rect>
       <x>1240</x>
@@ -1342,13 +1342,13 @@ p, li { white-space: pre-wrap; }
      </font>
     </property>
     <property name="text">
-     <string>Archetype Name</string>
+     <string>Hero Name</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="shopLocationLabel_3">
+   <widget class="QLabel" name="playerArchetypeAbility">
     <property name="geometry">
      <rect>
       <x>1240</x>
@@ -1365,10 +1365,23 @@ p, li { white-space: pre-wrap; }
      </font>
     </property>
     <property name="text">
-     <string>Archetype Ability</string>
+     <string>Hero Ability</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="weatherIcon">
+    <property name="geometry">
+     <rect>
+      <x>930</x>
+      <y>600</y>
+      <width>81</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Weather</string>
     </property>
    </widget>
   </widget>

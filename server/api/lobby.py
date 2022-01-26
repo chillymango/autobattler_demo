@@ -220,6 +220,7 @@ async def start_game(request: StartGameRequest):
                 except GameOver:
                     print('Game over man')
                     break
+            game.cleanup()
             ALL_GAMES.pop(game.id)
 
         thread = Thread(target=run_loop)

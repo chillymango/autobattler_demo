@@ -81,6 +81,9 @@ async def websocket_endpoint(websocket: WebSocket):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback)
             print(f'Error in websocket: {repr(exc)}')
+            # still need to send an error response
+            response = ReportingResponse(success=False, message=repr(exc))
+            await websocket.send_json(response.json())
 
 
 class WebSocketCallback:

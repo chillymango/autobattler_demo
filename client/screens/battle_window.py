@@ -13,23 +13,27 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from client.client_env import ClientEnvironment
+from client.client_env import ClientEnvironment, ClientState
 from client.screens.base import GameWindow
 from client.screens.context_window import Ui as ContextWindow
 
 from engine.match import Matchmaker
+from engine.models.shop import ShopOffer
+from engine.models.weather import WeatherType
 from engine.player import Player
 from engine.pubsub import Message
+from engine.sprites import SpriteManager
 from engine.models.pokemon import Pokemon
 from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
-from utils.buttons import PokemonButton
+from utils.buttons import PokemonButton, clear_button_image, set_button_image
 from utils.buttons import ShopPokemonButton
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
 from utils.collections_util import pad_list_to_length
+from utils.strings import split_half_on_space
 from engine.models.phase import GamePhase
 from utils.error_window import error_window
 from utils.websockets_client import WebSocketClient
@@ -50,6 +54,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.user = user
         self.websocket = WebSocketClient(websocket)
         self.client = client
+
+        self._state_callback_rising_edge = False
 
         # create an environment to support rendering
         self.env: ClientEnvironment = ClientEnvironment(8, id=game_id)
@@ -77,6 +83,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.add_party_interface()
         self.add_team_interface()
         self.add_message_interface()
+        self.add_weather_interface()
 
         # register pokemon buttons for context window
         self.register_pokemon_buttons()
@@ -88,6 +95,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.render_player_stats,
             self.render_opponent_party,
             self.render_time_to_next_stage,
+            self.render_weather,
         ]
 
     @property
@@ -101,6 +109,17 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             if player.id == self.user.id:
                 return player
         return None
+
+    @property
+    def player_hero(self):
+        return self.state.player_hero[self.player.id]
+
+    @property
+    def shop_window(self) -> T.List[T.Union[ShopOffer, None]]:
+        state: State = self.state
+        shop_window: T.List[ShopOffer] = state.shop_window[self.player]
+        pad_list_to_length(shop_window, 5)
+        return shop_window
 
     @property
     def party(self):
@@ -285,10 +304,19 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.pokeBallCount = self.findChild(QtWidgets.QLineEdit, "pokeBallCount")
         self.energyCount = self.findChild(QtWidgets.QLineEdit, "energyCount")
         self.hitPoints = self.findChild(QtWidgets.QLineEdit, "hitPoints")
+        self.masterBalls = self.findChild(QtWidgets.QLineEdit, "masterBalls")
+        # player archetype, name, etc
+        self.playerNameLabel = self.findChild(QtWidgets.QLabel, "playerNameLabel")
+        self.playerArchetypeIcon = self.findChild(QtWidgets.QPushButton, "playerArchetypeIcon")
+        self.playerArchetypeName = self.findChild(QtWidgets.QLabel, "playerArchetypeName")
+        self.playerArchetypeAbility = self.findChild(QtWidgets.QLabel, "playerArchetypeAbility")
 
     def add_stage_timer_interface(self):
         # time to next stage
         self.timeToNextStage = self.findChild(QtWidgets.QProgressBar, "timeToNextStage")
+
+    def add_weather_interface(self):
+        self.weatherIcon = self.findChild(QtWidgets.QPushButton, "weatherIcon")
 
     def add_message_interface(self):
         # update log messages
@@ -345,28 +373,53 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             websocket=self.websocket,
         )
 
-    def render_player_stats(self):
+    def render_player_stats(self, update_player=False):
         player: Player = self.player
         self.pokeBallCount.setText(str(player.balls))
         self.energyCount.setText(str(player.energy))
         self.hitPoints.setText(str(player.hitpoints))
+        self.masterBalls.setText(str(player.master_balls))
+
+        # these don't change often so just check if the value is different
+        if update_player:
+            # fields might overflow, splitline if needed
+            ability = split_half_on_space(self.player_hero.ability_name)
+            self.playerNameLabel.setText(self.player.name)
+            self.playerArchetypeName.setText(self.player_hero.name)
+            self.playerArchetypeAbility.setText(ability)
+            sprite_manager: SpriteManager = self.env.sprite_manager
+            icon = sprite_manager.get_trainer_sprite(self.player_hero.name)
+            if icon is not None:
+                set_button_image(self.playerArchetypeIcon, icon, color=None)
+            else:
+                clear_button_image(self.playerArchetypeIcon)
+
+    def render_weather(self):
+        weather = self.state.weather
+        if weather is None or weather is WeatherType.NONE:
+            clear_button_image(self.weatherIcon)
+            return
+        sprite_manager: SpriteManager = self.env.sprite_manager
+        icon = sprite_manager.get_weather_sprite(weather.name.lower())
+        if icon is not None:
+            # TODO: do a color lookup?
+            set_button_image(self.weatherIcon, icon, color=None)
+        else:
+            clear_button_image(self.weatherIcon)
+            self.weatherIcon.setText(weather.name.capitalize())
 
     def render_opponent_party(self):
         try:
             player: Player = self.player
             state: State = self.state
             matchmaker: Matchmaker = self.env.matchmaker
-            for op in self.opposing_party:
             if state.current_matches is not None:
                 opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
                 if opponent is not None:
                     self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
-                    opponent_party = [Pokemon.get_by_id(_id) for _id in opponent.party_config.party]
-                    if len(opponent_party) < 6:
-                        opponent_party += [None] * (6 - len(opponent_party))
                     for idx in range(6):
                         button = self.opposing_pokemon_buttons[idx]
-                        pokemon = opponent_party[idx]
+                        pokemon = self.opposing_party[idx]
                         button.set_pokemon(pokemon)
                     return
 
@@ -414,12 +467,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 remove_team_member.setDisabled(False)
 
     def render_shop(self):
-        state: State = self.state
-        shop_window: T.Dict[Player, str] = state.shop_window
-
-        for idx, pokemon_name in enumerate(shop_window[self.player]):
+        for idx, offer in enumerate(self.shop_window):
             shop_button = self.shop_pokemon_buttons[idx]
-            shop_button.set_pokemon(pokemon_name)
+            shop_button.set_pokemon(getattr(offer, 'pokemon', None))
 
         # update shop location
         if self.state.turn_number:
@@ -431,7 +481,11 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         Updates the state every time a pubsub message is received
         """
         # refresh references
-        self.env.state = self.state = State.parse_raw(data)
+        self.env.state = self.state = ClientState.parse_raw(data)
+
+        if not self._state_callback_rising_edge:
+            self.render_player_stats(update_player=True)
+            self._state_callback_rising_edge = True
 
         for method in self.render_functions:
             try:
@@ -619,7 +673,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         #return await self.websocket.shift_team_down(self.context, idx)
 
     def subscribe_pubsub_state(self):
-        pubsub_topic = f"pubsub-state-{self.game_id}"
+        pubsub_topic = f"pubsub-state-{str(self.user.id)}-{self.game_id}"
         self.pubsub_client.subscribe(pubsub_topic, callback=self._state_callback)
 
     def subscribe_pubsub_messages(self):

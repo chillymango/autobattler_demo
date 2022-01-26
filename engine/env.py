@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from engine.base import Component
 from engine.battle_seq import BattleManager
+from engine.hero import HeroManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
 from engine.item_event import ItemEventManager
@@ -21,6 +22,7 @@ from engine.pubsub import PubSubInterface
 from engine.shop import ShopManager
 from engine.models.state import State
 from engine.turn import Turn
+from engine.weather import WeatherManager
 from engine.models.phase import GamePhase
 
 
@@ -45,9 +47,10 @@ class Environment:
     def default_component_classes(self):
         return [
             Turn,
+            WeatherManager,
             ItemManager,
             PlayerManager,
-            #PlayerInventoryManager,
+            HeroManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
@@ -59,11 +62,15 @@ class Environment:
             PubSubInterface,  # this should probably go last
         ]
 
+    @property
+    def state_factory(self):
+        return State.default
+
     def __init__(self, max_players: int, id=None, component_classes: T.List[Component]=None):
         self.component_classes = component_classes or self.default_component_classes
         self._id = UUID(id) if id else uuid4()
         print("Created env with id {}".format(self._id))
-        self.state: State = State.default()
+        self.state: State = self.state_factory()
         self.state.phase = GamePhase.INITIALIZATION
         self.max_players = max_players
         self.components: T.List[Component] = []
@@ -80,15 +87,15 @@ class Environment:
         # add all non-web components
         component_classes = [
             Turn,
+            WeatherManager,
             ItemManager,
             PlayerManager,
-            #PlayerInventoryManager,
+            HeroManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
             CreepRoundManager,
             ShopManager,
-            #BattleManager,
             ItemEventManager,
             EvolutionManager,
         ]
@@ -237,3 +244,10 @@ class Environment:
             return
 
         raise RuntimeError(f"Game phase not in main turn loop yet. Phase {self.state.phase}")
+
+    def cleanup(self):
+        """
+        Run component cleanup
+        """
+        for component in self.components:
+            component.cleanup()

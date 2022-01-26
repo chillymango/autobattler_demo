@@ -8,12 +8,15 @@ from pydantic import BaseModel, PrivateAttr
 from pydantic import Field
 from engine.models.association import Association, PlayerRoster, PlayerShop
 from engine.models.association import PlayerInventory
+from engine.models.hero import Hero
 from engine.models.items import Item
 from engine.models.phase import GamePhase
 from engine.models.pokemon import Pokemon
+from engine.models.shop import ShopOffer
 from engine.models.stage_config import StageConfig
 from engine.models.player import Player
 from engine.models.match import Match
+from engine.models.weather import WeatherType
 
 if T.TYPE_CHECKING:
     pass
@@ -42,6 +45,7 @@ class State(BaseModel):
     current_matches: T.List["Match"]
     turn_number: int
     stage: StageConfig = StageConfig(stage=0, round=0)
+    t_global: float = 0.0  # global timer
     t_phase_elapsed: float = 0.0
     t_phase_duration: float = float('inf')
 
@@ -55,14 +59,20 @@ class State(BaseModel):
     # server keeps track of associations and instances
     # client just gets object copies
 
-    # Shop Containers
-    shop_window_raw: T.Dict[str, T.List[T.Optional[str]]] = dict()
+    # Shop containers
+    shop_window_raw: T.Dict[str, T.List[T.Optional[ShopOffer]]] = dict()
 
-    # Pokemon Containers
+    # Pokemon containers
     player_roster_raw: T.Dict[str, T.List[Pokemon]] = dict()
 
-    # Inventory Containers
+    # Inventory containers
     player_inventory_raw: T.Dict[str, T.List[T.Any]] = dict()  # maps player ID to a list of items
+
+    # Player hero associations
+    player_hero: T.Dict[str, Hero] = dict()  # maps player ID to their hero
+
+    # Turn Weather
+    weather: WeatherType = WeatherType.NONE
 
     def load_containers(self):
         self.shop_window_raw = {p.id: PlayerShop.get_shop(p) for p in self.players}
@@ -105,7 +115,12 @@ class State(BaseModel):
             current_matches=self.current_matches,
             turn_number=self.turn_number,
             player_inventory_raw=player_inventory,
-            player_roster_raw=player_roster
+            player_roster_raw=player_roster,
+            stage=self.stage,
+            t_phase_elapsed=self.t_phase_elapsed,
+            t_phase_duration=self.t_phase_duration,
+            player_hero=self.player_hero,
+            weather=self.weather,
         )
 
     @classmethod
@@ -116,6 +131,17 @@ class State(BaseModel):
             current_matches=[],
             turn_number=0,
         )
+
+    def json(self, *args, **kwargs):
+        self.load_containers()
+        return super().json(*args, **kwargs)
+
+    def dict(self, *args, **kwargs):
+        """
+        Re-load containers every time
+        """
+        self.load_containers()
+        return super().dict(*args, **kwargs)
 
     @property
     def player_inventory(self):

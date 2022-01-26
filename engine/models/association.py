@@ -1,7 +1,6 @@
 """
 Association Models
 """
-from tkinter import E
 import typing as T
 from collections import defaultdict
 
@@ -10,6 +9,7 @@ from engine.models.base import Queryable
 from engine.models.player import Player
 from engine.models.items import Item
 from engine.models.pokemon import Pokemon
+from engine.models.shop import ShopOffer
 
 
 class CompositePK(Queryable):
@@ -44,7 +44,7 @@ class PlayerShop(OMAssociation):
     Associates players to their shops
     """
     entity1: Player  # one
-    entity2: str  # many
+    entity2: ShopOffer  # many
 
     @classmethod
     def get_shop(cls, player: Player) -> T.List[str]:
@@ -53,7 +53,7 @@ class PlayerShop(OMAssociation):
 
         Returns a list of shop cards (strings) of Pokemon for a player
         """
-        return [x.entity2 for x in cls.all(entity1=player)]
+        return [x.entity2 if x else None for x in cls.all(entity1=player)]
 
 
 class PlayerInventory(OMAssociation):
@@ -66,10 +66,6 @@ class PlayerInventory(OMAssociation):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        print(f'I am a player inventory assn {self}')
-
-    def __del__(self):
-        print(f'I am a player inventory association {self} and I was deleted')
 
     @classmethod
     def get_inventory(cls, player: Player) -> T.List[Item]:
@@ -149,4 +145,7 @@ def dissociate(klass: AssociationType, entity1: Entity, entity2: Entity):
     for assn in ASSOCIATIONS[klass]:
         if assn.entity1 == entity1 and assn.entity2 == entity2:
             ASSOCIATIONS[klass].remove(assn)
+            assn.delete()
             break
+    else:
+        raise Exception(f'{entity1} and {entity2} are not associated by {klass}')
