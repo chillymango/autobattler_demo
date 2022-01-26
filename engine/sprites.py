@@ -37,6 +37,13 @@ class SpriteManager(Component):
             typename, _ = filename.split('.')
             self.type_sprites[typename] = '/'.join([self.type_base, filename])
 
+        # load trainer sprites
+        self.trainer_sprites = defaultdict(lambda: None)
+        self.trainer_base = '/'.join([self.ASSETS_DIR, 'sprites', 'trainer'])
+        for filename in os.listdir(self.trainer_base):
+            trainername, _ = filename.split('.')
+            self.trainer_sprites[trainername] = '/'.join([self.trainer_base, filename])
+
     def get_normie_sprite(self, pokemon_name):
         if not self.DISABLED:
             return self.normie_sprites[pokemon_name]

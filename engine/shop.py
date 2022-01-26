@@ -238,7 +238,6 @@ class ShopManager(Component):
             print("Not enough Poke Balls to catch this Pokemon")
             return
 
-        pokemon_factory: PokemonFactory = self.env.pokemon_factory
         player_manager: PlayerManager = self.env.player_manager
         player_manager.create_and_give_pokemon_to_player(player, card)
 

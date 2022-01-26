@@ -20,6 +20,7 @@ from client.screens.context_window import Ui as ContextWindow
 from engine.match import Matchmaker
 from engine.player import Player
 from engine.pubsub import Message
+from engine.models.pokemon import Pokemon
 from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
@@ -99,6 +100,14 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             if player.id == self.user.id:
                 return player
         return None
+
+    @property
+    def party(self):
+        return [Pokemon.get_by_id(party_id) for party_id in self.player.party_config.party]
+
+    @property
+    def team(self):
+        return [Pokemon.get_by_id(team_id) for team_id in self.player.party_config.team]
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
@@ -337,9 +346,12 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
                 if opponent is not None:
                     self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
+                    opponent_party = [Pokemon.get_by_id(_id) for _id in opponent.party_config.party]
+                    if len(opponent_party) < 6:
+                        opponent_party += [None] * 6 - len(opponent_party)
                     for idx in range(6):
                         button = self.opposing_pokemon_buttons[idx]
-                        pokemon = opponent.party[idx]
+                        pokemon = opponent_party[idx]
                         button.set_pokemon(pokemon)
                     return
 
@@ -349,11 +361,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 self.opposingPokemon[idx].setDisabled(True)
 
         except Exception as exc:
-            print(repr(exc))
+            print(f'Exception in rendering opposing party: {repr(exc)}')
 
     def render_party(self):
-        player = self.player
-        party = player.party
+        party = self.party
         for idx, party_member in enumerate(party):
             add_party_button = self.addParty[idx]
             item_button = self.partyItems[idx]
@@ -368,8 +379,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             party_button.set_pokemon(party_member)
 
     def render_team(self):
-        player = self.player
-        team = player.team
+        team = self.team
         arr = [x for x in team]
         if len(arr) < 3:
             arr.extend([None] * (3 - len(arr)))
@@ -406,7 +416,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         Updates the state every time a pubsub message is received
         """
         # refresh references
-        print(data)
         self.env.state = self.state = State.parse_raw(data)
 
         for method in self.render_functions:
@@ -490,33 +499,40 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     @asyncSlot()
     async def add_to_team_callback0(self):
+        # update party config first and then make the websocket client call
         idx = 0
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def add_to_team_callback1(self):
         idx = 1
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def add_to_team_callback2(self):
         idx = 2
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def add_to_team_callback3(self):
         idx = 3
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def add_to_team_callback4(self):
         idx = 4
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def add_to_team_callback5(self):
         idx = 5
-        return await self.websocket.add_to_team(self.context, idx)
+        self.player.party_config.add_to_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def remove_team_member_callback(self, idx):
@@ -526,81 +542,66 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     async def remove_team_member_callback0(self):
         idx = 0
         print("Removing team member at idx {} from team".format(idx))
-        return await self.websocket.remove_team_member(self.context, idx)
+        self.player.party_config.remove_from_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def remove_team_member_callback1(self):
         idx = 1
         print("Removing team member at idx {} from team".format(idx))
-        return await self.websocket.remove_team_member(self.context, idx)
+        self.player.party_config.remove_from_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def remove_team_member_callback2(self):
         idx = 2
         print("Removing team member at idx {} from team".format(idx))
-        return await self.websocket.remove_team_member(self.context, idx)
-
-    def shift_up_callback(self, idx):
-        print("Shifting team member at {} up".format(idx))
-        if idx == 0:
-            return
-        self.env.current_player.team[idx], self.env.current_player.team[idx - 1] =\
-            self.env.current_player.team[idx - 1], self.env.current_player.team[idx]
+        self.player.party_config.remove_from_team_by_idx(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_up_callback0(self):
-        idx = 0
-        print("Shifting team member at {} up".format(idx))
-        if idx == 0:
-            return
-        return await self.websocket.shift_team_up(self.context, idx)
+        return
+        #idx = 0
+        #self.player.party_config.shift_team_up(idx)
+        #return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_up_callback1(self):
         idx = 1
         print("Shifting team member at {} up".format(idx))
-        if idx == 0:
-            return
-        return await self.websocket.shift_team_up(self.context, idx)
+        self.player.party_config.shift_team_up(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_up_callback2(self):
         idx = 2
         print("Shifting team member at {} up".format(idx))
-        if idx == 0:
-            return
-        return await self.websocket.shift_team_up(self.context, idx)
-
-    @asyncSlot()
-    async def shift_down_callback(self, idx):
-        print("Shifting team member at {} down".format(idx))
-        if idx == 2:
-            return
-        return await self.websocket.shift_team_down(self.context, idx)
+        self.player.party_config.shift_team_up(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_down_callback0(self):
         idx = 0
         print("Shifting team member at {} down".format(idx))
-        if idx == 2:
-            return
-        return await self.websocket.shift_team_down(self.context, idx)
+        self.player.party_config.shift_team_down(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_down_callback1(self):
         idx = 1
         print("Shifting team member at {} down".format(idx))
-        if idx == 2:
-            return
-        return await self.websocket.shift_team_down(self.context, idx)
+        self.player.party_config.shift_team_down(idx)
+        return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_down_callback2(self):
-        idx = 2
-        print("Shifting team member at {} down".format(idx))
-        if idx == 2:
-            return
-        return await self.websocket.shift_team_down(self.context, idx)
+        return
+        #idx = 2
+        #print("Shifting team member at {} down".format(idx))
+        #if idx == 2:
+        #    return
+        #return await self.websocket.shift_team_down(self.context, idx)
 
     def subscribe_pubsub_state(self):
         pubsub_topic = f"pubsub-state-{self.game_id}"

@@ -358,6 +358,7 @@ class LargeSpeedShard(Shard):
     cost = LARGE_SHARD_COST
     level = 2
 
+'''
 # COMBAT ITEM
 class CombinedItem(CombatItem):
 
@@ -647,7 +648,7 @@ class ChoiceSpecs(CombinedItem):
         change your fast move
         """
         pass
-
+'''
 
 class TM(InstantPokemonItem):
 

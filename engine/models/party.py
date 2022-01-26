@@ -102,6 +102,14 @@ class PartyConfig(BaseModel):
         self.team.append(poke_id)
         return True
 
+    def add_to_team_by_idx(self, idx: int) -> bool:
+        """
+        Add Pokemon to team (by idx)
+
+        Will always add to the first free team slot
+        """
+        return self.add_to_team(self.party[idx])
+
     def remove_from_team_by_idx(self, idx: int):
         """
         Remove from team by index
@@ -117,3 +125,23 @@ class PartyConfig(BaseModel):
         for idx, team_poke_id in enumerate(self.team):
             if team_poke_id == poke_id:
                 self.remove_from_team_by_id(idx)
+
+    def shift_team_up(self, idx: int):
+        """
+        Swap the position of a team member with the one above it.
+
+        If the Pokemon is already at the top, do nothing.
+        """
+        if idx < 1:
+            return
+        self.team[idx - 1], self.team[idx] = self.team[idx], self.team[idx - 1]
+
+    def shift_team_down(self, idx: int):
+        """
+        Swap the position of a team member with the one below it.
+
+        If the Pokemon is already at the bottom, do nothing.
+        """
+        if idx >= len(self.team) - 1:
+            return
+        self.team[idx], self.team[idx + 1] = self.team[idx + 1], self.team[idx]

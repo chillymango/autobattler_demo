@@ -6,10 +6,10 @@ Primarily deals with the asynchronous implementation
 import asyncio
 import json
 import aiohttp
-import websockets
 import typing as T
+from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage
+from server.api.websocket import AddToTeam, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, UpdatePartyConfig
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -80,6 +80,13 @@ class WebSocketClient:
         Catch a Pokemon
         """
         await self.implement_api_client(CatchShop, context, shop_index=shop_index)
+
+    # PARTY CONFIG APIs
+    async def update_party_config(self, context: GameContext, party_config: PartyConfig):
+        """
+        Update a party config
+        """
+        await self.implement_api_client(UpdatePartyConfig, context, party_config=party_config)
 
     # TEAM APIs
     async def shift_team_up(self, context: GameContext, team_index: int):

@@ -3,9 +3,7 @@ Association Models
 """
 from tkinter import E
 import typing as T
-import weakref
 from collections import defaultdict
-from pydantic import BaseModel
 
 from engine.models.base import Entity
 from engine.models.base import Queryable

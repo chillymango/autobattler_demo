@@ -6,14 +6,12 @@ import typing as T
 from uuid import UUID
 from uuid import uuid4
 
-from engine.association import AssociationManager
 from engine.base import Component
 from engine.battle_seq import BattleManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
 from engine.item_event import ItemEventManager
 from engine.items import ItemManager
-from engine.inventory import PlayerInventoryManager
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.player import PlayerManager
@@ -47,10 +45,9 @@ class Environment:
     def default_component_classes(self):
         return [
             Turn,
-            AssociationManager,
             ItemManager,
             PlayerManager,
-            PlayerInventoryManager,
+            #PlayerInventoryManager,
             TmManager,
             PokemonFactory,
             Matchmaker,
@@ -83,7 +80,6 @@ class Environment:
         # add all non-web components
         component_classes = [
             Turn,
-            AssociationManager,
             ItemManager,
             PlayerManager,
             #PlayerInventoryManager,

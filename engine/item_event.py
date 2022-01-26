@@ -11,7 +11,6 @@ from collections import namedtuple
 from pydantic import BaseModel
 
 from engine.base import Component
-from engine.inventory import PlayerInventoryManager
 from engine.items import ItemManager
 from engine.models.item_event import ItemSchedule
 from engine.models.items import Item
@@ -31,7 +30,6 @@ class ItemEventManager(Component):
     def dependencies(self) -> T.List:
         return [
             ItemManager,
-            PlayerInventoryManager,
         ]
 
     def initialize(self):

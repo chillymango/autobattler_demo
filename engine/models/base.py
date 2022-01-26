@@ -67,6 +67,8 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         """
         Return an exact match by ID
         """
+        if id is None:
+            raise ValueError("Cannot hash NoneType")
         return cls._INSTANCES.get(hash(id))
 
     @classmethod

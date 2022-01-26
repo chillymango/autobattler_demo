@@ -66,10 +66,6 @@ class ItemManager(Component):
                 water_stone=items.WaterStone,
             ),
             items.CombatItem: dict(
-                small_sitrus_berry=items.SmallSitrusBerry,
-                large_sitrus_berry=items.LargeSitrusBerry,
-                small_leppa_berry=items.SmallLeppaBerry,
-                large_leppa_berry=items.LargeLeppaBerry,
             ),
             items.PersistentPokemonItem: dict()
         }

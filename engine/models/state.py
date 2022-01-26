@@ -86,10 +86,21 @@ class State(BaseModel):
         shop_window = {player.id: self.shop_window_raw[player.id]}
         player_inventory = {player.id: self.player_inventory_raw[player.id]}
         player_roster = {player.id: self.player_roster_raw[player.id]}
+        # only transmit the creep if player is against them
+        creeps = []
+        for match in self.current_matches:
+            if match.has_player(player):
+                if match.player1 == player and match.player2.is_creep:
+                    creeps.append(match.player2)
+                    break
+                elif match.player2 == player and match.player1.is_creep:
+                    creeps.append(match.player1)
+                    break
+
         return self.__class__(
             phase=self.phase,
             players=self.players,
-            creeps=self.creeps,
+            creeps=creeps,
             shop_window_raw=shop_window,
             current_matches=self.current_matches,
             turn_number=self.turn_number,
