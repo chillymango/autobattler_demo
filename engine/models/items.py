@@ -832,7 +832,7 @@ class BlaineBlaze(PlayerHeroPower):
         """
         next reroll is free 
         """
-        player.flute_charges += 1
+        player.energy += 1
 
 class BrockShield(PlayerHeroPower):
     
@@ -842,7 +842,8 @@ class BrockShield(PlayerHeroPower):
         """
         get a brock's solid item 
         """
-        if player.balls > self.hp_cost :
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
             player_manager: PlayerManager = self.env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
             self.success = True
@@ -855,7 +856,8 @@ class GreensRocks(PlayerHeroPower):
         """
         get a mineral
         """
-        if player.energy > self.reroll_cost :
+        if player.energy >= self.reroll_cost :
+            player.energy -= self.reroll_cost
             player_manager: PlayerManager = self.env.player_manager
             minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
@@ -869,7 +871,8 @@ class JanineJutsu(PlayerHeroPower):
         """
         get a janine's button item 
         """
-        if player.balls > self.hp_cost :
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
             player_manager: PlayerManager = self.env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
             self.success = True
@@ -882,7 +885,8 @@ class LanceFetish(PlayerHeroPower):
         """
         get a dragon scale item 
         """
-        if player.balls > self.hp_cost :
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
             player_manager: PlayerManager = self.env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
             self.success = True
@@ -896,9 +900,12 @@ class WillSac(PlayerHeroPower):
         get hurt, get $ 
         """
         if player.hitpoints > self.hp_cost :
-            player.energy += 1
-            player.balls += 1
+            player.hitpoints -= self.hp_cost
+            player.flute_charges += 1
+            player.balls += 2
             self.success = True
+
+
 
 ## OLDER STUFF BELOW HERE ##
 
