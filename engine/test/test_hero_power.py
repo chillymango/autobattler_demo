@@ -33,13 +33,14 @@ class TestInstantPokemonItem(InstantPokemonItem):
             return
 
         self.holder.battle_card.poke_type1 = 'dragon' 
-
+        self.consumed = True
 
 class TestHeroPower(PlayerHeroPower):
     """
     Test function to use lance's hero power
     """
     success: bool = False
+    used: bool = False
     hp_cost: int = 2
 
     @classmethod
@@ -51,6 +52,7 @@ class TestHeroPower(PlayerHeroPower):
         get a dragon scale item 
         """
         if player.balls > self.hp_cost :
+            player.balls -= self.hp_cost
             player_manager: PlayerManager = self._env.player_manager
             player_manager.create_and_give_item_to_player(player, "test_dragon_scale")
             self.success = True
@@ -86,7 +88,7 @@ class TestItemManager(unittest.TestCase):
         test_hp.holder = player
         player.balls = 5
 
-        test_hp.use(player)
+        test_hp.immediate_action(player = player)
         state = self.env.state
         print(state.player_inventory)
         player_inventory_names = set(item.name for item in state.player_inventory[player])
@@ -95,14 +97,15 @@ class TestItemManager(unittest.TestCase):
         dragon_scale = state.player_inventory[player][0]
         dragon_scale.holder = poke
         dragon_scale.use()
+        item_manager.cleanup()
         self.assertEqual(poke.battle_card.poke_type1, "dragon")
 
         self.assertTrue(player.balls == 3)
 
-        test_hp.use(player)
+        test_hp.immediate_action(player = player)
         state = self.env.state
-        player_inventory_names = set(item.name for item in state.player_inventory[player.name])
-        self.assertFalse("Test Dragon Scale" in player_inventory_names)
+        player_inventory_names = set(item.name for item in state.player_inventory[player])
+        self.assertTrue(dragon_scale.consumed == True)
 
 
 if __name__ == "__main__":
