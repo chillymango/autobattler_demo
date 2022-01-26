@@ -20,6 +20,8 @@ UPDATE_FREQUENCY = 10.0  # hz
 
 class PubSubInterface(Component):
 
+    COMPRESS = True
+
     def initialize(self):
         super().initialize()
         # assumes the logger component is set up first

@@ -1,3 +1,5 @@
+import gzip
+from io import StringIO
 import logging
 import os
 import sys
@@ -480,6 +482,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         """
         Updates the state every time a pubsub message is received
         """
+
         # refresh references
         self.env.state = self.state = ClientState.parse_raw(data)
 

@@ -3,8 +3,10 @@
 # this split needs to happen now so i can make the state be fully transmitted over the wire
 
 # maybe we just do a `mutate` function or something
+import codecs
+from io import StringIO
 import typing as T
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, StrBytes
 from pydantic import Field
 from engine.models.association import Association, PlayerRoster, PlayerShop
 from engine.models.association import PlayerInventory
@@ -132,9 +134,23 @@ class State(BaseModel):
             turn_number=0,
         )
 
-    def json(self, *args, **kwargs):
+    @classmethod
+    def parse_raw(cls, b: StrBytes, decompress=True, **kwargs):
+        """
+        By default assume this message is compressed
+        """
+        if not decompress:
+            return super().parse_raw(b, **kwargs)
+        return super().parse_raw(codecs.decode(b, 'zlib'), **kwargs)
+
+    def json(self, *args, compress=True, **kwargs):
+        """
+        By default compress this message
+        """
         self.load_containers()
-        return super().json(*args, **kwargs)
+        if not compress:
+            return super().json(*args, **kwargs)
+        return codecs.encode(bytes(super().json(*args, **kwargs), 'ascii'), 'zlib')
 
     def dict(self, *args, **kwargs):
         """
