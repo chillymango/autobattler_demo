@@ -181,24 +181,19 @@ class BasicHeroPowerMixIn:
         """
         if self.used == False:
             return True
-    def immediate_action(self):
+        else:
+            print('hero power already used this turn')
+            return False
+    def immediate_action(self, player: "Player" = None):
         """
         ensure once per turn
         """
-        if not self.can_use():
-            return
-        self.use()
-        if self.success == True:
-            self.used = True
+        if self.can_use() == True:
+            self.use(player)
+            if self.success == True:
+                self.used = True
 
-    def use(self):
-        """
-        Child classes define usage actions
 
-        The target should be available at self.pokemon if the target is a Pokemon, or
-        at self.player if the target is a Player.
-        """
-        raise NotImplementedError
 
 
 class InstantItemMixin:
@@ -849,7 +844,7 @@ class BrockShield(PlayerHeroPower):
         """
         if player.balls > self.hp_cost :
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "Brock's Solid")
+            player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
             self.success = True
 
 class GreensRocks(PlayerHeroPower):
@@ -862,7 +857,7 @@ class GreensRocks(PlayerHeroPower):
         """
         if player.energy > self.reroll_cost :
             player_manager: PlayerManager = self.env.player_manager
-            minerals = ['Fire Stone', 'Water Stone', 'Thunder Stone', 'Leaf Stone', 'Moon Stone']
+            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
             self.success = True
 
@@ -876,7 +871,7 @@ class JanineJutsu(PlayerHeroPower):
         """
         if player.balls > self.hp_cost :
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "JanineEject")
+            player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
             self.success = True
 
 class LanceFetish(PlayerHeroPower):
@@ -889,7 +884,7 @@ class LanceFetish(PlayerHeroPower):
         """
         if player.balls > self.hp_cost :
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
+            player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
             self.success = True
 
 class WillSac(PlayerHeroPower):
