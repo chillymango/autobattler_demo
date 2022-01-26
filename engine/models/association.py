@@ -64,6 +64,13 @@ class PlayerInventory(OMAssociation):
     entity1: Player  # one
     entity2: Item  # many
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f'I am a player inventory assn {self}')
+
+    def __del__(self):
+        print(f'I am a player inventory association {self} and I was deleted')
+
     @classmethod
     def get_inventory(cls, player: Player) -> T.List[Item]:
         """

@@ -29,6 +29,7 @@ from utils.buttons import ShopPokemonButton
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
+from utils.collections_util import pad_list_to_length
 from engine.models.phase import GamePhase
 from utils.error_window import error_window
 from utils.websockets_client import WebSocketClient
@@ -104,13 +105,23 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @property
     def party(self):
         party = [Pokemon.get_by_id(party_id) for party_id in self.player.party_config.party]
-        if len(party) < 6:
-            party += [None] * (6 - len(party))
+        pad_list_to_length(party, 6)
         return party
 
     @property
     def team(self):
         return [Pokemon.get_by_id(team_id) for team_id in self.player.party_config.team]
+
+    @property
+    def opposing_party(self):
+        if self.state.current_matches is not None:
+            matchmaker: Matchmaker = self.env.matchmaker
+            opponent = matchmaker.get_player_opponent_in_round(self.player, self.state.current_matches)
+        if opponent is None:
+            return [None] * 6
+        opposing_party = [Pokemon.get_by_id(poke_id) for poke_id in opponent.party_config.party]
+        pad_list_to_length(opposing_party, 6)
+        return opposing_party
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
@@ -345,6 +356,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             player: Player = self.player
             state: State = self.state
             matchmaker: Matchmaker = self.env.matchmaker
+            for op in self.opposing_party:
             if state.current_matches is not None:
                 opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
                 if opponent is not None:

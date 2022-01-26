@@ -35,10 +35,6 @@ class TestInstantPokemonItem(InstantPokemonItem):
         self.holder.battle_card.poke_type1 = 'dragon' 
 
 
-
-
-
-
 class TestHeroPower(PlayerHeroPower):
     """
     Test function to use lance's hero power
@@ -70,18 +66,19 @@ class TestItemManager(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.env = Environment.create_webless_game(8)
-        self.env.initialize()
-
-        # create a test factory and inject it
-        im: ItemManager = self.env.item_manager
-        for itemtype, factory in TEST_FACTORIES.items():
-            im.import_factory(itemtype, factory)
 
     def test_item_usage_valid_targets(self):
         """
         Provide valid item targets
         """
         player = Player(name='balbert bang')
+        self.env.add_player(player)
+        self.env.initialize()
+        # create a test factory and inject it
+        im: ItemManager = self.env.item_manager
+        for itemtype, factory in TEST_FACTORIES.items():
+            im.import_factory(itemtype, factory)
+
         poke_factory: PokemonFactory = self.env.pokemon_factory
         poke = poke_factory.create_pokemon_by_name('pikachu')
         item_manager: ItemManager = self.env.item_manager
@@ -92,13 +89,14 @@ class TestItemManager(unittest.TestCase):
         test_hp.use(player)
         state = self.env.state
         print(state.player_inventory)
-        player_inventory_names = set(item.name for item in state.player_inventory[player.name])
+        player_inventory_names = set(item.name for item in state.player_inventory[player])
         self.assertTrue("Test Dragon Scale" in player_inventory_names)
 
         dragon_scale = state.player_inventory[player][0]
         dragon_scale.holder = poke
-        dragon_scale.use(poke)
+        dragon_scale.use()
         self.assertEqual(poke.battle_card.poke_type1, "dragon")
+
         self.assertTrue(player.balls == 3)
 
         test_hp.use(player)
