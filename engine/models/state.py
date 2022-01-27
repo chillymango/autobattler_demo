@@ -135,7 +135,7 @@ class State(BaseModel):
         )
 
     @classmethod
-    def parse_raw(cls, b: StrBytes, decompress=True, **kwargs):
+    def parse_raw(cls, b: StrBytes, decompress=False, **kwargs):
         """
         By default assume this message is compressed
         """
@@ -143,7 +143,7 @@ class State(BaseModel):
             return super().parse_raw(b, **kwargs)
         return super().parse_raw(codecs.decode(b, 'zlib'), **kwargs)
 
-    def json(self, *args, compress=True, **kwargs):
+    def json(self, *args, compress=False, **kwargs):
         """
         By default compress this message
         """

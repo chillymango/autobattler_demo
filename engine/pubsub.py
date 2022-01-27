@@ -22,22 +22,6 @@ class PubSubInterface(Component):
 
     COMPRESS = True
 
-    def initialize(self):
-        super().initialize()
-        # assumes the logger component is set up first
-        self.logger: Logger = self.env.logger
-
-        # increase broadcast speed
-        self.update_freq = 10.0
-
-        # do some stuff here to start broadcasting on the correct channels
-        # use game ID for namespace
-        for player in self.state.players:
-            self._pubsub_state_headers[player] = f"pubsub-state-{str(player.id)}-{self.env.id}"
-            self._pubsub_msg_headers[player] = f"pubsub-msg-{str(player.id)}-{self.env.id}"
-            print(f"PubSub state player {player.name} on {self._pubsub_state_headers[player]}")
-            print(f"PubSub msg player {player.name} on {self._pubsub_msg_headers[player]}")
-
     def __init__(self, env: "Environment", state: "State"):
         super().__init__(env, state)
         # specific player messages
@@ -62,11 +46,36 @@ class PubSubInterface(Component):
         # NOTE: defer import to break circular deps
         from server.api.pubsub import endpoint
         self.endpoint = endpoint
+        self.lobby_task = asyncio.create_task(self.broadcast_lobby())
+        print('Created the lobby broadcast loop')
 
-        self.task = asyncio.create_task(self.broadcast())
-        print('Created the loop')
+    async def broadcast_lobby(self):
+        while True:
+            asyncio.gather(self._broadcast_game_state())
+            await asyncio.sleep(1.0 / self.update_freq)
 
-    async def broadcast(self):
+    def initialize(self):
+        super().initialize()
+        # assumes the logger component is set up first
+        self.logger: Logger = self.env.logger
+
+        # increase broadcast speed
+        self.update_freq = 10.0
+
+        # do some stuff here to start broadcasting on the correct channels
+        # use game ID for namespace
+        for player in self.state.players:
+            self._pubsub_state_headers[player] = f"pubsub-state-{str(player.id)}-{self.env.id}"
+            self._pubsub_msg_headers[player] = f"pubsub-msg-{str(player.id)}-{self.env.id}"
+            print(f"PubSub state player {player.name} on {self._pubsub_state_headers[player]}")
+            print(f"PubSub msg player {player.name} on {self._pubsub_msg_headers[player]}")
+
+        # broadcast all state
+        self.lobby_task.cancel()
+        self.task = asyncio.create_task(self.broadcast_game())
+        print('Created the game broadcast loop')
+
+    async def broadcast_game(self):
         print("Starting PubSub broadcast loop")
         while True:
             tasks = (

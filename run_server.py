@@ -1,4 +1,3 @@
-from telnetlib import IP
 from server.app import *
 
 if __name__ == "__main__":
