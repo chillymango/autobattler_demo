@@ -34,6 +34,8 @@ class HeroManager(Component):
             self.state.player_hero[str(player.id)] = hero = sample(heroes, 1)[0]
             print(f'Assigned hero {hero} to {player}')
             heroes.remove(hero)
-
+            if hasattr(hero.power, 'StartOfGame'):
+                hero.power.StartOfGame()
+                
     def get_player_hero(self, player: Player) -> Hero:
         return self.state.player_hero[player]
