@@ -3,6 +3,7 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
+from ast import Pass
 import typing as T
 
 from pydantic import BaseModel
@@ -20,6 +21,7 @@ if T.TYPE_CHECKING:
     from engine.models.player import Player
     from engine.models.pokemon import BattleCard
     from engine.models.pokemon import Pokemon
+    from engine.shop import ShopManager
 
 # DEFAULT ITEM COSTS
 # TODO: store somewhere else for clarity, or make configurable
@@ -184,6 +186,7 @@ class BasicHeroPowerMixIn:
         else:
             print('hero power already used this turn')
             return False
+
     def immediate_action(self, player: "Player" = None):
         """
         ensure once per turn
@@ -192,6 +195,35 @@ class BasicHeroPowerMixIn:
             self.use(player)
             if self.success == True:
                 self.used = True
+    
+
+class PassiveHeroPowerMixin:
+    """
+    Hero powers that accept no player input
+    """
+    def pre_battle_action(self, context: T.Dict):
+        """
+        Run this before any fighting happens
+        """
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        Run this after all fighting happens
+        """
+        pass
+
+    def turn_setup(self):
+        """
+        Run hp logic during turn_setup
+        """
+        pass
+
+    def turn_cleanup(self):
+        """
+        Run hp logic during turn_cleanup
+        """
+        pass
 
 
 
@@ -265,6 +297,17 @@ class PlayerHeroPower(BasicHeroPowerMixIn, PlayerItem):
     """
     Base class for once-per-turn hero powers
     """
+
+class PassiveHeroPower(PassiveHeroPowerMixin, PlayerItem):
+    """
+    Base class for passive hero powers
+    """
+
+class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
+    """
+    Base class for once-per-turn hero powers
+    """
+
 
 # EXAMPLES:
 # COMBAT ITEM
@@ -694,9 +737,10 @@ class DragonScale(InstantPokemonItem):
         if self.holder.is_type('dragon'):
             return
 
-        self.holder.battle_card.poke_type1 = 'dragon' 
+        self.holder.battle_card.poke_type2 = 'dragon' 
 
-class RedFriendship(InstantPokemonItem):
+        
+class RedCooking(InstantPokemonItem):
 
     name = "Red's Cooking"
 
@@ -826,13 +870,65 @@ class MasterBall(InstantPlayerItem):
 
 #HERO POWERS
 
-class BlaineBlaze(PlayerHeroPower):
+class BlaineBlaze(PassiveHeroPower):
     
-    def use(self, player: "Player" = None):
+    def turn_setup(self, player: "Player" = None):
         """
         next reroll is free 
         """
         player.energy += 1
+
+class BluePower(PassiveHeroPower):
+    
+    def turn_setup(self, player: "Player" = None):
+        """
+        if it's the correct turn get a TM
+        """
+        turn_divisor = 4
+        if self._env.state.turn_number % turn_divisor:
+            player_manager: PlayerManager = self.env.player_manager
+            player_manager.create_and_give_item_to_player(player, item_name = "tm")
+
+class BrunoBod(PassiveHeroPower):
+    
+    """
+    buff HP at start of game
+    """
+
+    def StartOfGame(self, player: "Player" = None):
+        buffed_hp = 35
+        player.hitpoints = buffed_hp
+
+
+class GiovanniGains(PlayerHeroPower):
+    
+    oncepergame: bool = False
+    reward_dict: dict = {
+        1: [1,1,0],
+        2: [2,1,1],
+        3: [2,2,1],
+        4: [3,2,2],
+        5: [3,3,2],
+        6: [4,3,3],
+        7: [5,4,3],
+        8: [6,4,4],
+        9: [7,5,5]
+    }
+
+    def use(self, player: "Player" = None):
+        """
+        if you haven't used it before, get rewards according to schedule
+        """
+        if self.oncepergame == False:
+            rewards = self.reward_dict[self._env.state.turn_number]
+            player.balls += rewards[0]
+            player.energy += rewards[1]
+            reward_items =  ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            player_manager: PlayerManager = self.env.player_manager
+            for i in range(rewards[2]):
+                player_manager.create_and_give_item_to_player(player, item_name = random.choice(reward_items))
+            self.oncepergame == True
+
 
 class BrockShield(PlayerHeroPower):
     
@@ -845,7 +941,7 @@ class BrockShield(PlayerHeroPower):
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
+            player_manager.create_and_give_item_to_player(player, item_name = "brock_shield")
             self.success = True
 
 class GreensRocks(PlayerHeroPower):
@@ -877,7 +973,7 @@ class JanineJutsu(PlayerHeroPower):
             player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
             self.success = True
 
-class LanceFetish(PlayerHeroPower):
+class LanceFetish(ComplexHeroPower):
     
     hp_cost: int = 2
 
@@ -890,6 +986,13 @@ class LanceFetish(PlayerHeroPower):
             player_manager: PlayerManager = self.env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
             self.success = True
+        
+    def pre_battle_action(self, context: T.Dict):
+        """
+        if dragon, buff 
+        """
+        pass
+
 
 class WillSac(PlayerHeroPower):
     
@@ -905,8 +1008,44 @@ class WillSac(PlayerHeroPower):
             player.balls += 2
             self.success = True
 
+class KogaNinja(ComplexHeroPower):
 
+    hp_cost: int = 2
+    unseal_cost = 4
 
+    def post_battle_action(self, context: T.Dict):
+        """
+        if win, lower unseal cost
+        """
+        pass
+    
+    def use(self, player: "Player" = None):
+        if self.unseal_cost == 0:
+            if player.balls > self.hp_cost :
+                player.balls -= self.hp_cost
+                player_manager: PlayerManager = self.env.player_manager
+                eevees = ['jolteon', 'vaporeon', 'flareon']
+                player_manager.create_and_give_pokemon_to_player(player, random.choice(eevees))
+
+        
+class SurgeGorilla(PassiveHeroPower):
+    def pre_battle_action(self, context: T.Dict):
+        """
+        check largest number of matching types, apply buff
+        """
+        pass
+
+class RedCheater(PassiveHeroPower):
+    
+    """
+    give plot device at start of game
+    """
+
+    def StartOfGame(self, player: "Player" = None):
+        player_manager: PlayerManager = self.env.player_manager 
+        player_manager.create_and_give_item_to_player(player, item_name = "red_cooking")
+
+        
 ## OLDER STUFF BELOW HERE ##
 
 class _Berry:
