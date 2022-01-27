@@ -7,9 +7,14 @@ import typing as T
 from collections import defaultdict
 
 from engine.base import Component
+from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.pokemon import BattleCard
 from engine.models.pokemon import EvolutionConfig
 from engine.models.pokemon import Pokemon
+
+if T.TYPE_CHECKING:
+    from engine.player import PlayerManager
+    from engine.shop import ShopManager
 
 
 class TmManager(Component):
@@ -96,20 +101,22 @@ class PokemonFactory(Component):
         self.move_reference = pd.read_csv(self.MOVE_REFERENCE_PATH)
         self.type_reference = pd.read_csv(self.TYPE_REFERENCE_PATH)
 
-    def get_pokemon_type_reference(self, name: str) -> T.Tuple[str, str]:
+    def get_pokemon_type_reference(self, name: str) -> T.Tuple[PokemonType, PokemonType]:
         """
         Get the Pokemon type reference
 
-        TODO: what's going on here
+        # TODO: read from gamemaster instead of loading a manual file
         """
-        type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0]
-        type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0]
-        if type2 == 'No Type':
-            type2 = None
-        return (type1, type2)
+        type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0].lower()
+        type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0].lower()
+        if type2 == 'no type':
+            type2 = "none"  # feed into enum
+        return (PokemonType[type1], PokemonType[type2])
 
-    def get_move_type_reference(self, move: str) -> str:
-        return self.move_reference[self.move_reference.move == move].type.iloc[0]
+    def get_move_type_reference(self, move: str) -> PokemonType:
+        return PokemonType[
+            self.move_reference[self.move_reference.move == move].type.iloc[0].lower()
+        ]
 
     def get_PVE_battle_card(self, pokemon_name):
         """
@@ -142,7 +149,7 @@ class PokemonFactory(Component):
     def get_nickname_by_pokemon_name(self, pokemon_name):
         return self.nickname_map[self.nickname_map.name == pokemon_name].sanitized_name.iloc[0]
 
-    def create_pokemon_by_name(self, pokemon_name):
+    def create_pokemon_by_name(self, pokemon_name: str):
         """
         Create a new Pokemon by pokemon name.
 
@@ -150,25 +157,31 @@ class PokemonFactory(Component):
         """
         battle_card = self.get_default_battle_card(pokemon_name)
         if pokemon_name == 'mew':
-            battle_card.move_f = random.choice(self.mew_m_fast)
-            battle_card.move_ch = random.choice(self.mew_m_charged)
+            battle_card.move_f = Move[random.choice(self.mew_m_fast)]
+            battle_card.move_ch = Move[random.choice(self.mew_m_charged)]
         if pokemon_name == 'porygon':
-            battle_card.move_f = random.choice(self.porygon_m_fast)
+            battle_card.move_f = Move[random.choice(self.porygon_m_fast)]
 
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         # assign types here
         types = self.get_pokemon_type_reference(pokemon_name)
-        fast_move_type = self.get_move_type_reference(battle_card.move_f)
-        charged_move_type = self.get_move_type_reference(battle_card.move_ch)
-        tm_move_type = self.get_move_type_reference(battle_card.move_tm)
-        battle_card.poke_type1 = types[0]
-        battle_card.poke_type2 = types[1]
+        fast_move_type = self.get_move_type_reference(battle_card.move_f.name)
+        charged_move_type = self.get_move_type_reference(battle_card.move_ch.name)
+        tm_move_type = self.get_move_type_reference(battle_card.move_tm.name)
+        if types[0] is not None:
+            battle_card.poke_type1 = types[0]
+        else:
+            battle_card.poke_type1 = None
+        if types[1] is not None:
+            battle_card.poke_type2 = types[1]
+        else:
+            battle_card.poke_type2 = None
         battle_card.f_move_type = fast_move_type
         battle_card.ch_move_type = charged_move_type
         battle_card.tm_move_type = tm_move_type
-        return Pokemon(name=pokemon_name, battle_card=battle_card, nickname=nickname)
+        return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
 
-    def create_PVEpokemon_by_name(self, pokemon_name):
+    def create_PVEpokemon_by_name(self, pokemon_name: str):
         """
         Create a new Pokemon by pokemon name.
 
@@ -177,32 +190,7 @@ class PokemonFactory(Component):
         battle_card = self.get_PVE_battle_card(pokemon_name)
         battle_card.bonus_shield = -1
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
-        return Pokemon(name=pokemon_name, battle_card=battle_card, nickname=nickname)
-
-    def shiny_checker(self, player, card):
-        roster_pokes = player.roster
-        matching_pokes = []
-        for poke in roster_pokes:
-            if (poke.battle_card.shiny != True) & (poke.name == card):
-                matching_pokes.append(poke)
-        if len(matching_pokes) == 3: 
-            self.log(f'Caught a shiny {card}!', recipient=player)
-            max_xp = 0
-            max_tm_flag = 0
-            max_bonus_shield = 0
-            max_choice = 0
-            for mp in matching_pokes:
-                max_xp = max(mp.xp, max_xp)
-                max_tm_flag = max(mp.battle_card.tm_flag, max_tm_flag)
-                max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
-                player.release_by_id(mp.id)
-            shiny_poke = self.create_pokemon_by_name(card)
-            shiny_poke.battle_card.shiny = True
-            shiny_poke.xp = max_xp
-            shiny_poke.battle_card.tm_flag = max_tm_flag
-            shiny_poke.battle_card.bonus_shield = max_bonus_shield
-            shiny_poke.battle_card.choiced = max_choice
-            player.add_to_roster(shiny_poke)
+        return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
 
 
 class EvolutionManager(Component):
@@ -284,7 +272,8 @@ class EvolutionManager(Component):
         for player in self.state.players:
             if not player.is_alive:
                 continue
-            for party_member in player.party:
+            player_manager: "PlayerManager" = self.env.player_manager
+            for party_member in player_manager.player_party(player):
                 if party_member is None or party_member.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)
@@ -295,5 +284,5 @@ class EvolutionManager(Component):
                         .format(party_member.name, party_member.xp, threshold)
                     )
                     self.evolve(party_member)
-                    pokemon_factory: PokemonFactory = self.env.pokemon_factory
-                    pokemon_factory.shiny_checker(player, party_member.name)
+                    shop_manager: "ShopManager" = self.env.shop_manager
+                    shop_manager.shiny_checker(player, party_member.name)

@@ -11,10 +11,10 @@ from collections import namedtuple
 from pydantic import BaseModel
 
 from engine.base import Component
-from engine.inventory import PlayerInventoryManager
 from engine.items import ItemManager
 from engine.models.item_event import ItemSchedule
-from engine.models.items import Item
+from engine.models.items import ITEM_NAME_LOOKUP, Item
+from engine.player import PlayerManager
 
 #TurnConfig = namedtuple("TurnConfig", ["item_set", "score"])
 
@@ -30,7 +30,6 @@ class ItemEventManager(Component):
     def dependencies(self) -> T.List:
         return [
             ItemManager,
-            PlayerInventoryManager,
         ]
 
     def initialize(self):
@@ -55,13 +54,12 @@ class ItemEventManager(Component):
         if not self.item_schedule.turn_configs.get(self.state.turn_number):
             return
 
-        inv: PlayerInventoryManager = self.env.inventory_manager
-        item_manager: ItemManager = self.env.item_manager
+        pm: PlayerManager = self.env.player_manager
         for player in self.state.players:
             player_items = self.item_schedule.roll_items(self.state.turn_number)
             # TODO: implement choices
             # give items to players
-            for item in player_items:
-                item_class = item_manager.get_item_class_by_name(item)
-                self.log(f"Received a {item_class.name}!", recipient=player)
-                inv.create_and_give_item_to_player(item, player)
+            for item_name in player_items:
+                item = pm.create_and_give_item_to_player(player, item_name)
+                item_display_name = ITEM_NAME_LOOKUP.get(item.__class__, item.__class__)
+                self.log(f"Received a {item_display_name}!", recipient=player)

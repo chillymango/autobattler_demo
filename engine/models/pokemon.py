@@ -1,11 +1,16 @@
 from __future__ import annotations
 import typing as T
 from collections import namedtuple
+from enum import Enum
+from uuid import UUID
 from pydantic import BaseModel
 from pydantic import Field
-from uuid import UUID
 
 from engine.models.base import Entity
+from engine.models.enums import Move
+from engine.models.enums import PokemonId
+from engine.models.enums import PokemonName
+from engine.models.enums import PokemonType
 from engine.models.items import Item
 
 if T.TYPE_CHECKING:
@@ -17,6 +22,24 @@ EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolv
 DEFAULT_XP_GAIN = 50.0
 
 
+class PokemonEnum(Enum):
+    """
+    Pokemon enumeration
+    """
+
+
+class FastMoveEnum(Enum):
+    """
+    Fast move enumeration
+    """
+
+
+class TypeEnum(Enum):
+    """
+    Move and Pokemon Type enumeration
+    """
+
+
 class BattleCard(BaseModel):
     """
     Pokemon Combat Representation
@@ -24,19 +47,19 @@ class BattleCard(BaseModel):
     Each Pokemon should have this instantiated
     """
 
-    name: str
-    move_f: str
-    move_ch: str
-    move_tm: str
+    name: PokemonId
+    move_f: Move
+    move_ch: Move
+    move_tm: Move
     level: float
     a_iv: int
     d_iv: int
     hp_iv: int
-    poke_type1: str = None
-    poke_type2: str = None
-    f_move_type: str = None
-    ch_move_type: str = None
-    tm_move_type: str = None
+    poke_type1: PokemonType = None
+    poke_type2: PokemonType = None
+    f_move_type: PokemonType = None
+    ch_move_type: PokemonType = None
+    tm_move_type: PokemonType = None
     tm_flag: bool = False
     shiny: bool = False
     health: int = 0
@@ -78,11 +101,15 @@ class BattleCard(BaseModel):
         This will initialize as a default.
         """
         l = string.split(',')
+        name = PokemonId[l[0]]
+        move_f = Move[l[1]]
+        move_ch = Move[l[2]]
+        move_tm = Move[l[3]]
         return BattleCard(
-            name = l[0],
-            move_f = l[1],
-            move_ch = l[2],
-            move_tm = l[3],
+            name = name,
+            move_f = move_f,
+            move_ch = move_ch,
+            move_tm = move_tm,
             level = l[4],
             a_iv = l[5], 
             d_iv = l[6], 
@@ -115,19 +142,10 @@ class Pokemon(Entity):
     Instantiate unique object based on name
     """
 
-    name: str
+    name: PokemonId
     battle_card: BattleCard
     nickname: str
     xp: float = 0.0
-    player: Entity = None  # TODO: break circ import
-
-    def __hash__(self):
-        try:
-            return int(UUID(self.id))
-        except Exception:
-            print(self.name)
-            print(self.id)
-            raise
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()

@@ -19,13 +19,6 @@ if T.TYPE_CHECKING:
     from engine.env import Environment
     from engine.models.state import State
 
-
-class GuiArray:
-    """
-    Base class that will signal some flags whenever it's updated.
-    """
-
-
 _T = T.TypeVar("_T")
 
 
@@ -36,6 +29,15 @@ class Component:
     These game components will have actions in the game and turn loop.
 
     The default action will be no-op.
+
+    TODO: split components into things that run on turn phase updates and things that just
+    contain game logic. Compounding them together right now is pretty unfortunate.
+
+    NOTE: for associative relationships, the component that manages the primary model will manage
+    the relationships for that model.
+    Example: in the player-pokemon one-to-many association, the player is the primary (one), and
+    the Pokemon is the joined (many). This means that the player manager is the component that
+    should be responsible for managing player Pokemon.
     """
 
     ENV_PROXY = None

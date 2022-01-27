@@ -37,6 +37,20 @@ class SpriteManager(Component):
             typename, _ = filename.split('.')
             self.type_sprites[typename] = '/'.join([self.type_base, filename])
 
+        # load trainer sprites
+        self.trainer_sprites = defaultdict(lambda: None)
+        self.trainer_base = '/'.join([self.ASSETS_DIR, 'sprites', 'trainer'])
+        for filename in os.listdir(self.trainer_base):
+            trainername, _ = filename.split('.')
+            self.trainer_sprites[trainername] = '/'.join([self.trainer_base, filename])
+
+        # load weather sprites
+        self.weather_sprites = defaultdict(lambda: None)
+        self.weather_base = '/'.join([self.ASSETS_DIR, 'sprites', 'weather'])
+        for filename in os.listdir(self.weather_base):
+            weathername, _ = filename.split('.')
+            self.weather_sprites[weathername] = '/'.join([self.weather_base, filename])
+
     def get_normie_sprite(self, pokemon_name):
         if not self.DISABLED:
             return self.normie_sprites[pokemon_name]
@@ -50,4 +64,14 @@ class SpriteManager(Component):
     def get_type_sprite(self, type_name):
         if not self.DISABLED:
             return self.type_sprites[type_name]
+        return None
+
+    def get_trainer_sprite(self, trainer_name: str) -> str:
+        if not self.DISABLED:
+            return self.trainer_sprites[trainer_name]
+        return None
+
+    def get_weather_sprite(self, weather_type: str) -> str:
+        if not self.DISABLED:
+            return self.weather_sprites[weather_type]
         return None

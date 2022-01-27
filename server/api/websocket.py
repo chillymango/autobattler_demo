@@ -10,6 +10,7 @@ from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from pydantic import BaseModel
 
+from engine.models.party import PartyConfig
 from server.api.base import PlayerContextRequest
 from server.api.base import ReportingResponse
 from server.api.base import WebSocketRequest
@@ -55,7 +56,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f'WS ERROR: {repr(exc)}')
             api = get_request_endpoint_by_name(endpoint)
             payload = request['payload']
-    
+
             # TODO: drop requests that are too time-different
 
             request_type = api.REQUEST_TYPE
@@ -80,6 +81,9 @@ async def websocket_endpoint(websocket: WebSocket):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback)
             print(f'Error in websocket: {repr(exc)}')
+            # still need to send an error response
+            response = ReportingResponse(success=False, message=repr(exc))
+            await websocket.send_json(response.json())
 
 
 class WebSocketCallback:
@@ -258,6 +262,27 @@ class AddToTeam(WebSocketCallback):
         if idx > PARTY_SIZE:
             return ReportingResponse(success=False, message="Invalid request")
         player.add_party_to_team(idx)
+        return ReportingResponse(success=True)
+
+
+class UpdatePartyConfigRequest(WebSocketPlayerRequest):
+    """
+    Change the party config for a player
+    """
+
+    party_config: PartyConfig
+
+
+class UpdatePartyConfig(WebSocketCallback):
+
+    REQUEST_TYPE = UpdatePartyConfigRequest
+
+    @staticmethod
+    def callback(hydrated: BaseModel):
+        game, player_model = get_request_context(hydrated)
+        player: Player = game.state.get_player_by_id(player_model.id)
+        party_config: PartyConfig = hydrated.party_config
+        player.party_config = party_config
         return ReportingResponse(success=True)
 
 

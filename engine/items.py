@@ -48,6 +48,7 @@ class ItemManager(Component):
             items.InstantPokemonItem,
             items.PersistentPokemonItem,
             items.CombatItem,
+            items.PlayerHeroPower
         ]
 
         # TODO: dynamic evaluation
@@ -66,12 +67,9 @@ class ItemManager(Component):
                 water_stone=items.WaterStone,
             ),
             items.CombatItem: dict(
-                small_sitrus_berry=items.SmallSitrusBerry,
-                large_sitrus_berry=items.LargeSitrusBerry,
-                small_leppa_berry=items.SmallLeppaBerry,
-                large_leppa_berry=items.LargeLeppaBerry,
             ),
-            items.PersistentPokemonItem: dict()
+            items.PersistentPokemonItem: dict(), 
+            items.PlayerHeroPower: dict()
         }
 
         self.submanagers: T.Dict[T.Type, ItemSubManager] = {
@@ -93,7 +91,7 @@ class ItemManager(Component):
                 item = item_class(self.env)
                 self.item_costs[item_name] = item.cost
                 item.consumed = True
-                del item
+                item.delete()
 
     def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
         """
@@ -135,18 +133,7 @@ class ItemManager(Component):
         """
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
-        item: items.Item = submanager.factory[item_name](self.env)
-        submanager._items.add(item)
-        self.id_to_item[item.id] = item
-        return item
-
-    def remove_item(self, item: items.Item) -> None:
-        """
-        Remove an item from existence
-        """
-        submanager: ItemSubManager = self.item_to_manager[item.name]
-        submanager._items.remove(item)
-        self.id_to_item.pop(item.id)
+        return submanager.factory[item_name](self.env)
 
     @property
     def combat_items(self) -> T.Set[items.CombatItem]:
@@ -164,20 +151,13 @@ class ItemManager(Component):
 
         NOTE: this should just print warnings because it's a sign of sloppy programming
         """
-        for submgr in self.submanagers.values():
-            for item in submgr._items:
-                if item.holder is None:
-                    print(f'Item {item} was orphaned and sad')
-                    self.remove_item(item)
+        pass
 
     def remove_consumed_items(self):
         """
         Check all item lists
         """
-        for submgr in self.submanagers.values():
-            for item in submgr._items:
-                if item.consumed:
-                    self.remove_item(item)
+        pass
 
     def turn_setup(self) -> None:
         """
@@ -199,19 +179,17 @@ class ItemManager(Component):
         NOTE: this should run before battle manager executes
         """
         for persistent_itype in self.persistent_item_types:
-            for submgr in self.submanagers[persistent_itype]:
-                submgr: ItemSubManager
-                for item in submgr._items:
-                    item: items.PersistentItemMixin
-                    item.turn_execute()
+            submgr = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_execute()
         self.remove_consumed_items()
 
     def turn_cleanup(self):
         for persistent_itype in self.persistent_item_types:
-            for submgr in self.submanagers[persistent_itype]:
-                submgr: ItemSubManager
-                for item in submgr._items:
-                    item: items.PersistentItemMixin
-                    item.turn_cleanup()
+            submgr: ItemSubManager = self.submanagers[persistent_itype]
+            for item in submgr._items:
+                item: items.PersistentItemMixin
+                item.turn_cleanup()
         self.remove_consumed_items()
         self.remove_orphaned_items()

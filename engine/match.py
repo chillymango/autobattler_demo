@@ -9,9 +9,11 @@ from itertools import combinations
 from random import shuffle
 
 from engine.base import Component
+from engine.models.enums import PokemonId
 from engine.models.match import Match
 from engine.models.player import EntityType
 from engine.models.player import Player
+from engine.player import PlayerManager
 
 if T.TYPE_CHECKING:
     from engine.pokemon import PokemonFactory
@@ -59,11 +61,20 @@ class CreepRoundManager(Component):
     def create_creep_player(self):
         # do a lookup based on the current run
         creep_player = Player(name="Creep Round", type=EntityType.CREEP)
+        self.state.creeps.append(creep_player)
+        player_manager: PlayerManager = self.env.player_manager
         turn = self.state.turn_number
-        for idx, pokemon in enumerate(self.creep_round_pokemon[turn]):
-            creep_player.add_to_party(pokemon)
-            creep_player.add_party_to_team(idx)
+        for pokemon in self.creep_round_pokemon[turn]:
+            player_manager.give_pokemon_to_player(creep_player, pokemon)
         return creep_player
+
+    def remove_creeps(self):
+        """
+        Wipe all creep round players
+        """
+        for creep in self.state.creeps:
+            creep.delete()
+        self.state.creeps = []
 
     def organize_creep_round(self):
         """
@@ -73,7 +84,7 @@ class CreepRoundManager(Component):
         matches = []
         for player in self.state.players:
             creep_player = self.create_creep_player()
-            match = Match(player1=player, player2=creep_player)
+            match = Match(player1=player.id, player2=creep_player.id)
             matches.append(match)
 
         return matches
@@ -100,7 +111,7 @@ class Matchmaker(Component):
             EntityType.HUMAN: [x for x in self.state.players if x.type == EntityType.HUMAN],
             EntityType.COMPUTER: [x for x in self.state.players if x.type == EntityType.COMPUTER],
         }
-        self.matches = [[]]
+        self.matches: T.List[T.List[Match]] = [[]]
         self.opponents_by_player = defaultdict(lambda: [])
 
 
@@ -112,7 +123,7 @@ class Matchmaker(Component):
         Return the player object for their opponent. Return None if player is not participating.
         """
         for match in matches:
-            if match.has_player(player):
+            if match.has_player(player.id):
                 if match.player1 == player:
                     return match.player2
                 return match.player1
@@ -129,13 +140,13 @@ class Matchmaker(Component):
         """
         return len(self.matches)
 
-    def previous_match_between_players(self, player1, player2):
+    def previous_match_between_players(self, player1_id: str, player2_id: str):
         """
         Determine what round the provided players last played a match in.
         """
         for idx, matches in enumerate(reversed(self.matches)):
             for match in matches:
-                if match.has_player(player1) and match.has_player(player2):
+                if match.has_player(player1_id) and match.has_player(player2_id):
                     return self.turn - idx - 1
 
         return 0
@@ -163,7 +174,7 @@ class Matchmaker(Component):
         left over player will receive a creep round matchup.
         """
         # find who is still alive
-        live_players = []
+        live_players: T.List[Player] = []
         for human in self.players[EntityType.HUMAN]:
             if human.is_alive:
                 live_players.append(human)
@@ -172,7 +183,7 @@ class Matchmaker(Component):
                 live_players.append(computer)
 
         # list potential matches
-        all_matches = [Match(player1=p1, player2=p2) for p1, p2 in combinations(live_players, 2)]
+        all_matches = [Match(player1=p1.id, player2=p2.id) for p1, p2 in combinations(live_players, 2)]
         shuffle(all_matches)  # to prevent guessing of matches based on lobby order
 
         # calculate match scores based on match history
@@ -194,11 +205,11 @@ class Matchmaker(Component):
 
         # sort match scores ascending and pull the first values
         sorted_scores = dict(sorted(match_scores.items(), key=lambda item: item[1]))
-        remaining_players = [player for player in live_players]
+        remaining_players = [player.id for player in live_players]
         idx = 0
         determined_matches = []
         while remaining_players and idx < len(sorted_scores):
-            match = list(sorted_scores.keys())[idx]
+            match: Match = list(sorted_scores.keys())[idx]
             if match.players[0] in remaining_players and match.players[1] in remaining_players:
                 determined_matches.append(match)
                 remaining_players.remove(match.players[0])
@@ -210,7 +221,7 @@ class Matchmaker(Component):
         elif len(remaining_players) == 1:
             # organize a creep round for this player
             creep_player = self.env.creep_round_manager.create_creep_player()
-            match = Match(player1=remaining_players[0], player2=creep_player)
+            match = Match(player1=remaining_players[0].id, player2=creep_player.id)
             determined_matches.append(match)
 
         # update player opponent history
@@ -234,6 +245,8 @@ class Matchmaker(Component):
             self.state.current_matches = self.organize_round()
         else:
             print('Trying to organize creep round')
+            # remove any existing creeps first
+            creep_round_manager.remove_creeps()
             self.state.current_matches = creep_round_manager.organize_creep_round()
 
     def turn_cleanup(self):

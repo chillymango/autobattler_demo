@@ -3,26 +3,32 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
+from enum import Enum
 import typing as T
 
 from pydantic import BaseModel
+from pydantic import Field
 from pydantic import PrivateAttr
 from engine.models.base import Entity
 from engine.models.stats import Stats
+import random
 
+from utils.strings import camel_case_to_snake_case 
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
     from engine.env import Environment
     from engine.pokemon import EvolutionManager, PokemonFactory
+    from engine.player import PlayerManager
     from engine.models.player import Player
     from engine.models.pokemon import BattleCard
     from engine.models.pokemon import Pokemon
+    from engine.shop import ShopManager
 
 # DEFAULT ITEM COSTS
 # TODO: store somewhere else for clarity, or make configurable
-SMALL_BERRY_COST = 2
-LARGE_BERRY_COST = 4
+SMALL_SHARD_COST = 2
+LARGE_SHARD_COST = 4
 
 L1_CONSUMABLE_COST = 1
 L2_CONSUMABLE_COST = 2
@@ -41,10 +47,9 @@ class Item(Entity):
     Base Class for Item
     """
 
-    name: str  # not unique, all subclasses should define a default here though
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
-    holder: Entity = None
+    holder: Entity = Field(default=None, exclude={"inventory"})
     cost: int = 1  # the "value" of a specific item
     level: int = 0  # the "power" of a specific item
     _env: "Environment" = PrivateAttr()
@@ -92,7 +97,7 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    holder: "Player" = None
+    holder: "Player" = Field(default=None, exclude={"inventory"})
 
 
 class PokemonItem(Item):
@@ -100,7 +105,7 @@ class PokemonItem(Item):
     Base class for items which get assigned to Pokemon
     """
 
-    holder: "Pokemon" = None
+    holder: "Pokemon" = Field(default=None, exclude={"battle_card"})
 
 
 class CombatItem(PokemonItem):
@@ -109,6 +114,8 @@ class CombatItem(PokemonItem):
 
     The battle sequencer should handle this
     """
+    
+    slotless: bool = False #some items don't compete for slots
 
     def pre_battle_action(self, context: T.Dict):
         """
@@ -134,6 +141,18 @@ class CombatItem(PokemonItem):
         """
         pass
 
+    def on_enemy_fast_move_action(self, context: T.Dict):
+        """
+        Run this action on all enemy fast hits
+        """
+        pass
+
+    def on_enemy_charged_move_action(self, context: T.Dict):
+        """
+        Run this action on all enemy charged hits
+        """
+        pass
+
     def on_charged_move_action(self, context: T.Dict):
         """
         Run this action on all charged moves
@@ -149,6 +168,61 @@ class CombatItem(PokemonItem):
     def post_battle_action(self, context: T.Dict):
         """
         Run this after all fighting happens
+        """
+        pass
+
+class BasicHeroPowerMixIn:
+    """
+    Hero Powers that can be used once per turn
+    """
+    used: bool =  False
+    success: bool = False
+
+    def can_use(self):
+        """
+        ensure correct timing
+        """
+        if self.used == False:
+            return True
+        else:
+            print('hero power already used this turn')
+            return False
+
+    def immediate_action(self, player: "Player" = None):
+        """
+        ensure once per turn
+        """
+        if self.can_use() == True:
+            self.use(player)
+            if self.success == True:
+                self.used = True
+    
+
+class PassiveHeroPowerMixin:
+    """
+    Hero powers that accept no player input
+    """
+    def pre_battle_action(self, context: T.Dict):
+        """
+        Run this before any fighting happens
+        """
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        Run this after all fighting happens
+        """
+        pass
+
+    def turn_setup(self):
+        """
+        Run hp logic during turn_setup
+        """
+        pass
+
+    def turn_cleanup(self):
+        """
+        Run hp logic during turn_cleanup
         """
         pass
 
@@ -218,70 +292,371 @@ class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
     Base class for type checking
     """
 
+class PlayerHeroPower(BasicHeroPowerMixIn, PlayerItem):
+    """
+    Base class for once-per-turn hero powers
+    """
+
+class PassiveHeroPower(PassiveHeroPowerMixin, PlayerItem):
+    """
+    Base class for passive hero powers
+    """
+
+class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
+    """
+    Base class for once-per-turn hero powers
+    """
+
 
 # EXAMPLES:
 # COMBAT ITEM
-class Berry(CombatItem):
+class Shard(CombatItem):
 
-    stat: Stats = None  # stat the Berry adjusts
-    name: str = "Berry"  # assign a default name here
+    stat: Stats = None  # stat the Shard adjusts
 
-
-class SmallSitrusBerry(Berry):
+class SmallHPShard(Shard):
     """
-    Small Sitrus Berry
+    Small HP Shard
 
-    Grants a small amount of health upon exiting successful combat
+    Grants a small amount of health at combat start
     """
-    name = 'Small Sitrus Berry'
     stat = Stats.HP
-    cost = SMALL_BERRY_COST
+    cost = SMALL_SHARD_COST
     level = 1
 
-    def post_combat_action(self, context: T.Dict):
+
+class LargeHPShard(Shard):
+    """
+    Large HP Shard
+
+    Grants a large amount of health at combat start
+    """
+    stat = Stats.HP
+    cost = LARGE_SHARD_COST
+    level = 2
+
+
+class SmallEnergyShard(Shard):
+    """
+    Small Energy Shard
+
+    Grants a small amount of energy at combat start
+    """
+    stat = Stats.ENG
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeEnergyShard(Shard):
+    """
+    Large Energy Shard
+
+    Grants a large amount of energy at combat start
+    """
+    stat = Stats.ENG
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallDefenseShard(Shard):
+    """
+    Small Defense Shard
+
+    Grants a small amount of Defense at combat start
+    """
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeDefenseShard(Shard):
+    """
+    Large Defense Shard
+
+    Grants a large amount of Defense at combat start
+    """
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallAttackShard(Shard):
+    """
+    Small Attack Shard
+
+    Grants a small amount of Attack at combat start
+    """
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeAttackShard(Shard):
+    """
+    Large Attack Shard
+
+    Grants a large amount of Attack at combat start
+    """
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+class SmallSpeedShard(Shard):
+    """
+    Small Speed Shard
+
+    Grants a small amount of Speed at combat start
+    """
+    stat = Stats.DEF
+    cost = SMALL_SHARD_COST
+    level = 1
+
+
+class LargeSpeedShard(Shard):
+    """
+    Large Speed Shard
+
+    Grants a large amount of Speed at combat start
+    """
+    stat = Stats.DEF
+    cost = LARGE_SHARD_COST
+    level = 2
+
+'''
+# COMBAT ITEM
+class CombinedItem(CombatItem):
+
+    name: str = "CombinedItem"  # assign a default name here
+    stat_contribution = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
+    
+class LifeOrb(CombinedItem):
+    """
+    Life Orb
+    Significantly increases damage, deals damage per tick to holder
+    """
+    name = "Life Orb"
+    stat_contribution = Field(default_factory=lambda:  [1,0,0,0,0])
+
+    def on_battle_start(self, context: T.Dict):
         """
-        If Pokemon still alive, gain 10% HP
+        even more damage 
+        """
+        pass
+
+    def on_tick_action(self, context: T.Dict):
+        """
+        deal damage to self 
+        """
+        pass
+class LightClay(CombinedItem):
+    """
+    Light Clay
+    Provide extra shield
+    """
+    name = "Light Clay"
+    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,0])
+
+    def pre_battle_action(self, context: T.Dict):
+        """
+        give shields to teammates 
+        """
+        pass
+
+class CellBattery(CombinedItem):
+    """
+    Cell Battery
+    Provide energy per tick
+    """
+    name = "Cell Battery"
+    stat_contribution = Field(default_factory=lambda:   [0,0,1,0,0])
+
+    def on_tick_action(self, context: T.Dict):
+        """
+        energy per tick 
+        """
+        pass
+class Leftovers(CombinedItem):
+    """
+    Leftovers
+    Provide energy per tick
+    """
+    name = "Leftovers"
+    stat_contribution = Field(default_factory=lambda:   [0,0,0,1,0])
+
+    def on_tick_action(self, context: T.Dict):
+        """
+        HP per tick 
+        """
+        pass
+class Metronome(CombinedItem):
+    """
+    Metronome
+    Provide attack speed on hit
+    """
+    name = "Metronome"
+    stat_contribution = Field(default_factory=lambda:   [0,0,0,0,1])
+
+
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        atk spd per tick 
+        """
+        pass
+
+class ExpShare(CombinedItem):
+    """
+    EXP Share
+    Provide bonus XP at end of battle
+    """
+    name = "EXP Share"
+    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,1])
+
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        xp post battle 
         """
         pass
 
 
-class LargeSitrusBerry(Berry):
+class IntimidatingMask(CombinedItem):
     """
-    Large Sitrus Berry
-
-    Grants a large amount of health upon exiting successful combat
+    Intimidating Mask
+    Lowers enemy attack at battle start
     """
-    name = 'Large Sitrus Berry'
-    stat = Stats.HP
-    cost = LARGE_BERRY_COST
-    level = 2
+    name = "EXP Share"
+    stat_contribution = Field(default_factory=lambda:   [1,1,0,0,0])
 
 
-class SmallLeppaBerry(Berry):
+    def pre_combat_action(self, context: T.Dict):
+        """
+        debuff enemy attack 
+        """
+        pass
+
+class IronBarb(CombinedItem):
     """
-    Small Leppa Berry
-
-    Grants a small amount of energy at combat start
+    Iron Barb
+    Deals damage on hit
     """
-    name = 'Small Leppa Berry'
-    stat = Stats.ENG
-    cost = SMALL_BERRY_COST
-    level = 1
+    name = "Iron Barb"
+    stat_contribution = Field(default_factory=lambda:   [0,1,0,1,0])
+    
+    def on_enemy_fast_move_action(self, context: T.Dict):
+        """
+        deal damage
+        """
+        pass
 
-
-class LargeLeppaBerry(Berry):
+class FocusBand(CombinedItem):
     """
-    Large Leppa Berry
-
-    Grants a large amount of energy at combat start
+    Focus Band
+    Revive after battle at low health
     """
-    name = 'Large Leppa Berry'
-    stat = Stats.ENG
-    cost = LARGE_BERRY_COST
-    level = 2
+    name = "Focus Band"
+    stat_contribution = Field(default_factory=lambda:   [1,0,1,0,0])
+    
+    def post_combat_action(self, context: T.Dict):
+        """
+        revive
+        """
+        pass
 
-# TODO: implement the rest of the berry classes
+class ShellBell(CombinedItem):
+    """
+    Shell Bell
+    Lifesteal
+    """
+    name = "Shell Bell"
+    stat_contribution = Field(default_factory=lambda:  [1,0,0,1,0])
+    
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        heal
+        """
+        pass
 
+class EjectButton(CombinedItem):
+    """
+    Eject Button
+    Swaps out to a favorable matchup
+    """
+    name = "Eject Button"
+    stat_contribution = Field(default_factory=lambda:   [0,0,1,1,0])
+    
+    def on_tick_action(self, context: T.Dict):
+        """
+        check HP, then terminate the combat
+        """
+        pass
+
+    def post_combat_action(self, context: T.Dict):
+        """
+        exhaust the button
+        """
+        pass
+
+class ExpertBelt(CombinedItem):
+    """
+    Expert Belt
+    boosts power of super effective hits
+    """
+    name = "Expert Belt"
+    stat_contribution = Field(default_factory=lambda:   [1,0,0,0,1])
+    
+    def on_fast_move_action(self, context: T.Dict):
+        """
+        check damage type, then boost power
+        """
+        pass
+    def on_charged_move_action(self, context: T.Dict):
+        """
+        check damage type, then boost power
+        """
+        pass
+
+class AssaultVest(CombinedItem):
+    """
+    Assault Vest
+    reduces power of enemy charged moves
+    """
+    name = "Assault Vest"
+    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,1])
+  
+    def on_enemy_charged_move_action(self, context: T.Dict):
+        """
+        reduce power
+        """
+        pass
+
+class QuickPowder(CombinedItem):
+    """
+    Quick Powder
+    boosts attack speed of teammates
+    """
+    name = "Quick Powder"
+    stat_contribution = Field(default_factory=lambda:   [0,0,0,1,1])
+    
+  
+    def pre_battle_action(self, context: T.Dict):
+        """
+        boost speed of team
+        """
+        pass
+
+class ChoiceSpecs(CombinedItem):
+    """
+    Choice Specs
+    Your fast move becomes lock on
+    """
+    name = "Choice Specs"
+    stat_contribution = Field(default_factory=lambda:   [0,0,1,0,1])
+    
+  
+    def pre_battle_action(self, context: T.Dict):
+        """
+        change your fast move
+        """
+        pass
+'''
 
 class TM(InstantPokemonItem):
 
@@ -298,43 +673,66 @@ class TM(InstantPokemonItem):
         """
         return cls(name = 'TM')
 
+#HERO POWER ITEMS
+class BrockShield(CombatItem):
 
-class ChoiceItem(InstantPokemonItem):
+    slotless = True
+
+    def pre_battle_action(self, context: T.Dict):
+        """
+        give shields to teammates 
+        """
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        remove shields 
+        """
+        self.consumed = True
+        pass
+
+class JanineEject(CombatItem):
+
+    def on_tick_action(self, context: T.Dict):
+        """
+        check HP, then terminate the combat
+        """
+        pass
+
+    def post_combat_action(self, context: T.Dict):
+        """
+        exhaust the button
+        """
+        pass
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        remove button 
+        """
+        self.consumed = True
+        pass
+
+class DragonScale(InstantPokemonItem):
 
     def use(self):
-        card: "BattleCard" = self.pokemon.battle_card
-        if card.choiced == 'No':
-            self.consumed = True
-            if self.name == 'Choice Band':
-                card.choiced = 'Fast'
-                card.move_f = 'YAWN'
-                card.f_move_type = 'Normal'
-                card.attackbuff += 2
-            elif self.name == 'Choice Specs':
-                card.choiced == 'Charged'
-                card.move_ch = 'FRUSTRATION'
-                card.ch_move_type = 'Normal'
-                card.tm_flag = 1
-                card.tm_move_type = 'Normal'
-                card.move_tm = 'STRUGGLE'
-                card.attackbuff += 2
-            elif self.name == 'Choice Scarf':
-                card.choiced = 'Fast-Speed'
-                card.spdbuff = 0.66
-                card.move_f = 'YAWN'
-                card.f_move_type = 'Normal'
+        if not isinstance(self.holder, Pokemon):
+            return
+        if self.holder.is_type('dragon'):
+            return
 
-    @classmethod
-    def choice_band_factory(cls):
-        return cls(name = 'Choice Band')
+        self.holder.battle_card.poke_type2 = 'dragon' 
 
-    @classmethod
-    def choice_specs_factory(cls):
-        return cls(name = 'Choice Specs')
+        
+class RedCooking(InstantPokemonItem):
 
-    @classmethod
-    def choice_scarf_factory(cls):
-        return cls(name = 'Choice Scarf')
+    def use(self):
+        if not isinstance(self.holder, Pokemon):
+            return
+        if self.holder.shiny == True:
+            return
+
+        self.holder.battle_card.shiny = True
+
 
 # INSTANT ITEM
 class Stone(InstantPokemonItem):
@@ -358,7 +756,7 @@ class Stone(InstantPokemonItem):
 
 class CommonStone(Stone):
     """
-    Fire, Water, Thunder, Leaf Stones
+    Fire, Water, Thunder, Leaf, Moon Stones
     """
 
     def stone_evo(self):
@@ -385,7 +783,6 @@ class FireStone(CommonStone):
     Used to evolve fire-type Pokemon (and Eevee!)
     """
 
-    name = 'Fire Stone'
     target_type = "fire"
     cost = COMMON_STONE_COST
 
@@ -394,8 +791,6 @@ class WaterStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-
-    name = 'Water Stone'
     target_type = 'water'
     cost = COMMON_STONE_COST
 
@@ -403,7 +798,6 @@ class WaterStone(CommonStone):
 # EXAMPLE: PERSISTENT PLAYER ITEM
 class PokeFlute(PersistentPlayerItem):
 
-    name: str = "Poke Flute"
     # can define additional fields for item flexibility
     uses_left: int = 5  # can be passed as construction argument
 
@@ -429,7 +823,6 @@ class PokeFlute(PersistentPlayerItem):
 # EXAMPLE: INSTANT PLAYER ITEM
 class MasterBall(InstantPlayerItem):
 
-    name: str = "Master Ball"
     ball_count: int = 0
 
     def use(self, player: "Player" = None):
@@ -451,6 +844,184 @@ class MasterBall(InstantPlayerItem):
         return cls()
 
 
+#HERO POWERS
+
+class BlaineBlaze(PassiveHeroPower):
+    
+    def turn_setup(self, player: "Player" = None):
+        """
+        next reroll is free 
+        """
+        player.energy += 1
+
+
+class BluePower(PassiveHeroPower):
+    
+    def turn_setup(self, player: "Player" = None):
+        """
+        if it's the correct turn get a TM
+        """
+        turn_divisor = 4
+        if self._env.state.turn_number % turn_divisor:
+            player_manager: PlayerManager = self.env.player_manager
+            player_manager.create_and_give_item_to_player(player, item_name = "tm")
+
+class BrunoBod(PassiveHeroPower):
+    """
+    buff HP at start of game
+    """
+
+    def StartOfGame(self, player: "Player" = None):
+        buffed_hp = 35
+        player.hitpoints = buffed_hp
+
+
+class GiovanniGains(PlayerHeroPower):
+    
+    oncepergame: bool = False
+    reward_dict: dict = {
+        1: [1,1,0],
+        2: [2,1,1],
+        3: [2,2,1],
+        4: [3,2,2],
+        5: [3,3,2],
+        6: [4,3,3],
+        7: [5,4,3],
+        8: [6,4,4],
+        9: [7,5,5]
+    }
+
+    def use(self, player: "Player" = None):
+        """
+        if you haven't used it before, get rewards according to schedule
+        """
+        if self.oncepergame == False:
+            rewards = self.reward_dict[self._env.state.turn_number]
+            player.balls += rewards[0]
+            player.energy += rewards[1]
+            reward_items =  ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            player_manager: PlayerManager = self.env.player_manager
+            for i in range(rewards[2]):
+                player_manager.create_and_give_item_to_player(player, item_name = random.choice(reward_items))
+            self.oncepergame == True
+
+
+class BrockShield(PlayerHeroPower):
+    
+    hp_cost: int = 2
+
+    def use(self, player: "Player" = None):
+        """
+        get a brock's solid item 
+        """
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
+            player_manager: PlayerManager = self.env.player_manager
+            player_manager.create_and_give_item_to_player(player, item_name = "brock_shield")
+            self.success = True
+
+class GreensRocks(PlayerHeroPower):
+    
+    reroll_cost: int = 2
+
+    def use(self, player: "Player" = None):
+        """
+        get a mineral
+        """
+        if player.energy >= self.reroll_cost :
+            player.energy -= self.reroll_cost
+            player_manager: PlayerManager = self.env.player_manager
+            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
+            self.success = True
+
+class JanineJutsu(PlayerHeroPower):
+    
+    hp_cost: int = 2
+
+    def use(self, player: "Player" = None):
+        """
+        get a janine's button item 
+        """
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
+            player_manager: PlayerManager = self.env.player_manager
+            player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
+            self.success = True
+
+class LanceFetish(ComplexHeroPower):
+    
+    hp_cost: int = 2
+
+    def use(self, player: "Player" = None):
+        """
+        get a dragon scale item 
+        """
+        if player.balls >= self.hp_cost :
+            player.balls -= self.hp_cost
+            player_manager: PlayerManager = self.env.player_manager
+            player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
+            self.success = True
+        
+    def pre_battle_action(self, context: T.Dict):
+        """
+        if dragon, buff 
+        """
+        pass
+
+
+class WillSac(PlayerHeroPower):
+    
+    hp_cost: int = 2
+
+    def use(self, player: "Player" = None):
+        """
+        get hurt, get $ 
+        """
+        if player.hitpoints > self.hp_cost :
+            player.hitpoints -= self.hp_cost
+            player.flute_charges += 1
+            player.balls += 2
+            self.success = True
+
+class KogaNinja(ComplexHeroPower):
+
+    hp_cost: int = 2
+    unseal_cost = 4
+
+    def post_battle_action(self, context: T.Dict):
+        """
+        if win, lower unseal cost
+        """
+        pass
+    
+    def use(self, player: "Player" = None):
+        if self.unseal_cost == 0:
+            if player.balls > self.hp_cost :
+                player.balls -= self.hp_cost
+                player_manager: PlayerManager = self.env.player_manager
+                eevees = ['jolteon', 'vaporeon', 'flareon']
+                player_manager.create_and_give_pokemon_to_player(player, random.choice(eevees))
+
+        
+class SurgeGorilla(PassiveHeroPower):
+    def pre_battle_action(self, context: T.Dict):
+        """
+        check largest number of matching types, apply buff
+        """
+        pass
+
+class RedCheater(PassiveHeroPower):
+    
+    """
+    give plot device at start of game
+    """
+
+    def StartOfGame(self, player: "Player" = None):
+        player_manager: PlayerManager = self.env.player_manager 
+        player_manager.create_and_give_item_to_player(player, item_name = "red_cooking")
+
+        
 ## OLDER STUFF BELOW HERE ##
 
 class _Berry:
@@ -703,3 +1274,18 @@ class _OldItemClass:
 # type annotations
 AllPokemonItems = T.Union[PersistentPokemonItem, InstantPokemonItem]
 AllPlayerItems = T.Union[PersistentPlayerItem, InstantPlayerItem]
+
+# by default just convert to snakecase and capitalize
+ITEM_NAME_LOOKUP: T.Dict[T.Type[Item], str] = {}
+
+def get_item_name_for_subclasses(klass):
+    """
+    Recursively update ITEM_NAME_LOOKUP for all subclasses of klass
+    """
+    words = camel_case_to_snake_case(klass.__name__).split('_')
+    ITEM_NAME_LOOKUP[klass] = ' '.join([word.capitalize() for word in words])
+
+    for subclass in klass.__subclasses__():
+        get_item_name_for_subclasses(subclass)
+
+get_item_name_for_subclasses(Item)
