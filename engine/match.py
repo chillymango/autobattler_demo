@@ -9,6 +9,7 @@ from itertools import combinations
 from random import shuffle
 
 from engine.base import Component
+from engine.models.enums import PokemonId
 from engine.models.match import Match
 from engine.models.player import EntityType
 from engine.models.player import Player

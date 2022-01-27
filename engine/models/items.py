@@ -3,7 +3,7 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
-from ast import Pass
+from enum import Enum
 import typing as T
 
 from pydantic import BaseModel
@@ -11,7 +11,9 @@ from pydantic import Field
 from pydantic import PrivateAttr
 from engine.models.base import Entity
 from engine.models.stats import Stats
-import random 
+import random
+
+from utils.strings import camel_case_to_snake_case 
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
@@ -45,7 +47,6 @@ class Item(Entity):
     Base Class for Item
     """
 
-    name: str  # not unique, all subclasses should define a default here though
     # if item is marked as consumed, the item manager should clean it up
     consumed: bool = False
     holder: Entity = Field(default=None, exclude={"inventory"})
@@ -226,8 +227,6 @@ class PassiveHeroPowerMixin:
         pass
 
 
-
-
 class InstantItemMixin:
     """
     Item that gets used immediately
@@ -314,7 +313,6 @@ class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
 class Shard(CombatItem):
 
     stat: Stats = None  # stat the Shard adjusts
-    name: str = "Shard"  # assign a default name here
 
 class SmallHPShard(Shard):
     """
@@ -322,12 +320,9 @@ class SmallHPShard(Shard):
 
     Grants a small amount of health at combat start
     """
-    name = 'Small HP Shard'
     stat = Stats.HP
     cost = SMALL_SHARD_COST
     level = 1
-
-
 
 
 class LargeHPShard(Shard):
@@ -336,7 +331,6 @@ class LargeHPShard(Shard):
 
     Grants a large amount of health at combat start
     """
-    name = 'Large HP Shard'
     stat = Stats.HP
     cost = LARGE_SHARD_COST
     level = 2
@@ -348,7 +342,6 @@ class SmallEnergyShard(Shard):
 
     Grants a small amount of energy at combat start
     """
-    name = 'Small Energy Shard'
     stat = Stats.ENG
     cost = SMALL_SHARD_COST
     level = 1
@@ -360,7 +353,6 @@ class LargeEnergyShard(Shard):
 
     Grants a large amount of energy at combat start
     """
-    name = 'Large Energy Shard'
     stat = Stats.ENG
     cost = LARGE_SHARD_COST
     level = 2
@@ -371,7 +363,6 @@ class SmallDefenseShard(Shard):
 
     Grants a small amount of Defense at combat start
     """
-    name = 'Small Defense Shard'
     stat = Stats.DEF
     cost = SMALL_SHARD_COST
     level = 1
@@ -383,7 +374,6 @@ class LargeDefenseShard(Shard):
 
     Grants a large amount of Defense at combat start
     """
-    name = 'Large Defense Shard'
     stat = Stats.DEF
     cost = LARGE_SHARD_COST
     level = 2
@@ -394,7 +384,6 @@ class SmallAttackShard(Shard):
 
     Grants a small amount of Attack at combat start
     """
-    name = 'Small Attack Shard'
     stat = Stats.DEF
     cost = SMALL_SHARD_COST
     level = 1
@@ -406,7 +395,6 @@ class LargeAttackShard(Shard):
 
     Grants a large amount of Attack at combat start
     """
-    name = 'Large Attack Shard'
     stat = Stats.DEF
     cost = LARGE_SHARD_COST
     level = 2
@@ -417,7 +405,6 @@ class SmallSpeedShard(Shard):
 
     Grants a small amount of Speed at combat start
     """
-    name = 'Small Speed Shard'
     stat = Stats.DEF
     cost = SMALL_SHARD_COST
     level = 1
@@ -429,7 +416,6 @@ class LargeSpeedShard(Shard):
 
     Grants a large amount of Speed at combat start
     """
-    name = 'Large Speed Shard'
     stat = Stats.DEF
     cost = LARGE_SHARD_COST
     level = 2
@@ -689,7 +675,7 @@ class TM(InstantPokemonItem):
 
 #HERO POWER ITEMS
 class BrockShield(CombatItem):
-    name= "Brock's Solid"
+
     slotless = True
 
     def pre_battle_action(self, context: T.Dict):
@@ -706,7 +692,6 @@ class BrockShield(CombatItem):
         pass
 
 class JanineEject(CombatItem):
-    name= "Janine's Button"
 
     def on_tick_action(self, context: T.Dict):
         """
@@ -729,8 +714,6 @@ class JanineEject(CombatItem):
 
 class DragonScale(InstantPokemonItem):
 
-    name = "Lance's Dragon Scale"
-
     def use(self):
         if not isinstance(self.holder, Pokemon):
             return
@@ -741,8 +724,6 @@ class DragonScale(InstantPokemonItem):
 
         
 class RedCooking(InstantPokemonItem):
-
-    name = "Red's Cooking"
 
     def use(self):
         if not isinstance(self.holder, Pokemon):
@@ -820,7 +801,6 @@ class WaterStone(CommonStone):
 # EXAMPLE: PERSISTENT PLAYER ITEM
 class PokeFlute(PersistentPlayerItem):
 
-    name: str = "Poke Flute"
     # can define additional fields for item flexibility
     uses_left: int = 5  # can be passed as construction argument
 
@@ -846,7 +826,6 @@ class PokeFlute(PersistentPlayerItem):
 # EXAMPLE: INSTANT PLAYER ITEM
 class MasterBall(InstantPlayerItem):
 
-    name: str = "Master Ball"
     ball_count: int = 0
 
     def use(self, player: "Player" = None):
@@ -878,6 +857,7 @@ class BlaineBlaze(PassiveHeroPower):
         """
         player.energy += 1
 
+
 class BluePower(PassiveHeroPower):
     
     def turn_setup(self, player: "Player" = None):
@@ -890,7 +870,6 @@ class BluePower(PassiveHeroPower):
             player_manager.create_and_give_item_to_player(player, item_name = "tm")
 
 class BrunoBod(PassiveHeroPower):
-    
     """
     buff HP at start of game
     """
@@ -1298,3 +1277,18 @@ class _OldItemClass:
 # type annotations
 AllPokemonItems = T.Union[PersistentPokemonItem, InstantPokemonItem]
 AllPlayerItems = T.Union[PersistentPlayerItem, InstantPlayerItem]
+
+# by default just convert to snakecase and capitalize
+ITEM_NAME_LOOKUP: T.Dict[T.Type[Item], str] = {}
+
+def get_item_name_for_subclasses(klass):
+    """
+    Recursively update ITEM_NAME_LOOKUP for all subclasses of klass
+    """
+    words = camel_case_to_snake_case(klass.__name__).split('_')
+    ITEM_NAME_LOOKUP[klass] = ' '.join([word.capitalize() for word in words])
+
+    for subclass in klass.__subclasses__():
+        get_item_name_for_subclasses(subclass)
+
+get_item_name_for_subclasses(Item)

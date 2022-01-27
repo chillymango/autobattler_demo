@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from engine.base import Component
 from engine.items import ItemManager
 from engine.models.item_event import ItemSchedule
-from engine.models.items import Item
+from engine.models.items import ITEM_NAME_LOOKUP, Item
 from engine.player import PlayerManager
 
 #TurnConfig = namedtuple("TurnConfig", ["item_set", "score"])
@@ -61,4 +61,5 @@ class ItemEventManager(Component):
             # give items to players
             for item_name in player_items:
                 item = pm.create_and_give_item_to_player(player, item_name)
-                self.log(f"Received a {item.name}!", recipient=player)
+                item_display_name = ITEM_NAME_LOOKUP.get(item.__class__, item.__class__)
+                self.log(f"Received a {item_display_name}!", recipient=player)

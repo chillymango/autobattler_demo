@@ -70,7 +70,7 @@ class TestGame(unittest.TestCase):
         shop_manager.check_shiny(self.p1, 'pikachu')
         player_manager.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         shop_manager.check_shiny(self.p1, 'pikachu')
-
+        import IPython; IPython.embed()
         # everyone rolls again and buys their last 3 pokemon
         for player in self.env.state.players:
             player.energy += 2

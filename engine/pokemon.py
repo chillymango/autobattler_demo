@@ -7,6 +7,7 @@ import typing as T
 from collections import defaultdict
 
 from engine.base import Component
+from engine.models.enums import PokemonId, PokemonType
 from engine.models.pokemon import BattleCard
 from engine.models.pokemon import EvolutionConfig
 from engine.models.pokemon import Pokemon
@@ -100,20 +101,22 @@ class PokemonFactory(Component):
         self.move_reference = pd.read_csv(self.MOVE_REFERENCE_PATH)
         self.type_reference = pd.read_csv(self.TYPE_REFERENCE_PATH)
 
-    def get_pokemon_type_reference(self, name: str) -> T.Tuple[str, str]:
+    def get_pokemon_type_reference(self, name: str) -> T.Tuple[PokemonType, PokemonType]:
         """
         Get the Pokemon type reference
 
-        TODO: what's going on here
+        # TODO: read from gamemaster instead of loading a manual file
         """
-        type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0]
-        type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0]
-        if type2 == 'No Type':
-            type2 = None
-        return (type1, type2)
+        type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0].lower()
+        type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0].lower()
+        if type2 == 'no type':
+            type2 = "none"  # feed into enum
+        return (PokemonType[type1], PokemonType[type2])
 
-    def get_move_type_reference(self, move: str) -> str:
-        return self.move_reference[self.move_reference.move == move].type.iloc[0]
+    def get_move_type_reference(self, move: str) -> PokemonType:
+        return PokemonType[
+            self.move_reference[self.move_reference.move == move].type.iloc[0].lower()
+        ]
 
     def get_PVE_battle_card(self, pokemon_name):
         """
@@ -146,7 +149,7 @@ class PokemonFactory(Component):
     def get_nickname_by_pokemon_name(self, pokemon_name):
         return self.nickname_map[self.nickname_map.name == pokemon_name].sanitized_name.iloc[0]
 
-    def create_pokemon_by_name(self, pokemon_name):
+    def create_pokemon_by_name(self, pokemon_name: str):
         """
         Create a new Pokemon by pokemon name.
 
@@ -162,17 +165,23 @@ class PokemonFactory(Component):
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         # assign types here
         types = self.get_pokemon_type_reference(pokemon_name)
-        fast_move_type = self.get_move_type_reference(battle_card.move_f)
-        charged_move_type = self.get_move_type_reference(battle_card.move_ch)
-        tm_move_type = self.get_move_type_reference(battle_card.move_tm)
-        battle_card.poke_type1 = types[0]
-        battle_card.poke_type2 = types[1]
+        fast_move_type = self.get_move_type_reference(battle_card.move_f.name)
+        charged_move_type = self.get_move_type_reference(battle_card.move_ch.name)
+        tm_move_type = self.get_move_type_reference(battle_card.move_tm.name)
+        if types[0] is not None:
+            battle_card.poke_type1 = types[0]
+        else:
+            battle_card.poke_type1 = None
+        if types[1] is not None:
+            battle_card.poke_type2 = types[1]
+        else:
+            battle_card.poke_type2 = None
         battle_card.f_move_type = fast_move_type
         battle_card.ch_move_type = charged_move_type
         battle_card.tm_move_type = tm_move_type
-        return Pokemon(name=pokemon_name, battle_card=battle_card, nickname=nickname)
+        return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
 
-    def create_PVEpokemon_by_name(self, pokemon_name):
+    def create_PVEpokemon_by_name(self, pokemon_name: str):
         """
         Create a new Pokemon by pokemon name.
 
@@ -181,7 +190,7 @@ class PokemonFactory(Component):
         battle_card = self.get_PVE_battle_card(pokemon_name)
         battle_card.bonus_shield = -1
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
-        return Pokemon(name=pokemon_name, battle_card=battle_card, nickname=nickname)
+        return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
 
 
 class EvolutionManager(Component):
