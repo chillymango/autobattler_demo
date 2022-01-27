@@ -14,14 +14,54 @@
 #     self.bonus_shield = bonus_shield
 #     self.status = status  
 
+# pre_battle_action()
+# pre_combat_action()
+# on_tick_action()
+# on_fast_move_action()
+# on_charged_move_action()
+# post_combat_action
+# post_battle_action
+
+# import typing as T
+# from engine.models.itmes import Item
+
+# pre battle hooks
+# step 1 determine what the relevant items are and who they belong to
+# team1_items = set([x.berry for x in ...
+# context
+# context.update() at every item check
+# for item in team1 items
+# item.pre_battle_action(context)
+
+# make a class BattleContext(BaseModel):
+# name: str
+# move_f: str
+# atk: int
+# : T.List[Battler]
+
+# class Battler(BaseModel):
+# atk: float = 0
+# def __init__(self, battle_card, index, **kwargs):
+# self
+
+# @classmethod
+# def create(cls, 
+# return cls(atk=atk)
+
+# import pydantic import BaseModel
+
+
 import json
 import copy
+import math
+from random import randint
 
 import os.path
-import typing as T
-from pydantic import BaseModel
-from engine.models.items import CombatItem
-from engine.models.pokemon import BattleCard
+from shutil import which
+import string
+from typing_extensions import Self
+
+from more_itertools import first
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
 parent_directory = os.path.split(parent_directory)[0]
@@ -38,6 +78,7 @@ with open(file_path, 'r') as origin:
     types = dataset['types'] # creates a list of all types and their attributes
     # how combat power modifies
     # cpms = dataset["cpms"] or whatever
+cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.290249884128570, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.362457748778790, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.411193549517250, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.462798386812210, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.597400009632110, 0.604823657502073, 0.612157285213470, 0.619404110566050, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.755685508251190, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.770297273971590, 0.773186504840850, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.797803921486970, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.810299992561340, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.855300009250640, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897]
 
 # current_team1_hp = current_team1.hp_iv*pokedex[current_team1.name]["baseStats"]["hp"]
 # current_team2_hp = current_team2.hp_iv*pokedex[current_team2.name]["baseStats"]["hp"]
@@ -50,57 +91,36 @@ class Event:
         self.type = category
         self.value = value
 
-
-class Battler(BaseModel):
-
-    atk: float
-    defn: float
-    hp: float
-    idx: int
-    damage_dealt: float = 0
-    damage_taken: float = 0
-    ready: bool = False
-    timer: int = 0
-    battlecard: BattleCard = None
-
-    @classmethod
-    def create_from_battle_card(cls, battle_card, index):
-        attack = pokedex[battle_card.name]["baseStats"]["atk"]
-        defense = pokedex[battle_card.name]["baseStats"]["def"]
-        hitpoints = pokedex[battle_card.name]["baseStats"]["hp"]
-        return cls(atk=attack, defn=defense, hp=hitpoints, idx=index, battlecard=battle_card)
-
-
-class OldBattler:
+class Battler:
     def __init__(self, battle_card, index):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
+        self.battlecard.bonus_shield = 1
 
+        cpm = cpms[int((battle_card.level-1) * 2)]
         # initialize stats. ignoring iv for now
-        self.a = pokedex[battle_card.name]["baseStats"]["atk"]
+        self.a = cpm * (pokedex[battle_card.name]["baseStats"]["atk"] + self.battlecard.a_iv)
         # in the pokemon.js file, search for "ivs.atk" to find the real assignment variables. 
-        self.d = pokedex[battle_card.name]["baseStats"]["def"]
-        self.hp = pokedex[battle_card.name]["baseStats"]["hp"]
+        self.d = cpm * (pokedex[battle_card.name]["baseStats"]["def"] + self.battlecard.d_iv)
+        self.hp = math.floor(cpm * (pokedex[battle_card.name]["baseStats"]["hp"] + self.battlecard.hp_iv))
+        if self.hp < 10:
+            self.hp = 10
         self.id = index # keep track of where on the bench it is. for keeping track of how much damage it does
         self.dmg_dealt = 0
         self.dmg_taken = 0
         self.ready = False
         self.timer = 0
 
+        # buff modifiers
+        self.am = 0
+        self.dm = 0
+        
+        # can look at pokemon.js line 595 "self.activechargedmoves = []" to see sorting charged move array by cost, selecting an optimal move
+
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
-
-# this would fail
-#json.dumps(OldBattler())
-
-
-class BattleContext(BaseModel):
-
-    pokemon1: Battler
-    pokemon2: Battler
-    team1: T.List[Battler]
-    team2: T.List[Battler]
-
-
+        
 def battle(team1_cards, team2_cards): # takes two arrays of battlecards
+    stop_this = False
+
     # creating a dictionary for output
     output = {
         "winner": "none",
@@ -115,9 +135,7 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     t2_dmg_dealt = []
     t2_dmg_taken = []
     sequence = []
-
-    context = {}
-
+    
     team1_live = copy.deepcopy(team1_cards) # create an instance of the team for the battle
     team2_live = copy.deepcopy(team2_cards)
     
@@ -159,37 +177,14 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
     
     team1_switches = 5 # max number of switches the team can make
     team2_switches = 5
-
-    # pre-battle hooks go here
-
-    # STATE: PRE_BATTLE
-    # step 1: determine what the relevant items are and who they belong to
-    team1_items: T.Set[CombatItem] = set(x.berry for x in team1_cards)
-    team2_items: T.Set[CombatItem] = set(x.berry for x in team2_cards)
-
-    # step 2: update context with current battle information
-    context.update({})
-
-    # step 3: for items, run the pre_battle_actions method
-    for item in team1_items:
-        item.pre_battle_action(context)
-
-    for item in team2_items:
-        item.pre_battle_action(context)
-
-    while (len(team1_live) != 0 and len(team2_live) != 0): # while there are pokemon alive for a team
-        # STATE: PRE_COMBAT
-        context.update({"pokemon1": team1_live[0], "pokemon2": team2_live[0]})
-        for item in team1_items:
-            item.pre_combat_action(context)
-        for item in team2_items:
-            item.pre_combat_action(context)
-
+    turnnumber = 1
+    while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
-
+        sequence.append(Event(-1, '',"turn number: "+str(turnnumber)))
+        turnnumber += 1
         # if bad matchup, switch
-# THIS NEEDS WORK, IF WANT TO TRY 1V1
+# THIS NEEDS WORK, IF WANT TO TRY 1V1        
         index1 = check_advantage(current_team1, current_team2, bench1) # the index on bench for best pokemon
         index2 = check_advantage(current_team2, current_team1, bench2)
 #        index1 = matchup(current_team1, current_team2, bench1)
@@ -207,16 +202,87 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
             sequence.append(Event(-1, "switch", "team 2"))
             can_attack_2 = False
             team2_switches -= 1
-
+       
         # was considering making array of possible moves, but handled in optimal moves function
 
         pokemon1_dead = False # at the resolution of a turn, will decide if pokemon is switched   
         pokemon2_dead = False
 
+        dummy1 = copy.deepcopy(current_team1)
+        dummy2 = copy.deepcopy(current_team2)
+        dumseq = [] # copy.deepcopy(sequence)
+        dumdead1 = False
+        dumdead2 = False
+        if can_attack_1 and can_attack_2 and dummy1.timer >= 500 and dummy2.timer >=500:
+            runtheblock = False
+            firstset = [dummy1.battlecard.move_f, dummy1.battlecard.move_ch, dummy1.battlecard.move_tm]
+            secondset = [dummy2.battlecard.move_f, dummy2.battlecard.move_ch, dummy2.battlecard.move_tm]
+            for x in firstset:
+                # consider an if_legal() function to check cooldown and tm flag, energy. though just adding cooldown check made the code slower
+                # COULD USE IF_LEGAL IN CHOOSE OPTIMAL MOVE FUNCTION, or just take the code out of there
+# the problem here is is_lethal changes the values, because I initially coded it as just a check, but turned it into a move
+# would need to change the is_lethal function, correct the part in the battle loop. get rid of these deep copies then                
+                dummy1_2 = copy.deepcopy(dummy1)
+                dummy2_2 = copy.deepcopy(dummy2)
+                if is_lethal(dummy1_2, x, dummy2_2, dummy2_2.hp, dumseq):
+                    runtheblock = True
+            for x in secondset:
+                dummy1_2 = copy.deepcopy(dummy1)
+                dummy2_2 = copy.deepcopy(dummy2)
+                if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
+                    runtheblock = True
+            if runtheblock:
+                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq)
+                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq)
+                wascharged1 = False
+                wascharged2 = False
+                if dummy1.battlecard.move_ch == firstattack or dummy1.battlecard.move_tm == firstattack:
+                    wascharged1 = True
+                if dummy2.battlecard.move_ch == secondattack or dummy2.battlecard.move_tm == secondattack:
+                    wascharged2 = True
+                priority = -1
+                if wascharged1 and wascharged2:
+                    # stat1 = effective_stat(dummy1, "a") # if debuffs/buffs changing base stats were what impacted the tiebreaker
+                    # stat2 = effective_stat(dummy2, "a")
+                    # print(stat1, stat2)
+                    if dummy1.a > dummy2.a:
+                        priority = 1
+                    elif dummy2.a > dummy1.a:
+                        priority = 2
+                    elif dummy1.a == dummy2.a:
+                        priority = 0
+                elif wascharged1 and not wascharged2:
+                    priority = 1
+                elif wascharged2 and not wascharged1:
+                    priority = 2
+                elif not wascharged1 and not wascharged2:
+                    priority = 0
+                else:
+                    print('help')
+                if priority == -1:
+                    print('help')
+                if dumdead1 and dumdead2:
+                    if priority == 1:
+                        can_attack_2 = False
+                    elif priority == 2:
+                        can_attack_1 = False
+                elif dumdead2 and not dumdead1:
+                    # priority = 1
+                    if wascharged2 and not wascharged1:
+                        priority = 0
+                    if priority == 1:
+                        can_attack_2 = False
+                elif dumdead1 and not dumdead2:
+                    # priority = 2 # with this, if A has priority on double charged attack, but B has lethal, then A doesn't get the first attack
+                    if wascharged1 and not wascharged2:
+                        priority = 0
+                    if priority == 2:
+                        can_attack_1 = False
+
         if can_attack_1: # pokemon 1 attacks
-            pokemon2_dead = launch_attack(current_team1, current_team2, sequence)
+            pokemon2_dead = launch_attack(current_team1, current_team2, sequence)[0]
         if can_attack_2:
-            pokemon1_dead = launch_attack(current_team2, current_team1, sequence)
+            pokemon1_dead = launch_attack(current_team2, current_team1, sequence)[0]
 
         # increment time
         current_team1.timer += 500
@@ -224,16 +290,20 @@ def battle(team1_cards, team2_cards): # takes two arrays of battlecards
 
         if pokemon1_dead:
             # print(current_team1.name+" fainted")
-            sequence.append(Event(-1, "death", "team 1 "+current_team1.battlecard.name))
+            sequence.append(Event(-1, "death", "team 1 had "+current_team1.battlecard.name+" die"))
         if pokemon2_dead:
             # print(current_team2.name+" fainted")
-            sequence.append(Event(-1, "death", "team 2 "+current_team2.battlecard.name))
+            sequence.append(Event(-1, "death", "team 2 had "+current_team2.battlecard.name+" die"))
 
         if pokemon2_dead:
             current_team2 = next_pokemon(bench2) # handles the death of current pokemon
+            if current_team2 == None:
+                stop_this = True
             team2_live.pop(0) # doesn't matter which pokemon is popped. once all three are gone it's over
         if pokemon1_dead:
             current_team1 = next_pokemon(bench1)
+            if current_team1 == None:
+                stop_this = True
             team1_live.pop(0)
 
     # closing messages
@@ -289,30 +359,96 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
     # shield_used = 0 # if a shield was used
     # new_health = defender.health # defender's new health
 
+    move = calculate_optimal_move(attacker, defender) # picks the move with the highest damage, in case a charged is type-disadvantaged
+    
     # if fast move lethal, use move because can't be shielded
     if is_lethal(attacker, attacker.battlecard.move_f, defender, defender.hp, sequence):
         # print(attacker.name+' used '+attacker.move_f)
         fatal = True
+        move = attacker.battlecard.move_f
     else:
-        move = calculate_optimal_move(attacker, defender) # picks the move with the highest damage, in case a charged is type-disadvantaged
         if move == attacker.battlecard.move_tm or move == attacker.battlecard.move_ch: # if the optimal move needs energy
             # print(attacker.name+' used '+move)
             sequence.append(Event(-1, "attack", attacker.battlecard.name+" used "+move+" on "+defender.battlecard.name))
             attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
-            attacker.timer = 0
-            damage = 0 # set to 0 because if you shield a charged attack its useless
+            sequence.append(Event(-1, "", attacker.battlecard.name+" has "+str(attacker.battlecard.energy)+" energy left"))
+# idk about this, to simulate charged attack taking a while based on how it looks when pvpoke renders a quick fast attack after opponent charged          
+            attacker.timer = -500 # -= moves[move]["cooldown"] + 500 # an extra -500 to timer
+            damage = 1 # set to 1 because if you shield a charged attack its useless
             effectiveness = -1 # how effective an attack was
+            proposed_damage, p_effectiveness = calculate_damage(attacker, move, defender)
 
             # check for shield
+            block = False
             if defender.battlecard.bonus_shield > 0:
-                defender.battlecard.bonus_shield -= 1 # if shield, decrement
-                # print(defender.name+' used a shield')
-                sequence.append(Event(-1, "shield", defender.battlecard.name))
-            else:
-                damage, effectiveness = calculate_damage(attacker, move, defender) # if no shield, does damage
+                isweakbuff = False
+                block = True
+                try:
+                    if moves[move]["buffTarget"] == "opponent" and float(moves[move]["buffApplyChance"]) == 1:
+                        isweakbuff = True
+                    elif moves[move]["buffTarget"] == "self":
+                        isweakbuff = True
+                except:
+                    pass
+                if isweakbuff and not is_lethal(attacker, move, defender, defender.hp, sequence):
+                    fastDPT = calculate_damage(attacker, attacker.battlecard.move_f, defender)[0] / (moves[attacker.battlecard.move_f]["cooldown"] / 500)
+                    if proposed_damage < (defender.hp / 1.5) and (fastDPT) <= 1.5: # opposite of battle.js line 2251 ("if the defender can't afford")
+                        block = False
+                if block:
+                    defender.battlecard.bonus_shield -= 1 # if shield, decrement
+                    # print(defender.name+' used a shield')
+                    sequence.append(Event(-1, "shield", defender.battlecard.name+" used a shield"))
+            if not block:
+                damage = proposed_damage
+                effectiveness = p_effectiveness
             defender.hp -= damage # deal damage
             defender.dmg_taken += damage
             attacker.dmg_dealt += damage
+
+            hasbuff = False
+            buff = []
+            buff_target = ''
+            chance = 0
+            try:
+                buff = moves[move]["buffs"]
+                buff_target = moves[move]["buffTarget"]
+                chance = float(moves[move]["buffApplyChance"]) * 1000
+                hasbuff = True
+            except:
+                pass
+            if hasbuff:
+                a_modifier = int(buff[0])
+                d_modifier = int(buff[1])
+                luck = randint(1, 1000)
+                # NOT TAKING INTO ACCOUNT MAXBUFFSTAGES YET. do with global setting for buffdivisor
+                if chance >= luck:
+                    if buff_target == "opponent":
+                        if a_modifier != 0:
+                            if a_modifier <0:
+                                sequence.append(Event(-1, "debuff", attacker.battlecard.name+" debuffed "+defender.battlecard.name+'\'s attack'))
+                            else:
+                                sequence.append(Event(-1, "debuff", attacker.battlecard.name+" buffed "+defender.battlecard.name+'\'s attack'))
+                            defender.am += a_modifier
+                        if d_modifier != 0:
+                            if d_modifier < 0:
+                                sequence.append(Event(-1, "debuff", attacker.battlecard.name+" debuffed "+defender.battlecard.name+'\'s defense'))
+                            else:
+                                sequence.append(Event(-1, "debuff", attacker.battlecard.name+" buffed "+defender.battlecard.name+'\'s defense'))
+                            defender.dm += d_modifier
+                    elif buff_target == "self":
+                        if a_modifier != 0:
+                            if a_modifier > 0:
+                                sequence.append(Event(-1, "buff", attacker.battlecard.name+' buffed its own attack'))
+                            else:
+                                sequence.append(Event(-1, "buff", attacker.battlecard.name+' debuffed its own attack'))
+                            attacker.am += a_modifier
+                        if d_modifier != 0:
+                            if d_modifier >0:
+                                sequence.append(Event(-1, "buff", attacker.battlecard.name+' buffed its own defense'))
+                            else:
+                                sequence.append(Event(-1, "buff", attacker.battlecard.name+' debuffed its own defense'))
+                            attacker.dm += d_modifier
+            
             # print(defender.name+' took '+str(damage)+' damage')
             # if effectiveness > 1.6:
             #     print('it was super effective')
@@ -323,7 +459,7 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
             # elif effectiveness < 0.6:
             #     print('it was not very effective')
 
-            # TRY TO TURN THIS INTO A DIFFERENT FUNCTION?
+            # TRY TO TURN THIS INTO A DIFFERENT FUNCTION? definitely, given that it's used in lethal function
             how_was_it = ""
             if effectiveness > 1.6:
                 how_was_it = 'it was super effective'
@@ -334,6 +470,7 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
             sequence.append(Event(-1, "damage", defender.battlecard.name+" took "+str(damage)+" damage. "+how_was_it))
+            sequence.append(Event(-1, '', defender.battlecard.name+" now has "+str(defender.hp)+" hp left"))
 
             if defender.hp <= 0: # check if dead
                 fatal = True
@@ -343,11 +480,14 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
             sequence.append(Event(-1, "attack", attacker.battlecard.name+" used "+attacker.battlecard.move_f+" on "+defender.battlecard.name))
             attacker.battlecard.energy += moves[attacker.battlecard.move_f]["energyGain"] # gain energy
             # print(attacker.name+' is charging up')
+            sequence.append(Event(-1, '', attacker.battlecard.name+" now has "+str(attacker.battlecard.energy)+" energy"))
+            sequence.append(Event(-1, '', attacker.battlecard.name+" needs "+str(moves[attacker.battlecard.move_ch]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
             damage, effectiveness = calculate_damage(attacker, move, defender)
             defender.hp -= damage
             attacker.dmg_dealt += damage
             defender.dmg_taken += damage
             attacker.timer = 0
+            
             # print(defender.name+' took '+str(damage)+' damage')
             how_was_it = ""
             if effectiveness > 1.6:
@@ -359,9 +499,12 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
             sequence.append(Event(-1, "damage", defender.battlecard.name+" took "+str(damage)+" damage. "+how_was_it))
+            sequence.append(Event(-1, '', defender.battlecard.name+" now has "+str(defender.hp)+" hp left"))
             if defender.hp <= 0: # check if dead
                 fatal = True
-
+        else:
+            sequence.append(Event(-1, '', attacker.battlecard.name+" is not ready to attack yet"))
+            
     # flavor text
     '''
     # max_health = pokedex[defender.name]["health"] # this line would be for flavor text of how the pokemon is doing
@@ -374,8 +517,8 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
     elif defender.health > 0 and defender.health <= 1:
         print('call an ambulance!') # consider returning a flag, and if this pokemon almost died, add "but not for me"
     '''
-
-    return fatal
+    
+    return fatal, move
 
 def next_pokemon(bench): # takes in bench of team, returns new pokemon and modifies bench
     for x in bench:
@@ -476,8 +619,7 @@ def analyze_type(attacker, defender): # >0 is good, <0 is bad
         if x in attacker_immunities:
             balance += 2
     return balance
-
-
+    
 def calculate_optimal_move(attacker, defender): # returns string, the name of best move
     # can consider passing back a flag for if the move was effective or not, to print. or change in calculate_damage
     fast_damage = calculate_damage(attacker, attacker.battlecard.move_f, defender)[0]
@@ -486,31 +628,87 @@ def calculate_optimal_move(attacker, defender): # returns string, the name of be
 
     if attacker.battlecard.energy >= moves[attacker.battlecard.move_ch]['energy'] and attacker.timer >= moves[attacker.battlecard.move_ch]["cooldown"]: # if you can use charged attack
         charged_damage = calculate_damage(attacker, attacker.battlecard.move_ch, defender)[0]
-
+    
     if attacker.battlecard.tm_flag == 1 and attacker.battlecard.energy >= moves[attacker.battlecard.move_tm]['energy'] and attacker.timer >= moves[attacker.battlecard.move_tm]["cooldown"]: # if you can use tm attack
         tm_damage = calculate_damage(attacker, attacker.battlecard.move_tm, defender)[0]
+    
+    holder = [charged_damage, tm_damage]
+    holder2 = [attacker.battlecard.move_ch, attacker.battlecard.move_tm]
+    for i, x in enumerate(holder2):
+        if moves[x]["archetype"] =="Self-Debuff":
+            dontuse = False
+            maxtimes = math.floor(attacker.battlecard.energy / moves[x]["energy"]) - defender.battlecard.bonus_shield
+            theoreticaldamage = maxtimes * calculate_damage(attacker, x, defender)[0]
+            turnsleft = turnstodie(attacker, defender)
+            if theoreticaldamage > defender.hp and maxtimes < turnsleft:
+                # attacker.timer += 500 * maxtimes # if the double charged attacks need to remove delay
+                pass
+            else:
+                dontuse = True
+# this is pvpoke "minimize time debuffed and it can stack the move" in battle.js                
+            # if (defender.hp > holder[i] or defender.battlecard.bonus_shield > 0) and (attacker.hp > calculate_damage(defender, defender.battlecard.move_f, attacker) or moves[defender.battlecard.move_f]["cooldown" - moves[attacker.battlecard.move_f]["cooldown"] > 500]):
+            #     dontuse = True
+
+
+            if dontuse:
+                holder[i] = -1
+    charged_damage = holder[0]
+    tm_damage = holder[1]
 
     if fast_damage >= charged_damage and fast_damage >= tm_damage and attacker.timer >= moves[attacker.battlecard.move_f]["cooldown"]:
         return attacker.battlecard.move_f
-    elif charged_damage >= tm_damage:
+    elif charged_damage >= tm_damage and charged_damage > 0:
     # could add logic about using the cheaper attack or whatever
         return attacker.battlecard.move_ch
     elif tm_damage > 0:
         return attacker.battlecard.move_tm    
+    elif attacker.timer >= moves[attacker.battlecard.move_f]["cooldown"]:
+        return attacker.battlecard.move_f
     return ''
+
+def turnstodie(me, them):
+    myhp = me.hp
+    theirenergy = them.battlecard.energy
+    theirmovef = them.battlecard.move_f
+    theirdps = calculate_damage(them, theirmovef, me)[0] * moves[theirmovef]["cooldown"] / 500
+    whichcharged = ''
+    if calculate_damage(them, them.battlecard.move_ch, me)[0] > calculate_damage(them, them.battlecard.move_tm, me)[0]:
+        whichcharged = them.battlecard.move_ch
+    else:
+        whichcharged = them.battlecard.move_tm
+    howmanytheircharged = 0
+    while theirenergy > moves[whichcharged]["energy"]:
+        howmanytheircharged += 1
+        theirenergy -= moves[whichcharged]["energy"]
+    myshields = me.battlecard.bonus_shield
+    maxblocked = 0
+    while myshields > 0:
+        maxblocked += 1
+        myshields -= 1
+    chargedincoming = max(0, howmanytheircharged - myshields)
+    turnstodie = 0
+    while myhp > 0 and chargedincoming > 0:
+        myhp -= calculate_damage(them, whichcharged, me)[0]
+        chargedincoming -= 1
+        turnstodie += 1
+    while myhp > 0:
+        myhp -= theirdps
+        turnstodie += 1
+    return turnstodie
+        
 
 def calculate_damage(attacker, move, defender): # battlecard, string, battlecard. returns damage
     # this is theoretical damage
 
     attacker_type = pokedex[attacker.battlecard.name]["types"] # gives an array of strings that are the types
     # attacker_attack = attacker.a_iv*pokedex[attacker.name]["baseStats"]["atk"] # defines which attack
-    attacker_attack = attacker.a
+    #attacker_attack = attacker.a
     move_type = moves[move]["type"] # gets the type of the move from the dictionary "moves"
     power = moves[move]["power"] # base power of move
 
     defender_type = pokedex[defender.battlecard.name]["types"] # gives an array of strings that are the types
     # defender_defense = defender.d_iv*pokedex[defender.name]["baseStats"]["def"]
-    defender_defense = defender.d
+    #defender_defense = defender.d
     
     defender_resistances = []
     defender_weaknesses = []
@@ -522,25 +720,68 @@ def calculate_damage(attacker, move, defender): # battlecard, string, battlecard
         defender_immunities += types[x]["immunities"]
     
     multiplier = 1 # how much the damage is influenced
-    if move_type in attacker_type:
-        multiplier *= 1.5
-    if move_type in defender_resistances:
-        multiplier *= 0.625
-    if move_type in defender_weaknesses:
-        multiplier *= 1.6
-    if move_type in defender_immunities:
-        multiplier *= 0.4 # make this 0 if you're real
+    for x in attacker_type:
+        if move_type == x:
+            multiplier *= 1.2
+    for x in defender_resistances:
+        if move_type == x:
+            multiplier *= 0.625
+    for x in defender_weaknesses:
+        if move_type == x:
+            multiplier *= 1.6
+    for x in defender_immunities:
+        if move_type == x:
+            multiplier *= 0.390625 # make this 0 if you're real
 
-    return multiplier*power*attacker_attack/defender_defense, multiplier
+    atkstat = effective_stat(attacker, "a")
+    defstat = effective_stat(defender, "d")
+    # currently cannot implement buffs that help the opponent. maybe use function geteffectivestat() that pvpoke uses
+    
+    #return multiplier*power*attacker_attack/defender_defense, multiplier
+    damage = math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3) + 1 # 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
+    return damage, multiplier
+
+def effective_stat(poke, which):
+    # gamemaster.json has ""buffdivisor": 4"
+    buffdivisor = 4
+    if which == "a":
+        if poke.am > 0:
+            return poke.a * (buffdivisor + poke.am) / buffdivisor
+        elif poke.am < 0:
+            return poke.a * buffdivisor / (buffdivisor - poke.am)
+        elif poke.am == 0:
+            return poke.a
+    elif which == "d":
+        if poke.dm > 0:
+            return poke.d * (buffdivisor + poke.dm ) / buffdivisor
+        elif poke.dm < 0:
+            return poke.d * buffdivisor / (buffdivisor - poke.dm)
+        elif poke.dm ==0:
+            return poke.d
+    else:
+        print("help")
 
 def is_lethal(attacker, move, defender, defender_hp, sequence): # checks if damage would be lethal
-    damage = calculate_damage(attacker, move, defender)[0]
+    (damage, effectiveness) = calculate_damage(attacker, move, defender)
     if damage >= defender_hp and attacker.timer >= moves[move]["cooldown"]:
         sequence.append(Event(-1, "attack", attacker.battlecard.name+" used "+move+" on "+defender.battlecard.name))
         attacker.dmg_dealt += damage
         defender.hp -= damage
         defender.dmg_taken += damage
         attacker.timer = 0
+        
+        # this needs to be its own function
+        how_was_it = ""
+        if effectiveness > 1.6:
+            how_was_it = 'it was super effective'
+        elif effectiveness > 1.3:
+            how_was_it = 'it was kind of effective'
+        elif effectiveness < 0.4:
+            how_was_it = 'it was barely effective'
+        elif effectiveness < 0.6:
+            how_was_it = 'it was not very effective'
+        sequence.append(Event(-1, "damage", defender.battlecard.name+" took "+str(damage)+" damage. "+how_was_it))
+        sequence.append(Event(-1, '', defender.battlecard.name+" now has "+str(defender.hp)+" hp left"))
         return True
     else:
         return False
