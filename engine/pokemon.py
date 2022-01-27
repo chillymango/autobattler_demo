@@ -7,7 +7,7 @@ import typing as T
 from collections import defaultdict
 
 from engine.base import Component
-from engine.models.enums import PokemonId, PokemonType
+from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.pokemon import BattleCard
 from engine.models.pokemon import EvolutionConfig
 from engine.models.pokemon import Pokemon
@@ -157,10 +157,10 @@ class PokemonFactory(Component):
         """
         battle_card = self.get_default_battle_card(pokemon_name)
         if pokemon_name == 'mew':
-            battle_card.move_f = random.choice(self.mew_m_fast)
-            battle_card.move_ch = random.choice(self.mew_m_charged)
+            battle_card.move_f = Move[random.choice(self.mew_m_fast)]
+            battle_card.move_ch = Move[random.choice(self.mew_m_charged)]
         if pokemon_name == 'porygon':
-            battle_card.move_f = random.choice(self.porygon_m_fast)
+            battle_card.move_f = Move[random.choice(self.porygon_m_fast)]
 
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
         # assign types here

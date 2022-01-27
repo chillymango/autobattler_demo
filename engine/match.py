@@ -84,7 +84,7 @@ class CreepRoundManager(Component):
         matches = []
         for player in self.state.players:
             creep_player = self.create_creep_player()
-            match = Match(player1=player, player2=creep_player)
+            match = Match(player1=player.id, player2=creep_player.id)
             matches.append(match)
 
         return matches
@@ -123,7 +123,7 @@ class Matchmaker(Component):
         Return the player object for their opponent. Return None if player is not participating.
         """
         for match in matches:
-            if match.has_player(player):
+            if match.has_player(player.id):
                 if match.player1 == player:
                     return match.player2
                 return match.player1
@@ -140,13 +140,13 @@ class Matchmaker(Component):
         """
         return len(self.matches)
 
-    def previous_match_between_players(self, player1, player2):
+    def previous_match_between_players(self, player1_id: str, player2_id: str):
         """
         Determine what round the provided players last played a match in.
         """
         for idx, matches in enumerate(reversed(self.matches)):
             for match in matches:
-                if match.has_player(player1) and match.has_player(player2):
+                if match.has_player(player1_id) and match.has_player(player2_id):
                     return self.turn - idx - 1
 
         return 0
@@ -174,7 +174,7 @@ class Matchmaker(Component):
         left over player will receive a creep round matchup.
         """
         # find who is still alive
-        live_players = []
+        live_players: T.List[Player] = []
         for human in self.players[EntityType.HUMAN]:
             if human.is_alive:
                 live_players.append(human)
@@ -183,7 +183,7 @@ class Matchmaker(Component):
                 live_players.append(computer)
 
         # list potential matches
-        all_matches = [Match(player1=p1, player2=p2) for p1, p2 in combinations(live_players, 2)]
+        all_matches = [Match(player1=p1.id, player2=p2.id) for p1, p2 in combinations(live_players, 2)]
         shuffle(all_matches)  # to prevent guessing of matches based on lobby order
 
         # calculate match scores based on match history
@@ -205,11 +205,11 @@ class Matchmaker(Component):
 
         # sort match scores ascending and pull the first values
         sorted_scores = dict(sorted(match_scores.items(), key=lambda item: item[1]))
-        remaining_players = [player for player in live_players]
+        remaining_players = [player.id for player in live_players]
         idx = 0
         determined_matches = []
         while remaining_players and idx < len(sorted_scores):
-            match = list(sorted_scores.keys())[idx]
+            match: Match = list(sorted_scores.keys())[idx]
             if match.players[0] in remaining_players and match.players[1] in remaining_players:
                 determined_matches.append(match)
                 remaining_players.remove(match.players[0])
@@ -221,7 +221,7 @@ class Matchmaker(Component):
         elif len(remaining_players) == 1:
             # organize a creep round for this player
             creep_player = self.env.creep_round_manager.create_creep_player()
-            match = Match(player1=remaining_players[0], player2=creep_player)
+            match = Match(player1=remaining_players[0].id, player2=creep_player.id)
             determined_matches.append(match)
 
         # update player opponent history

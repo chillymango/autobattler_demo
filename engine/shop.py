@@ -13,6 +13,7 @@ from collections import namedtuple
 from engine.base import Component
 from engine.models.association import associate, dissociate
 from engine.models.association import PlayerShop
+from engine.models.enums import PokemonId
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
 from engine.models.shop import ShopOffer
@@ -235,7 +236,7 @@ class ShopManager(Component):
         shop_offer: ShopOffer = self.state.shop_window[player][idx]
         if shop_offer.consumed:
             return
-        card = shop_offer.pokemon
+        card = shop_offer.pokemon.name
         cost = self.pokemon_tier_lookup[card]
         if cost > player.balls:
             print("Not enough Poke Balls to catch this Pokemon")
@@ -304,4 +305,4 @@ class ShopManager(Component):
 
         # create shop associations
         for rolled in self.route[player].roll_shop():
-            associate(PlayerShop, player, ShopOffer(pokemon=rolled))
+            associate(PlayerShop, player, ShopOffer(pokemon=PokemonId[rolled]))

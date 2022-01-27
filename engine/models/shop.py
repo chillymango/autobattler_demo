@@ -1,6 +1,7 @@
 """
 """
 from engine.models.base import Entity
+from engine.models.enums import PokemonId
 
 
 class ShopOffer(Entity):
@@ -8,5 +9,5 @@ class ShopOffer(Entity):
     Represents a Pokemon shop entry
     """
 
-    pokemon: str
+    pokemon: PokemonId
     consumed: bool = False

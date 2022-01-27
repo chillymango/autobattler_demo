@@ -783,7 +783,6 @@ class FireStone(CommonStone):
     Used to evolve fire-type Pokemon (and Eevee!)
     """
 
-    name = 'Fire Stone'
     target_type = "fire"
     cost = COMMON_STONE_COST
 
@@ -792,8 +791,6 @@ class WaterStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-
-    name = 'Water Stone'
     target_type = 'water'
     cost = COMMON_STONE_COST
 

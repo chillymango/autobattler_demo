@@ -3,6 +3,7 @@ Setup and test an entire game
 """
 import mock
 import unittest
+from engine.base import Component
 
 from engine.env import Environment
 from engine.models.player import Player
@@ -10,6 +11,20 @@ from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
 from engine.shop import ShopManager
 from engine.models.state import State
+
+
+class TestGameActions(Component):
+    """
+    Inject some player actions
+    """
+
+    def turn_setup(self):
+        for p in self.state.players:
+            p.energy += 2
+            sm: ShopManager = self.env.shop_manager
+            sm.roll(p)
+            sm.roll(p)
+            sm.catch(p, 0)
 
 
 class TestGame(unittest.TestCase):
@@ -70,7 +85,7 @@ class TestGame(unittest.TestCase):
         shop_manager.check_shiny(self.p1, 'pikachu')
         player_manager.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         shop_manager.check_shiny(self.p1, 'pikachu')
-        import IPython; IPython.embed()
+
         # everyone rolls again and buys their last 3 pokemon
         for player in self.env.state.players:
             player.energy += 2
@@ -108,6 +123,7 @@ class TestGame(unittest.TestCase):
         self.p8 = Player(name='Pokemon Addict')
         for p in (self.p1, self.p2, self.p3, self.p4, self.p5, self.p6, self.p7, self.p8):
             self.env.add_player(p)
+        self.env.components.append(TestGameActions(self.env, self.env.state))
         self.env.initialize()
 
         while True:
@@ -116,4 +132,5 @@ class TestGame(unittest.TestCase):
             except Exception as exc:
                 print(f'Encountered unexpected exception: {repr(exc)}')
                 break
+
         print(len(self.env.state.json()))
