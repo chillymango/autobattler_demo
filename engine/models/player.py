@@ -51,29 +51,6 @@ class Player(Entity):
     def is_creep(self):
         return self.type == EntityType.CREEP
 
-    @property
-    def party_is_full(self):
-        return sum(member is not None for member in self.party) == MAX_PARTY_SIZE
-
-    @property
-    def team_is_full(self):
-        return len(self.team) >= 3
-
-    @property
-    def storage_is_full(self):
-        return len(self.storage) >= MAX_STORAGE_SIZE
-
-    @property
-    def roster(self):
-        """
-        Party + Storage
-
-        Team is a subset of party. Party and storage are distinct containers.
-
-        List order is always party pokemon first and then storage pokemon.
-        """
-        return [x for x in self.party if x is not None] + self.storage
-
     def add_to_team_by_idx(self, party_idx: int):
         """
         Move a Pokemon into the team

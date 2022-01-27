@@ -9,3 +9,4 @@ class ShopOffer(Entity):
     """
 
     pokemon: str
+    consumed: bool = False

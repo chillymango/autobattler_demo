@@ -30,6 +30,7 @@ class TestGame(unittest.TestCase):
         * everyone buys the first 3 pokemon
         * initiate combat
         """
+        state = self.env.state
         self.p1 = Player(name="Balbert Bang")
         self.p2 = Player(name="Bill Yuan")
         self.p3 = Player(name="Tone Chenemdy")
@@ -60,6 +61,15 @@ class TestGame(unittest.TestCase):
             shop_manager.catch(player, 0)
             shop_manager.catch(player, 0)
             _ = State.parse_raw(self.env.state.json())
+
+        # give someone a shiny for free
+        player_manager: PlayerManager = self.env.player_manager
+        player_manager.create_and_give_pokemon_to_player(self.p1, 'pikachu')
+        shop_manager.check_shiny(self.p1, 'pikachu')
+        player_manager.create_and_give_pokemon_to_player(self.p1, 'pikachu')
+        shop_manager.check_shiny(self.p1, 'pikachu')
+        player_manager.create_and_give_pokemon_to_player(self.p1, 'pikachu')
+        shop_manager.check_shiny(self.p1, 'pikachu')
 
         # everyone rolls again and buys their last 3 pokemon
         for player in self.env.state.players:
@@ -105,4 +115,5 @@ class TestGame(unittest.TestCase):
                 self.env.step_loop()
             except Exception as exc:
                 print(f'Encountered unexpected exception: {repr(exc)}')
-                raise
+                break
+        print(len(self.env.state.json()))

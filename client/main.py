@@ -26,8 +26,8 @@ from utils.server_config import ServerConfig
 from server.api.user import NoCachedUser
 from server.api.user import User
 
-logging_config.set_mode(LoggingModes.UVICORN, level=logging.DEBUG)
-#logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
+#logging_config.set_mode(LoggingModes.UVICORN, level=logging.DEBUG)
+logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 WindowTransition = namedtuple("WindowTransition", ["before", "after"])
 

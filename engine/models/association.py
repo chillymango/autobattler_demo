@@ -146,6 +146,7 @@ def dissociate(klass: AssociationType, entity1: Entity, entity2: Entity):
         if assn.entity1 == entity1 and assn.entity2 == entity2:
             ASSOCIATIONS[klass].remove(assn)
             assn.delete()
+            print(f'Dissociated {entity1} and {entity2}')
             break
     else:
         raise Exception(f'{entity1} and {entity2} are not associated by {klass}')

@@ -125,13 +125,23 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     @property
     def party(self):
-        party = [Pokemon.get_by_id(party_id) for party_id in self.player.party_config.party]
+        party = [
+            Pokemon.get_by_id(party_id) if party_id else None
+            for party_id in self.player.party_config.party
+        ]
         pad_list_to_length(party, 6)
         return party
 
     @property
     def team(self):
         return [Pokemon.get_by_id(team_id) for team_id in self.player.party_config.team]
+
+    @property
+    def storage(self):
+        return [
+            Pokemon.get_by_id(x) for x in self.state.player_roster[self.player]
+            if x not in self.player.party_config.party
+        ]
 
     @property
     def opposing_party(self):
@@ -471,7 +481,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     def render_shop(self):
         for idx, offer in enumerate(self.shop_window):
             shop_button = self.shop_pokemon_buttons[idx]
-            shop_button.set_pokemon(getattr(offer, 'pokemon', None))
+            if offer.consumed:
+                shop_button.set_pokemon(None)
+            else:
+                shop_button.set_pokemon(getattr(offer, 'pokemon', None))
 
         # update shop location
         if self.state.turn_number:

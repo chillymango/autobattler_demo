@@ -53,11 +53,13 @@ class PlayerManager(Component):
         """
         party: T.List[T.Union[Pokemon, None]] = []
         for party_id in player.party_config.party:
+            if party_id is None:
+                continue
             poke = Pokemon.get_by_id(party_id)
             if poke is None:
                 party.append(None)
                 continue
-            party.append(poke())
+            party.append(poke)
         return party
 
     def player_storage(self, player: Player) -> T.List[Pokemon]:
@@ -86,6 +88,8 @@ class PlayerManager(Component):
         Give an already existing Pokemon to a player
         """
         associate(PlayerRoster, player, pokemon)
+        if pokemon not in self.state._pokemon_registry:
+            self.state._pokemon_registry.append(pokemon)
 
     def create_and_give_pokemon_to_player(self, player: Player, pokemon_name: str) -> Pokemon:
         """
@@ -152,4 +156,6 @@ class PlayerManager(Component):
         """
         dissociate(PlayerRoster, player, pokemon)
         self.state._pokemon_registry.remove(pokemon)
+        player.party_config.remove_from_party(pokemon.id)
+        player.party_config.remove_from_team(pokemon.id)
         pokemon.delete()

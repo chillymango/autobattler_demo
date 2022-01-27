@@ -19,7 +19,7 @@ class PartyConfig(BaseModel):
     The storage is implicit (not in party = in storage)
     """
 
-    party: T.List[str] = [] # list of Pokemon IDs
+    party: T.List[T.Optional[str]] = [] # list of Pokemon IDs
     team: T.List[str] = [] # list of Pokemon IDs
 
     @validator('party')

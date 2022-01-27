@@ -233,14 +233,13 @@ class ShopManager(Component):
         Do not refresh shop entry (leave as None).
         """
         shop_offer: ShopOffer = self.state.shop_window[player][idx]
+        if shop_offer.consumed:
+            return
         card = shop_offer.pokemon
         cost = self.pokemon_tier_lookup[card]
         if cost > player.balls:
             print("Not enough Poke Balls to catch this Pokemon")
             return
-
-        player_manager: PlayerManager = self.env.player_manager
-        player_manager.create_and_give_pokemon_to_player(player, card)
 
         if player.master_balls == 0:
             player.balls -= cost
@@ -248,9 +247,9 @@ class ShopManager(Component):
         else:
             player.master_balls -= -1
 
-        dissociate(PlayerShop, player, shop_offer)
-        shop_offer.delete()
-
+        player_manager: PlayerManager = self.env.player_manager
+        player_manager.create_and_give_pokemon_to_player(player, card)
+        shop_offer.consumed = True
         self.check_shiny(player, card)
 
     def check_shiny(self, player: Player, card: str):
@@ -284,6 +283,7 @@ class ShopManager(Component):
             shiny_poke.battle_card.bonus_shield = max_bonus_shield
             shiny_poke.battle_card.choiced = max_choice
             player_manager.give_pokemon_to_player(player, shiny_poke)
+            player.party_config.add_to_party(shiny_poke.id)
 
     def roll(self, player: Player):
         """

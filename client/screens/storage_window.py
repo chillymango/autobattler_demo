@@ -13,6 +13,7 @@ from qasync import asyncSlot
 from utils.websockets_client import WebSocketClient
 
 if T.TYPE_CHECKING:
+    from client.screens.battle_window import Ui as BattleWindow
     from engine.env import Environment
     from server.api.user import User
     from utils.context import GameContext
@@ -29,7 +30,7 @@ class Ui(QtWidgets.QDialog):
         websocket = None,
     ):
         super(Ui, self).__init__()
-        self.parent = parent
+        self.parent: "BattleWindow" = parent
         self.env = env
         self.ctx = ctx
         self.user = user
@@ -71,12 +72,12 @@ class Ui(QtWidgets.QDialog):
     def render_party(self):
         # NOTE: if party didn't change from last update, do not render
         # this is because we screw with the UI targeting if we render every time
-        if self._last_seen_party == self.current_player.party:
+        if self._last_seen_party == self.parent.party:
             return
-        self._last_seen_party = self.current_player.party
+        self._last_seen_party = self.parent.party
 
         self.party_model = QtGui.QStandardItemModel()
-        for pokemon in self.current_player.party:
+        for pokemon in self.parent.party:
             # TODO: fix this, what a horrible pattern of potentially accepting nulls
             if pokemon is not None:
                 item = QtGui.QStandardItem(str(pokemon))
@@ -88,12 +89,12 @@ class Ui(QtWidgets.QDialog):
     def render_storage(self):
         # NOTE: if storage didn't change from last update, do not render
         # this is because we screw with the UI targeting if we render every time
-        if self._last_seen_storage == self.current_player.storage:
+        if self._last_seen_storage == self.parent.storage:
             return
-        self._last_seen_storage = self.current_player.storage
+        self._last_seen_storage = self.parent.storage
 
         self.storage_model = QtGui.QStandardItemModel()
-        for pokemon in self.current_player.storage:
+        for pokemon in self.parent.storage:
             if pokemon is not None:
                 item = QtGui.QStandardItem(str(pokemon))
             else:
