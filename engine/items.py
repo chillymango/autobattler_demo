@@ -91,7 +91,7 @@ class ItemManager(Component):
                 item = item_class(self.env)
                 self.item_costs[item_name] = item.cost
                 item.consumed = True
-                del item
+                item.delete()
 
     def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
         """
