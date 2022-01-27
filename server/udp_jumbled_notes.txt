@@ -1,0 +1,25 @@
+how did spacex do UDP packets?
+* each telemetry packet was associated with a flow
+* each packet probably couldn't be decoded easily on its own, it was just a simple data object
+* some stupid stuff going on in there though like no arrays?
+
+ok here's the play:
+* state has all object instance / association information
+* client will work to reconstruct game state
+* each chunk of the state will be asynchronously broadcast as a message to all players
+* each model probably needs to define an encode/decode method
+* probably don't need to bother with compression for these bite-sized packets
+
+each state update message should look like this:
+* first two bytes: message type enum value
+* next two bytes: global packet number
+* next eight bytes: message sent timestamp (TODO here to synchronize times)
+* next byte: message packet index (e.g in 2/5, the 2)
+* next byte: message packet count (e.g in 2/5, the 5)
+* remaining bytes (up to 496): payload
+
+What happens when entities are deleted in the server? The client will retain them
+* how does a server tell a client to delete an object?
+* maybe the hacky assumption right now is that if the client hasn't seen the object in a message
+  for some period of time, the object should just be deleted?
+* this is a very unsatisfactory solution...

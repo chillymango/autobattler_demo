@@ -55,12 +55,18 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         """
         # TODO: making a copy is expensive, shouldn't do it...
         entities = copy.copy(cls._INSTANCES)
+        # search self first
         for entity in entities.values():
             for param, value in params.items():
                 if getattr(entity(), param) != value:
                     break
             else:
                 yield entity()
+
+        # search children after
+        for child in cls.__subclasses__():
+            for item in child.query(**params):
+                yield item
 
     @classmethod
     def get_by_id(cls, id: str) -> EntityType:
@@ -69,7 +75,17 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         """
         if id is None:
             raise ValueError("Cannot hash NoneType")
-        return cls._INSTANCES.get(hash(id))()
+
+        if hash(id) in cls._INSTANCES:
+            return cls._INSTANCES.get(hash(id))()
+
+        # if we cannot find it immediately, check subclasses
+        for child in cls.__subclasses__():
+            child_search = child.get_by_id(id)
+            if child_search is not None:
+                return child.get_by_id(id)
+        # return None if there is no match at all
+        return None
 
     @classmethod
     def all(cls, **params) -> T.List[EntityType]:
@@ -85,9 +101,10 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         Remove references to this object from instance registry
         """
         try:
-            self._INSTANCES.pop(hash(self))
+            self.__class__._INSTANCES.pop(hash(self))
         except KeyError:
             # already deleted
+            print('Object already deleted??')
             pass
 
 

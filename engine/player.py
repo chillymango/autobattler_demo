@@ -57,7 +57,7 @@ class PlayerManager(Component):
             if poke is None:
                 party.append(None)
                 continue
-            party.append(poke())
+            party.append(poke)
         return party
 
     def player_storage(self, player: Player) -> T.List[Pokemon]:
@@ -95,7 +95,7 @@ class PlayerManager(Component):
         pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
         associate(PlayerRoster, player, pokemon)
         # update party config to put pokemon in party if party is not full
-        self.state._pokemon_registry.append(pokemon)
+        self.state.pokemon_registry.add(pokemon)
         player.party_config.add_to_party(pokemon.id)
         print(f'{player} - {pokemon.name}: {pokemon.id}')
         return pokemon
@@ -151,5 +151,5 @@ class PlayerManager(Component):
         Release a Pokemon
         """
         dissociate(PlayerRoster, player, pokemon)
-        self.state._pokemon_registry.remove(pokemon)
+        self.state.pokemon_registry.remove(pokemon)
         pokemon.delete()

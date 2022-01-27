@@ -12,6 +12,7 @@ from engine.models.association import Association, PlayerRoster, PlayerShop
 from engine.models.association import PlayerInventory
 from engine.models.hero import Hero
 from engine.models.items import Item
+from engine.models.party import PartyConfig
 from engine.models.phase import GamePhase
 from engine.models.pokemon import Pokemon
 from engine.models.shop import ShopOffer
@@ -24,6 +25,12 @@ if T.TYPE_CHECKING:
     pass
 
 SHOP_SIZE = 5
+
+
+class _State(BaseModel):
+    """
+    This object should support gradual transmission / update over the wire.
+    """
 
 
 class State(BaseModel):
@@ -51,15 +58,20 @@ class State(BaseModel):
     t_phase_elapsed: float = 0.0
     t_phase_duration: float = float('inf')
 
-    # NOTE: registries are to ensure that these objects do not garbage collected until
-    # the state object is destructed. They should not be transmitted over the wire.
-    # TODO: figure out why pydantic breaks if the type is set
-    _pokemon_registry: T.List[Pokemon] = PrivateAttr(default_factory=list)
-    _item_registry: T.List[T.Any] = PrivateAttr(default_factory=list)  # TODO: fix type annotation
-    _associations: T.List[Association] = PrivateAttr(default_factory=list)
+    # Registries
+    # entity registries will ensure that objects persist
+    pokemon_registry: T.Set[Pokemon] = set()
+    shop_offer_registry: T.Set[ShopOffer] = set()
+    item_registry: T.Set[Item] = set()
+
+    # Association Registry
+    associations: T.Set[Association] = set()
 
     # server keeps track of associations and instances
     # client just gets object copies
+
+    # Shop offers
+    shop_offers: T.Dict[str, T.List[ShopOffer]] = dict()
 
     # Shop containers
     shop_window_raw: T.Dict[str, T.List[T.Optional[ShopOffer]]] = dict()
@@ -69,6 +81,9 @@ class State(BaseModel):
 
     # Inventory containers
     player_inventory_raw: T.Dict[str, T.List[T.Any]] = dict()  # maps player ID to a list of items
+
+    # Player party configs
+    party_config: T.Dict[str, PartyConfig] = dict()  # maps player ID to their party config
 
     # Player hero associations
     player_hero: T.Dict[str, Hero] = dict()  # maps player ID to their hero

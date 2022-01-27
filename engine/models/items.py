@@ -58,6 +58,9 @@ class Item(Entity):
         super().__init__(**kwargs)
         self._env = env
 
+    def __del__(self):
+        print(f'{self} left scope and was deleted')
+
 
 class PersistentItemMixin:
     """
@@ -804,6 +807,9 @@ class MasterBall(InstantPlayerItem):
 
     name: str = "Master Ball"
     ball_count: int = 0
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def use(self, player: "Player" = None):
         """

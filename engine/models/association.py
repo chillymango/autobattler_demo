@@ -4,6 +4,8 @@ Association Models
 import typing as T
 from collections import defaultdict
 
+from pydantic import PrivateAttr
+
 from engine.models.base import Entity
 from engine.models.base import Queryable
 from engine.models.player import Player
@@ -17,8 +19,12 @@ class CompositePK(Queryable):
     Composite primary key base
     """
 
-    entity1: Entity
-    entity2: Entity
+    entity1: str
+    entity2: str
+
+    # hold references to objects to prevent them from being garbage collected
+    _entity1: Entity = PrivateAttr()
+    _entity2: Entity = PrivateAttr()
 
     def __hash__(self):
         """
@@ -43,8 +49,8 @@ class PlayerShop(OMAssociation):
     """
     Associates players to their shops
     """
-    entity1: Player  # one
-    entity2: ShopOffer  # many
+    entity1: str  #Player  # one
+    entity2: str  #ShopOffer  # many
 
     @classmethod
     def get_shop(cls, player: Player) -> T.List[str]:
@@ -53,19 +59,15 @@ class PlayerShop(OMAssociation):
 
         Returns a list of shop cards (strings) of Pokemon for a player
         """
-        return [x.entity2 if x else None for x in cls.all(entity1=player)]
+        return [ShopOffer.get_by_id(x.entity2) if x else None for x in cls.all(entity1=player.id)]
 
 
 class PlayerInventory(OMAssociation):
     """
     Associates players to their inventory
     """
-
-    entity1: Player  # one
-    entity2: Item  # many
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    entity1: str  #Player  # one
+    entity2: str  #Item  # many
 
     @classmethod
     def get_inventory(cls, player: Player) -> T.List[Item]:
@@ -74,16 +76,13 @@ class PlayerInventory(OMAssociation):
 
         Returns a list of items in an inventory for a player
         """
-        return [x.entity2 for x in cls.all(entity1=player)]
+        return [Item.get_by_id(x.entity2) for x in cls.all(entity1=player.id)]
 
 
 class PlayerRoster(OMAssociation):
     """
     Associates players to their roster
     """
-
-    entity1: Player
-    entity2: Pokemon
 
     @classmethod
     def get_roster(cls, player: Player) -> T.List[Pokemon]:
@@ -92,7 +91,7 @@ class PlayerRoster(OMAssociation):
 
         Returns a list of Pokemon in a roster for a player
         """
-        return [x.entity2 for x in cls.all(entity1=player)]
+        return [Pokemon.get_by_id(x.entity2) for x in cls.all(entity1=player.id)]
 
 
 class PokemonHeldItem(OOAssociation):
@@ -100,15 +99,12 @@ class PokemonHeldItem(OOAssociation):
     Associates Pokemon to their held item
     """
 
-    entity1: Pokemon
-    entity2: Item
-
     @classmethod
     def get_held_item(cls, pokemon: Pokemon) -> T.Optional[Item]:
         """
         Get the held item. Returns None if there is no Item.
         """
-        items = [x.entity2 for x in cls.all(entity1=pokemon)]
+        items = [Item.get_by_id(x.entity2) for x in cls.all(entity1=pokemon)]
         if items:
             return items[0]
         return None
@@ -133,7 +129,9 @@ def associate(klass: AssociationType, entity1: Entity, entity2: Entity):
     """
     Associate two entities
     """
-    assn = klass(entity1=entity1, entity2=entity2)
+    assn = klass(entity1=entity1.id, entity2=entity2.id)
+    assn._entity1 = entity1
+    assn._entity2 = entity2
     ASSOCIATIONS[klass].add(assn)
     return assn
 
@@ -143,7 +141,9 @@ def dissociate(klass: AssociationType, entity1: Entity, entity2: Entity):
     Dissociate two entities if they are associated
     """
     for assn in ASSOCIATIONS[klass]:
-        if assn.entity1 == entity1 and assn.entity2 == entity2:
+        if assn.entity1 == entity1.id and assn.entity2 == entity2.id:
+            assn._entity1 = None
+            assn._entity2 = None
             ASSOCIATIONS[klass].remove(assn)
             assn.delete()
             break

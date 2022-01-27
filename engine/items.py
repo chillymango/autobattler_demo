@@ -29,8 +29,10 @@ class ItemSubManager:
         for factory_method in factory.values():
             # use a mock fillin for env
             env = None
-            if not isinstance(factory_method(env), self._item_type):
+            item: items.Item = factory_method(env)
+            if not isinstance(item, self._item_type):
                 raise Exception("Invalid factory method")
+            item.delete()
 
 
 class ItemManager(Component):
@@ -90,7 +92,7 @@ class ItemManager(Component):
                 # instantiate an ephemeral, immediately consume
                 item = item_class(self.env)
                 self.item_costs[item_name] = item.cost
-                item.consumed = True
+                item.delete()
                 del item
 
     def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
@@ -133,7 +135,9 @@ class ItemManager(Component):
         """
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
-        return submanager.factory[item_name](self.env)
+        item = submanager.factory[item_name](self.env)
+        self.state.item_registry.add(item)
+        return item
 
     @property
     def combat_items(self) -> T.Set[items.CombatItem]:

@@ -6,7 +6,7 @@ from engine.env import Environment
 from engine.models.player import Player
 from engine.models.state import State
 
-host = 'localhost' 
+host = '18.118.155.64'
 data_payload = 65536
  
 def echo_client(port): 
@@ -26,7 +26,7 @@ def echo_client(port):
  
         # Send data 
         #message = "Test message. This will be echoed"
-        message = state.json() * 100
+        message = state.json() * 5
         print(len(message))
         print ("Sending %s" % message)
         sent = sock.sendto(message, server_address) 
