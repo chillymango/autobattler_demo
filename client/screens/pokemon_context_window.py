@@ -6,6 +6,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from engine.models.enums import PokemonType
 
 from utils.buttons import clear_button_image
 from utils.buttons import set_button_image
@@ -94,32 +95,39 @@ class Ui(QtWidgets.QMainWindow):
         self.defStat.setText(str(_def))
         self.hpStat.setText(str(_hp))
 
-        primary_type, secondary_type = pokemon_factory.get_pokemon_type_reference(pokemon.name)
-        self.set_type_icon(self.primaryTypeIcon, primary_type)
-        if secondary_type is None:
+        pokemon_name = pokemon.name.name
+        primary_type, secondary_type = pokemon_factory.get_pokemon_type_reference(pokemon_name)
+        self.set_type_icon(self.primaryTypeIcon, primary_type.name)
+        if secondary_type is None or secondary_type == PokemonType.none:
             secondary_type = primary_type
-        self.set_type_icon(self.secondaryTypeIcon, secondary_type)
+        self.set_type_icon(self.secondaryTypeIcon, secondary_type.name)
 
-        self.set_type_icon(self.fastMoveTypeIcon, pokemon.battle_card.f_move_type)
-        self.set_type_icon(self.chargeMoveTypeIcon, pokemon.battle_card.ch_move_type)
+        try:
+            self.set_type_icon(self.fastMoveTypeIcon, pokemon.battle_card.f_move_type.name)
+            self.set_type_icon(self.chargeMoveTypeIcon, pokemon.battle_card.ch_move_type.name)
+        except:
+            print(pokemon)
+            print(pokemon.battle_card)
+            print(pokemon.battle_card.f_move_type)
+            print(pokemon.battle_card.ch_move_type)
 
         # only set TM if enabled
         if pokemon.battle_card.tm_flag:
-            self.set_type_icon(self.tmMoveTypeIcon, pokemon.battle_card.tm_move_type)
+            self.set_type_icon(self.tmMoveTypeIcon, pokemon.battle_card.tm_move_type.name)
         else:
             clear_button_image(self.tmMoveTypeIcon)
 
         if pokemon.battle_card.shiny:
-            sprite = sprite_manager.get_shiny_sprite(pokemon.name)
+            sprite = sprite_manager.get_shiny_sprite(pokemon_name)
         else:
-            sprite = sprite_manager.get_normie_sprite(pokemon.name)
+            sprite = sprite_manager.get_normie_sprite(pokemon_name)
         if not sprite:
             self.pokemonPicture.setText(pokemon.nickname)
         else:
             self.pokemonPicture.setText('')
             set_button_image(self.pokemonPicture, sprite, "transparent")
 
-    def set_type_icon(self, icon, _type):
+    def set_type_icon(self, icon: QtWidgets.QPushButton, _type: str):
         """
         Set a type icon
         """

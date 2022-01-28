@@ -11,6 +11,7 @@ from fastapi import WebSocketDisconnect
 from pydantic import BaseModel
 
 from engine.models.party import PartyConfig
+from engine.player import PlayerManager
 from server.api.base import PlayerContextRequest
 from server.api.base import ReportingResponse
 from server.api.base import WebSocketRequest
@@ -283,6 +284,7 @@ class UpdatePartyConfig(WebSocketCallback):
         player: Player = game.state.get_player_by_id(player_model.id)
         party_config: PartyConfig = hydrated.party_config
         player.party_config = party_config
+        print(f'Updated party config for {player} to {party_config}')
         return ReportingResponse(success=True)
 
 
@@ -308,7 +310,9 @@ class ReleaseFromParty(WebSocketCallback):
         idx = hydrated.party_index
         game, player_model = get_request_context(hydrated)
         player: Player = game.state.get_player_by_id(player_model.id)
-        player.release_from_party(idx)
+        player_manager: PlayerManager = game.player_manager
+        player_party = player_manager.player_party(player)
+        player_manager.release_pokemon(player, player_party[idx])
         return ReportingResponse(success=True)
 
 
@@ -344,7 +348,9 @@ class ReleaseFromStorage(WebSocketCallback):
         idx = hydrated.storage_index
         game, player_model = get_request_context(hydrated)
         player: Player = game.state.get_player_by_id(player_model.id)
-        player.release_from_storage(idx)
+        player_manager: PlayerManager = game.player_manager
+        party = player_manager.player_party(player)
+        player_manager.release_pokemon(player, party[idx])
         return ReportingResponse(success=True)
 
 

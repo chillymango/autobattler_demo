@@ -5,7 +5,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
-from client.screens.context_window import Ui as ContextWindow
+from client.screens.pokemon_context_window import Ui as ContextWindow
 from utils.buttons import PokemonButton
 
 

@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from engine.base import Component
 from engine.battle_seq import BattleManager
+from engine.gamemaster import GameMaster
 from engine.hero import HeroManager
 from engine.logger import __ALL_PLAYERS__
 from engine.logger import Logger
@@ -21,6 +22,7 @@ from engine.pokemon import TmManager
 from engine.pubsub import PubSubInterface
 from engine.shop import ShopManager
 from engine.models.state import State
+from engine.turn import GameOver
 from engine.turn import Turn
 from engine.weather import WeatherManager
 from engine.models.phase import GamePhase
@@ -47,6 +49,7 @@ class Environment:
     def default_component_classes(self):
         return [
             Turn,
+            GameMaster,
             WeatherManager,
             ItemManager,
             PlayerManager,
@@ -87,6 +90,7 @@ class Environment:
         # add all non-web components
         component_classes = [
             Turn,
+            GameMaster,
             WeatherManager,
             ItemManager,
             PlayerManager,

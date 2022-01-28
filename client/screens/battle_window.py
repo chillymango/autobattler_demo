@@ -1,5 +1,5 @@
-import gzip
 from io import StringIO
+import functools
 import logging
 import os
 import sys
@@ -17,9 +17,13 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment, ClientState
 from client.screens.base import GameWindow
-from client.screens.context_window import Ui as ContextWindow
+from client.screens.pokemon_context_window import Ui as PokedexWindow
+from client.screens.pokemon_item_window import Ui as PokeItemWindow
 
 from engine.match import Matchmaker
+from engine.models.enums import PokemonType
+from engine.models.items import Item, ItemName, get_item_class_by_name
+from engine.models.hero import Hero, HeroGrade
 from engine.models.shop import ShopOffer
 from engine.models.weather import WeatherType
 from engine.player import Player
@@ -29,8 +33,10 @@ from engine.models.pokemon import Pokemon
 from engine.models.state import State
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
-from utils.buttons import PokemonButton, clear_button_image, set_button_image
+from engine.weather import WeatherManager
+from utils.buttons import PokemonButton, clear_button_image, set_button_color, set_button_image
 from utils.buttons import ShopPokemonButton
+from utils.collections_util import extract_from_container_by_id
 from utils.context import GameContext
 from server.api.user import User
 from utils.client import AsynchronousServerClient
@@ -72,9 +78,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         # declare child pages
         self.storage_window = None
         self.debug_window = None
-        self.context_window = ContextWindow(self.env)
+        self.pokedex_window = PokedexWindow(self.env)
+        self.poke_item_window = None
         self.pubsub_client = PubSubClient()
-        self.state = None
+        self.state: ClientState = None
 
         if self.DEBUG:
             self.debug_window = DebugWindow(self, self.env)
@@ -106,11 +113,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     @property
     def player(self):
-        state: "State" = self.state
-        for player in state.players:
-            if player.id == self.user.id:
-                return player
-        return None
+        return self.state.get_player_by_id(self.user.id)
 
     @property
     def player_hero(self):
@@ -118,41 +121,48 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     @property
     def shop_window(self) -> T.List[T.Union[ShopOffer, None]]:
-        state: State = self.state
+        state: ClientState = self.state
         shop_window: T.List[ShopOffer] = state.shop_window[self.player]
         pad_list_to_length(shop_window, 5)
         return shop_window
 
     @property
     def party(self):
-        party = [
-            Pokemon.get_by_id(party_id) if party_id else None
-            for party_id in self.player.party_config.party
-        ]
-        pad_list_to_length(party, 6)
-        return party
+        """
+        NOTE: the query attributes and instancing mechanisms don't seem to work in the client.
+        I am not totally sure why that's the case.
+        """
+        return self.state.party(self.player)
 
     @property
     def team(self):
-        return [Pokemon.get_by_id(team_id) for team_id in self.player.party_config.team]
+        return self.state.team(self.player)
 
     @property
     def storage(self):
-        return [
-            Pokemon.get_by_id(x) for x in self.state.player_roster[self.player]
-            if x not in self.player.party_config.party
-        ]
+        return [x for x in self.state.player_roster[self.player] if x not in self.party]
 
     @property
     def opposing_party(self):
+        opponent = None
         if self.state.current_matches is not None:
             matchmaker: Matchmaker = self.env.matchmaker
-            opponent = matchmaker.get_player_opponent_in_round(self.player, self.state.current_matches)
+            opponent_id = matchmaker.get_player_opponent_in_round(self.player, self.state.current_matches)
+            opponent = self.state.get_player_by_id(opponent_id)
         if opponent is None:
             return [None] * 6
-        opposing_party = [Pokemon.get_by_id(poke_id) for poke_id in opponent.party_config.party]
-        pad_list_to_length(opposing_party, 6)
+        opposing_party = self.state.party(opponent)
         return opposing_party
+
+    @property
+    def inventory(self):
+        # re-populate inventory
+        inventory: T.List[Item] = []
+        for inv_raw in self.state.player_inventory[self.player]:
+            item_name = ItemName(inv_raw.name).name
+            item_class = get_item_class_by_name(item_name)
+            inventory.append(item_class(self.env, id=inv_raw.id))
+        return inventory
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
@@ -162,16 +172,16 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             for button in self._pokemon_context_buttons:
                 if button.button.underMouse():
                     # update and show context
-                    self.context_window.set_pokemon(button.pokemon)
-                    self.context_window.show()
-                    self.context_window.setWindowState(
-                        self.context_window.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive
+                    self.pokedex_window.set_pokemon(button.pokemon)
+                    self.pokedex_window.show()
+                    self.pokedex_window.setWindowState(
+                        self.pokedex_window.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive
                     )
-                    self.context_window.activateWindow()
+                    self.pokedex_window.activateWindow()
                     return
 
         # if no context, hide context window
-        self.context_window.hide()
+        self.pokedex_window.hide()
 
     def register_pokemon_buttons(self):
         """
@@ -247,6 +257,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         ]
         for idx, add_party in enumerate(self.addParty):
             add_party.clicked.connect(getattr(self, f"add_to_team_callback{idx}"))
+        for idx, party_items in enumerate(self.partyItems):
+            party_items.clicked.connect(
+                functools.partial(self.open_pokemon_item_window, idx)
+            )
 
     def add_team_interface(self):
         # team buttons
@@ -322,6 +336,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.playerArchetypeIcon = self.findChild(QtWidgets.QPushButton, "playerArchetypeIcon")
         self.playerArchetypeName = self.findChild(QtWidgets.QLabel, "playerArchetypeName")
         self.playerArchetypeAbility = self.findChild(QtWidgets.QLabel, "playerArchetypeAbility")
+        self.playerArchetypeIconBackground = self.findChild(
+            QtWidgets.QPushButton, "playerArchetypeIconBackground"
+        )
 
     def add_stage_timer_interface(self):
         # time to next stage
@@ -329,6 +346,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def add_weather_interface(self):
         self.weatherIcon = self.findChild(QtWidgets.QPushButton, "weatherIcon")
+        self.weatherType0 = self.findChild(QtWidgets.QPushButton, "weatherType0")
+        self.weatherType1 = self.findChild(QtWidgets.QPushButton, "weatherType1")
+        self.weatherType2 = self.findChild(QtWidgets.QPushButton, "weatherType2")
 
     def add_message_interface(self):
         # update log messages
@@ -385,6 +405,16 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             websocket=self.websocket,
         )
 
+    def open_pokemon_item_window(self, party_idx: int):
+        self.poke_item_window = PokeItemWindow(
+            self,
+            env=self.env,
+            ctx=self.context,
+            user=self.user,
+            websocket=self.websocket,
+            pokemon=self.party[party_idx]
+        )
+
     def render_player_stats(self, update_player=False):
         player: Player = self.player
         self.pokeBallCount.setText(str(player.balls))
@@ -403,45 +433,78 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             icon = sprite_manager.get_trainer_sprite(self.player_hero.name)
             if icon is not None:
                 set_button_image(self.playerArchetypeIcon, icon, color=None)
+                if self.player_hero.power == HeroGrade.PRISMATIC:
+                    set_button_color(self.playerArchetypeIconBackground, 'gold')
+                else:
+                    set_button_color(self.playerArchetypeIconBackground, 'blue')
             else:
                 clear_button_image(self.playerArchetypeIcon)
 
     def render_weather(self):
+        weather_manager: WeatherManager = self.env.weather_manager
         weather = self.state.weather
         if weather is None or weather is WeatherType.NONE:
-            clear_button_image(self.weatherIcon)
+            self.weatherIcon.hide()
+            self.weatherType0.hide()
+            self.weatherType1.hide()
+            self.weatherType2.hide()
+            #clear_button_image(self.weatherIcon)
+            #clear_button_image(self.weatherType0)
+            #clear_button_image(self.weatherType1)
+            #clear_button_image(self.weatherType2)
             return
         sprite_manager: SpriteManager = self.env.sprite_manager
         icon = sprite_manager.get_weather_sprite(weather.name.lower())
         if icon is not None:
             # TODO: do a color lookup?
             set_button_image(self.weatherIcon, icon, color=None)
+            self.weatherIcon.show()
         else:
             clear_button_image(self.weatherIcon)
             self.weatherIcon.setText(weather.name.capitalize())
 
+        bonus_types = weather_manager.weather_bonuses[weather]
+        for idx, button in enumerate((self.weatherType0, self.weatherType1, self.weatherType2)):
+            try:
+                type_enum: PokemonType = bonus_types[idx]
+                type_icon = sprite_manager.get_type_sprite(type_enum.name)
+                set_button_image(button, type_icon, "transparent")
+                button.show()
+            except IndexError:
+                # clear button
+                button.hide()
+                clear_button_image(button)
+
     def render_opponent_party(self):
-        try:
-            player: Player = self.player
-            state: State = self.state
-            matchmaker: Matchmaker = self.env.matchmaker
-            if state.current_matches is not None:
-                opponent = matchmaker.get_player_opponent_in_round(player, state.current_matches)
-                if opponent is not None:
-                    self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
-                    for idx in range(6):
-                        button = self.opposing_pokemon_buttons[idx]
-                        pokemon = self.opposing_party[idx]
-                        button.set_pokemon(pokemon)
-                    return
+        player: Player = self.player
+        state: ClientState = self.state
+        matchmaker: Matchmaker = self.env.matchmaker
+        if state.current_matches is not None:
+            opponent_id = matchmaker.get_player_opponent_in_round(player, state.current_matches)
+            if opponent_id is not None:
+                opponent = self.state.get_player_by_id(opponent_id)
 
-            self.opponentName.setText("No Match Scheduled")
-            for idx in range(6):
-                self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
-                self.opposingPokemon[idx].setDisabled(True)
+                sprite_manager: SpriteManager = self.env.sprite_manager
+                if opponent.is_creep:
+                    # set player icon from trainer sprites
+                    icon = sprite_manager.get_pve_round_sprite(opponent.name.capitalize())
+                else:
+                    # set player icon from hero power
+                    hero: Hero = self.state.player_hero[opponent.id]
+                    icon = sprite_manager.get_trainer_sprite(hero.name.capitalize())
+                set_button_image(self.opponentIcon, icon, 'transparent')
 
-        except Exception as exc:
-            print(f'Exception in rendering opposing party: {repr(exc)}')
+                self.opponentName.setText("{} ({})".format(opponent.name, opponent.hitpoints))
+                for idx in range(6):
+                    button = self.opposing_pokemon_buttons[idx]
+                    pokemon = self.opposing_party[idx]
+                    button.set_pokemon(pokemon)
+                return
+
+        self.opponentName.setText("No Match Scheduled")
+        for idx in range(6):
+            self.opposingPokemon[idx].setText("Opposing Pokemon {}".format(idx + 1))
+            self.opposingPokemon[idx].setDisabled(True)
 
     def render_party(self):
         party = self.party
@@ -519,6 +582,10 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
         if self.debug_window is not None:
             self.debug_window.update_game_phase()
+
+        if self.poke_item_window is not None:
+            self.poke_item_window.update_state()
+            self.poke_item_window.render()
 
     async def _message_callback(self, topic, data):
         """

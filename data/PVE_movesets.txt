@@ -40,3 +40,7 @@ lickitung,LICK,BODY_SLAM,none,23,0,0,0
 ninetales,FIRE_SPIN,PSYSHOCK,none,13,0,0,0,5
 golem_alolan,VOLT_SWITCH,STONE_EDGE,none,13,0,0,0
 exeggutor_alolan,DRAGON_TAIL,SEED_BOMB,none,13,0,0,0
+clefairy,ZEN_HEADBUTT,DISARMING_VOICE,none,14,5,5,5
+jigglypuff,FEINT_ATTACK,DISARMING_VOICE,none,5,5,5,5
+graveler,MUD_SHOT,ROCK_BLAST,none,13,5,5,5
+machoke,KARATE_CHOP,CROSS_CHOP,none,12,5,5,5

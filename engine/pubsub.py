@@ -109,9 +109,13 @@ class PubSubInterface(Component):
         try:
             header = self._pubsub_state_headers[player]
             state: State = self.env.state
-            encoded = state.for_player(player).json()
+            encoded = state.for_player(player).json(load_containers=False)
             await self.endpoint.publish(header, encoded)
         except Exception as exc:
+            import sys
+            import traceback
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
             print(f'Exception encountered in broadcast_player_state: {repr(exc)}')
             raise
 

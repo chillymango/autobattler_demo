@@ -264,7 +264,7 @@ class ShopManager(Component):
         roster_pokes = player_manager.player_roster(player)
         matching_pokes = []
         for poke in roster_pokes:
-            if (poke.battle_card.shiny != True) & (poke.name == card):
+            if (poke.battle_card.shiny != True) and (poke.name.name == card):
                 matching_pokes.append(poke)
         if len(matching_pokes) == 3: 
             self.log(f'Caught a shiny {card}!', recipient=player)

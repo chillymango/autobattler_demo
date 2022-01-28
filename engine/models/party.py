@@ -60,15 +60,18 @@ class PartyConfig(BaseModel):
         if self.party_is_full:
             return False
 
-        if len(self.party) < 6:
-            self.party.append(poke_id)
-            return True
+        if poke_id in self.party:
+            return False
 
         if idx is None:
             # find first empty slot
             for idx, slot in enumerate(self.party):
                 if slot is None:
                     self.party[idx] = poke_id
+                    return True
+            else:
+                if len(self.party) < 6:
+                    self.party.append(poke_id)
                     return True
             return False
 

@@ -1,0 +1,8 @@
+# maps item class name (e.g AssaultVest) to sprite path inside item sprites dir (e.g combineditems/assault-vest.png)
+
+AssaultVest    combineditems/assault-vest.png
+CellBattery    combineditems/cell-battery.png
+ChoiceSpecs    combineditems/choice-specs.png
+
+FireStone       other/fire-stone.png
+WaterStone      other/water-stone.png

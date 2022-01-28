@@ -5,7 +5,7 @@ import mock
 import unittest
 from engine.base import Component
 
-from engine.env import Environment
+from engine.env import Environment, GameOver
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
@@ -129,8 +129,14 @@ class TestGame(unittest.TestCase):
         while True:
             try:
                 self.env.step_loop()
+            except GameOver:
+                print('Finished the game!')
+                break
             except Exception as exc:
                 print(f'Encountered unexpected exception: {repr(exc)}')
                 break
 
-        print(len(self.env.state.json()))
+        print(f'Total state size: {len(self.env.state.json())}')
+        print(f'Player1 state size: {len(self.env.state.for_player(self.p1).json(load_containers=False))}')
+
+        import IPython; IPython.embed()

@@ -105,7 +105,7 @@ class PokemonFactory(Component):
         """
         Get the Pokemon type reference
 
-        # TODO: read from gamemaster instead of loading a manual file
+        TODO: read from gamemaster instead of loading a manual file
         """
         type1 = self.type_reference[self.type_reference.name == name].type1.iloc[0].lower()
         type2 = self.type_reference[self.type_reference.name == name].type2.iloc[0].lower()
@@ -114,6 +114,10 @@ class PokemonFactory(Component):
         return (PokemonType[type1], PokemonType[type2])
 
     def get_move_type_reference(self, move: str) -> PokemonType:
+        # TODO: fix this handling
+        if move == 'none':
+            return PokemonType.none
+
         return PokemonType[
             self.move_reference[self.move_reference.move == move].type.iloc[0].lower()
         ]
@@ -161,25 +165,7 @@ class PokemonFactory(Component):
             battle_card.move_ch = Move[random.choice(self.mew_m_charged)]
         if pokemon_name == 'porygon':
             battle_card.move_f = Move[random.choice(self.porygon_m_fast)]
-
-        nickname = self.get_nickname_by_pokemon_name(pokemon_name)
-        # assign types here
-        types = self.get_pokemon_type_reference(pokemon_name)
-        fast_move_type = self.get_move_type_reference(battle_card.move_f.name)
-        charged_move_type = self.get_move_type_reference(battle_card.move_ch.name)
-        tm_move_type = self.get_move_type_reference(battle_card.move_tm.name)
-        if types[0] is not None:
-            battle_card.poke_type1 = types[0]
-        else:
-            battle_card.poke_type1 = None
-        if types[1] is not None:
-            battle_card.poke_type2 = types[1]
-        else:
-            battle_card.poke_type2 = None
-        battle_card.f_move_type = fast_move_type
-        battle_card.ch_move_type = charged_move_type
-        battle_card.tm_move_type = tm_move_type
-        return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
+        return self.create_pokemon(pokemon_name, battle_card)
 
     def create_PVEpokemon_by_name(self, pokemon_name: str):
         """
@@ -189,7 +175,32 @@ class PokemonFactory(Component):
         """
         battle_card = self.get_PVE_battle_card(pokemon_name)
         battle_card.bonus_shield = -1
+        return self.create_pokemon(pokemon_name, battle_card)
+
+    def create_pokemon(self, pokemon_name: str, battle_card: BattleCard):
+        """
+        Create a Pokemon by name
+        """
+        types = self.get_pokemon_type_reference(pokemon_name)
+        fast_move_type = self.get_move_type_reference(battle_card.move_f.name)
+        charged_move_type = self.get_move_type_reference(battle_card.move_ch.name)
+        tm_move_type = self.get_move_type_reference(battle_card.move_tm.name)
+
+        if types[0] is not None:
+            battle_card.poke_type1 = types[0]
+        else:
+            battle_card.poke_type1 = None
+
+        if types[1] is not None:
+            battle_card.poke_type2 = types[1]
+        else:
+            battle_card.poke_type2 = None
+
+        battle_card.f_move_type = fast_move_type
+        battle_card.ch_move_type = charged_move_type
+        battle_card.tm_move_type = tm_move_type
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
+
         return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)
 
 

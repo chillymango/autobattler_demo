@@ -85,6 +85,10 @@ class PlayerRoster(OMAssociation):
     entity1: Player
     entity2: Pokemon
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f'Roster for {self.entity1} - {self.entity2}')
+
     @classmethod
     def get_roster(cls, player: Player) -> T.List[Pokemon]:
         """

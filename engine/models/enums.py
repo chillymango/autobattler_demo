@@ -2587,6 +2587,7 @@ class Move(Enum):
     ZEN_HEADBUTT = 254
     none = 255
 
+
 class PokemonType(Enum):
     normal = 0
     fighting = 1
@@ -2607,4 +2608,3 @@ class PokemonType(Enum):
     dark = 16
     fairy = 17
     none = 18
-

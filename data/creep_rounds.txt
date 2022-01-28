@@ -2,6 +2,7 @@
 # turn number where the round occurs is listed at the top
 # the next six lines need to each be a card representation of a pokemon
 1
+Preschooler
 rattata,TACKLE,BODY_SLAM,none,3,0,0,0
 pidgey,QUICK_ATTACK,TWISTER,none,3,0,0,0
 rattata_alolan,QUICK_ATTACK,HYPER_FANG,none,3,15,15,15
@@ -10,6 +11,7 @@ nidoran_female,BITE,SLUDGE_BOMB,none,3,0,0,0
 nidoran_male,POISON_STING,HORN_ATTACK,none,3,0,0,0
 
 2
+Lass
 pidgeotto,STEEL_WING,AIR_CUTTER,none,3,0,0,0
 metapod,BUG_BITE,STRUGGLE,none,4,0,0,0
 pikachu,PRESENT,DISCHARGE,none,4,0,0,0
@@ -18,6 +20,7 @@ clefairy,CHARM,HYPER_BEAM,none,4,0,0,0
 jigglypuff,POUND,DAZZLING_GLEAM,none,4,0,0,0
 
 4
+Hiker
 mankey,KARATE_CHOP,CROSS_CHOP,none,5,0,0,0
 geodude,ROCK_THROW,ROCK_SLIDE,none,4,0,0,0
 meowth,BITE,NIGHT_SLASH,none,4,0,0,0
@@ -26,6 +29,7 @@ paras,SCRATCH,SEED_BOMB,none,4,0,0,0,3
 sandshrew,MUD_SHOT,DIG,none,4,0,0,0,3
 
 9
+Gentleman
 mr_mime,CONFUSION,SHADOW_BALL,none,8,0,0,0
 graveler,MUD_SHOT,ROCK_SLIDE,none,8,0,0,0
 persian,FEINT_ATTACK,POWER_GEM,none,8,0,0,0
@@ -34,6 +38,7 @@ raticate,BITE,DIG,none,8,0,0,0
 machoke,COUNTER,CLOSE_COMBAT,none,8,0,0,0
 
 13
+HexManiac
 hypno,CONFUSION,ICE_PUNCH,none,13,0,0,0
 arbok,DRAGON_TAIL,ACID_SPRAY,none,13,0,0,0
 venomoth,CONFUSION,SILVER_WIND,none,13,0,0,0
@@ -42,6 +47,7 @@ nidoking,IRON_TAIL,MEGAHORN,none,13,0,0,0
 nidoqueen,BITE,STONE_EDGE,none,13,0,0,0
 
 16
+AceTrainer
 kangaskhan,LOW_KICK,OUTRAGE,none,12,0,0,0
 kingler,BUBBLE,CRABHAMMER,none,13,0,0,0,5
 primeape,COUNTER,NIGHT_SLASH,none,13,0,0,0,5
@@ -50,6 +56,7 @@ seaking,PECK,MEGAHORN,none,13,0,0,0
 dodrio,FEINT_ATTACK,AIR_CUTTER,none,13,0,0,0
 
 19
+Veteran
 cloyster,FROST_BREATH,HYDRO_PUMP,none,17,0,0,0
 victreebel,RAZOR_LEAF,ACID_SPRAY,none,17,0,0,0
 lickitung,LICK,BODY_SLAM,none,23,0,0,0

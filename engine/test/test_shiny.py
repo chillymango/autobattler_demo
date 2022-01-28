@@ -4,6 +4,7 @@ Why the fuck isn't shiny logic working jfc
 import unittest
 from engine.env import Environment
 from engine.models.association import PlayerShop, associate, dissociate
+from engine.models.enums import PokemonId
 from engine.models.player import Player
 from engine.models.shop import ShopOffer
 from engine.player import PlayerManager
@@ -43,11 +44,11 @@ class TestShinyLogic(unittest.TestCase):
         """
         # create a fake shop
         shop = [
-            ShopOffer(pokemon='pikachu'),
-            ShopOffer(pokemon='pikachu'),
-            ShopOffer(pokemon='pikachu'),
-            ShopOffer(pokemon='pikachu'),
-            ShopOffer(pokemon='pikachu')
+            ShopOffer(pokemon=PokemonId.pikachu),
+            ShopOffer(pokemon=PokemonId.pikachu),
+            ShopOffer(pokemon=PokemonId.pikachu),
+            ShopOffer(pokemon=PokemonId.pikachu),
+            ShopOffer(pokemon=PokemonId.pikachu)
         ]
 
         for card in self.env.state.shop_window.get(self.p1, []):
