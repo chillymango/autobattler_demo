@@ -96,7 +96,7 @@ class ItemManager(Component):
         self.combined_item_schema[items.CellBattery] = (items.Stats.ENG, items.Stats.ENG)
         self.combined_item_schema[items.Leftovers] = (items.Stats.HP, items.Stats.HP)
         self.combined_item_schema[items.ExpShare] = (items.Stats.DEF, items.Stats.ENG)
-        self.combined_item_schema[items.IntimidatingMask] = (items.Stats.ATK, items.Stats.DEF)
+        self.combined_item_schema[items.IntimidatingIdol] = (items.Stats.ATK, items.Stats.DEF)
         self.combined_item_schema[items.IronBarb] = (items.Stats.DEF, items.Stats.HP)
         self.combined_item_schema[items.AssaultVest] = (items.Stats.ATK, items.Stats.DEF)
         self.combined_item_schema[items.Metronome] = (items.Stats.SPD, items.Stats.SPD)
@@ -163,6 +163,7 @@ class ItemManager(Component):
 
         combo_item = self.create_item(combo_item_class.__name__)
         combo_item.level = primary.level + secondary.level - 1
+        combo_item.stat_contribution = [a+b for a,b in zip(primary.stat_contribution, secondary.stat_contribution )]
         return combo_item
 
     @property

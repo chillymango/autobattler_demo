@@ -332,6 +332,7 @@ class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
 # COMBAT ITEM
 class Shard(CombatItem):
 
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
     stat: Stats = None  # stat the Shard adjusts
 
 class SmallHPShard(Shard):
@@ -343,7 +344,7 @@ class SmallHPShard(Shard):
     stat = Stats.HP
     cost = SMALL_SHARD_COST
     level = 1
-
+    stat_contribution = [0,0,0,1,0]
 
 class LargeHPShard(Shard):
     """
@@ -354,6 +355,7 @@ class LargeHPShard(Shard):
     stat = Stats.HP
     cost = LARGE_SHARD_COST
     level = 2
+    stat_contribution = [0,0,0,2,0]
 
 
 class SmallEnergyShard(Shard):
@@ -365,6 +367,7 @@ class SmallEnergyShard(Shard):
     stat = Stats.ENG
     cost = SMALL_SHARD_COST
     level = 1
+    stat_contribution = [0,0,1,0,0]
 
 
 class LargeEnergyShard(Shard):
@@ -376,6 +379,7 @@ class LargeEnergyShard(Shard):
     stat = Stats.ENG
     cost = LARGE_SHARD_COST
     level = 2
+    stat_contribution = [0,0,2,0,0]
 
 class SmallDefenseShard(Shard):
     """
@@ -386,6 +390,7 @@ class SmallDefenseShard(Shard):
     stat = Stats.DEF
     cost = SMALL_SHARD_COST
     level = 1
+    stat_contribution = [0,1,0,0,0]
 
 
 class LargeDefenseShard(Shard):
@@ -397,6 +402,7 @@ class LargeDefenseShard(Shard):
     stat = Stats.DEF
     cost = LARGE_SHARD_COST
     level = 2
+    stat_contribution = [0,2,0,0,0]
 
 class SmallAttackShard(Shard):
     """
@@ -407,6 +413,7 @@ class SmallAttackShard(Shard):
     stat = Stats.ATK
     cost = SMALL_SHARD_COST
     level = 1
+    stat_contribution = [1,0,0,0,0]
 
 
 class LargeAttackShard(Shard):
@@ -418,6 +425,7 @@ class LargeAttackShard(Shard):
     stat = Stats.ATK
     cost = LARGE_SHARD_COST
     level = 2
+    stat_contribution = [2,0,0,0,0]
 
 class SmallSpeedShard(Shard):
     """
@@ -428,6 +436,7 @@ class SmallSpeedShard(Shard):
     stat = Stats.SPD
     cost = SMALL_SHARD_COST
     level = 1
+    stat_contribution = [0,0,0,0,1]
 
 
 class LargeSpeedShard(Shard):
@@ -439,6 +448,7 @@ class LargeSpeedShard(Shard):
     stat = Stats.SPD
     cost = LARGE_SHARD_COST
     level = 2
+    stat_contribution = [0,0,0,0,2]
 
 
 # COMBAT ITEM
