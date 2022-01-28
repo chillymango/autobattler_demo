@@ -9,10 +9,11 @@ import sys
 import traceback
 import typing as T
 import aiohttp
+from engine.models.items import CombinedItem
 
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, UpdatePartyConfig
+from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -137,3 +138,23 @@ class WebSocketClient:
 
     async def release_from_storage(self, context: GameContext, storage_index: int):
         await self.implement_api_client(ReleaseFromStorage, context, storage_index=storage_index)
+
+    # ITEM APIs
+    async def give_item_to_pokemon(self, context: GameContext, item_id: str, pokemon_id: str):
+        await self.implement_api_client(
+            GiveItemToPokemon,
+            context,
+            item_id=item_id,
+            pokemon_id=pokemon_id
+        )
+
+    async def remove_item_from_pokemon(self, context: GameContext, pokemon_id: str):
+        await self.implement_api_client(RemoveItemFromPokemon, context, pokemon_id=pokemon_id)
+
+    async def combine_items(self, ctx: GameContext, primary_item_id: str, secondary_item_id: str):
+        await self.implement_api_client(
+            CombineItems,
+            ctx,
+            primary_item_id=primary_item_id,
+            secondary_item_id=secondary_item_id
+        )

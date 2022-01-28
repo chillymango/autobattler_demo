@@ -13,6 +13,20 @@ def camel_case_to_snake_case(camel):
     return reduce(lambda x, y: x + ('_' if y.isupper() else '') + y, camel).lower()
 
 
+def crunch_spaces(string: str):
+    """
+    If a space is surrounded by two capital letters, remove the space.
+
+    This is just a hack to render things like H_P into HP
+    """
+    base = ''
+    for idx in range(len(string) - 2):
+        if string[idx + 1] in ('_', ' ') and string[idx].isupper() and string[idx + 2].isupper():
+            continue
+        base += string[idx]
+    return base + string[-1]
+
+
 def uuid_as_str():
     """
     Default constructor

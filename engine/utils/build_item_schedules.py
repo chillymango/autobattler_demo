@@ -6,6 +6,7 @@ that can be parsed by the item event manager at initialization.
 """
 import random
 import typing as T
+from engine.models import items
 
 from engine.models.item_event import ItemSchedule
 from engine.models.item_event import TurnConfig
@@ -36,7 +37,22 @@ def build_basic_item_schedule(blocklisted_items: T.List[str] = None):
     env.initialize()
     # all items available all the time...
     item_manager: ItemManager = env.item_manager
-    all_items: T.Set[str] = item_manager.supported_items.copy()
+    all_items = set()
+    item_types = (
+        items.MasterBall,
+        items.PokeFlute,
+        items.Shard,
+        items.CommonStone,
+        items.TechnicalMachine,
+    )
+    for itype in item_types:
+        children = itype.__subclasses__()
+        if children:
+            for child in itype.__subclasses__():
+                all_items.add(child.__name__)
+        else:
+            all_items.add(itype.__name__)
+
     if blocklisted_items:
         for blocklisted in blocklisted_items:
             all_items.discard(blocklisted)
@@ -56,7 +72,7 @@ def build_basic_item_schedule(blocklisted_items: T.List[str] = None):
     for turn_number, stage_config in turn.stages.items():
         if stage_config.stage != prev_stage:
             prev_stage = stage_config.stage
-            score = random.randrange(5, 11)  # 11 to include 10, funny...
+            score = random.randrange(25, 31)  # 11 to include 10, funny...
             turn_configs[turn_number] = TurnConfig(
                 item_set=all_items,
                 distribution=distribution,

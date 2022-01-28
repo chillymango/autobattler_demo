@@ -1,8 +1,22 @@
 # maps item class name (e.g AssaultVest) to sprite path inside item sprites dir (e.g combineditems/assault-vest.png)
 
+# shards
+LargeAttackShard      shards/atk-shard.png
+SmallAttackShard      shards/atk-shard.png
+LargeDefenseShard     shards/def-shard.png
+SmallDefenseShard     shards/def-shard.png
+LargeEnergyShard      shards/eng-shard.png
+SmallEnergyShard      shards/eng-shard.png
+LargeHitPointShard    shards/hp-shard.png
+SmallHitPointShard    shards/hp-shard.png
+LargeSpeedShard       shards/spd-shard.png
+SmallSpeedShard       shards/spd-shard.png
+
+# combined items
 AssaultVest    combineditems/assault-vest.png
 CellBattery    combineditems/cell-battery.png
 ChoiceSpecs    combineditems/choice-specs.png
 
+# stones
 FireStone       stones/fire-stone.png
 WaterStone      stones/water-stone.png

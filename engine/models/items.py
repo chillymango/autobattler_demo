@@ -14,7 +14,7 @@ from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
 
-from utils.strings import camel_case_to_snake_case 
+from utils.strings import camel_case_to_snake_case, crunch_spaces 
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
@@ -334,7 +334,8 @@ class Shard(CombatItem):
 
     stat: Stats = None  # stat the Shard adjusts
 
-class SmallHPShard(Shard):
+
+class SmallHitPointShard(Shard):
     """
     Small HP Shard
 
@@ -345,7 +346,7 @@ class SmallHPShard(Shard):
     level = 1
 
 
-class LargeHPShard(Shard):
+class LargeHitPointShard(Shard):
     """
     Large HP Shard
 
@@ -686,7 +687,7 @@ class ChoiceSpecs(CombinedItem):
         pass
 
 
-class TM(InstantPokemonItem):
+class TechnicalMachine(InstantPokemonItem):
 
     def use(self):
         card: "BattleCard" = self.pokemon.battle_card
@@ -694,12 +695,6 @@ class TM(InstantPokemonItem):
             self.consumed = True
             self.pokemon.battle_card.tm_flag = True
 
-    @classmethod
-    def tm_factory(cls):
-        """
-        tm factory
-        """
-        return cls(name = 'TM')
 
 #HERO POWER ITEMS
 class BrockShield(CombatItem):

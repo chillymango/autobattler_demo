@@ -383,7 +383,7 @@ class GiveItemToPokemon(WebSocketCallback):
         return ReportingResponse(success=True)
 
 
-class RemoveItemFromPokemonRequest(WebSocketCallback):
+class RemoveItemFromPokemonRequest(WebSocketPlayerRequest):
 
     pokemon_id: str
 
@@ -402,7 +402,7 @@ class RemoveItemFromPokemon(WebSocketCallback):
         return ReportingResponse(success=True)
 
 
-class CombineItemsRequest(WebSocketCallback):
+class CombineItemsRequest(WebSocketPlayerRequest):
     """
     Attempt to combine two items.
     """
@@ -412,6 +412,8 @@ class CombineItemsRequest(WebSocketCallback):
 
 
 class CombineItems(WebSocketCallback):
+
+    REQUEST_TYPE = CombineItemsRequest
 
     @staticmethod
     def callback(hydrated: CombineItemsRequest):

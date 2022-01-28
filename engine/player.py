@@ -126,13 +126,14 @@ class PlayerManager(Component):
 
         TODO: implement phase checks to ensure that these ops don't happen during combat
         """
-        player: Player = item.holder
+        player = PlayerRoster.all(entity2=pokemon)[0].entity1
 
         if not isinstance(player, Player):
             raise Exception(f"Tried to give item to {pokemon} that wasn't ready to give")
 
-        if pokemon not in player.roster:
-            raise Exception(f"{item} does not belong to {player}")
+        # do not allow assignment if Pokemon already has item
+        if PokemonHeldItem.get_held_item(pokemon) is not None:
+            raise Exception(f"{pokemon} is already holding an item")
 
         # TODO: make this block atomic
         dissociate(PlayerInventory, player, item)
@@ -142,13 +143,18 @@ class PlayerManager(Component):
         """
         Remove an item from a Pokemon and put it in its players inventory.
         """
-        player: Player = pokemon.player
-        item = pokemon.battle_card.berry
+        player = PlayerRoster.all(entity2=pokemon)[0].entity1
+        if not player:
+            raise Exception(f"No player found for {pokemon}")
 
         # TODO: make this block atomic
-        dissociate(PokemonHeldItem, pokemon, item)
-        associate(PlayerInventory, player, item)
-        return item
+        item = PokemonHeldItem.get_held_item(pokemon)
+        if item is not None:
+            dissociate(PokemonHeldItem, pokemon, item)
+            associate(PlayerInventory, player, item)
+            return item
+        print(f"{pokemon} does not have an item")
+        return None
 
     def release_pokemon(self, player: Player, pokemon: Pokemon):
         """
@@ -194,8 +200,8 @@ class PlayerManager(Component):
             associate(PokemonHeldItem, poke, combined_item)
         elif primary in pokemon_inventory and secondary in player_inventory:
             poke = PokemonHeldItem.get_item_holder(primary)
-            dissociate(PlayerInventory, poke, primary)
-            dissociate(PokemonHeldItem, player, secondary)
+            dissociate(PokemonHeldItem, poke, primary)
+            dissociate(PlayerInventory, player, secondary)
             associate(PokemonHeldItem, poke, combined_item)
         else:
             raise Exception("We lost our way (items, whatever)")

@@ -9,6 +9,7 @@ from engine.models.association import PlayerInventory
 from engine.models.association import PokemonHeldItem
 from engine.models.player import Player
 from engine.player import PlayerManager
+from engine.pokemon import PokemonFactory
 
 
 class TestItemCombos(unittest.TestCase):
@@ -43,6 +44,12 @@ class TestItemCombos(unittest.TestCase):
         shard1 = pm.create_and_give_item_to_player(self.p1, "LargeDefenseShard")
         shard2 = pm.create_and_give_item_to_player(self.p1, "LargeEnergyShard")
         pm.combine_player_items(self.p1, shard1, shard2)
+
+    def test_give_item_to_pokemon(self):
+        pm: PlayerManager = self.env.player_manager
+        pika = pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
+        fire_stone = pm.create_and_give_item_to_player(self.p1, 'FireStone')
+        pm.give_item_to_pokemon(pika, fire_stone)
         import IPython; IPython.embed()
 
 

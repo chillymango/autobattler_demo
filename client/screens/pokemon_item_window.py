@@ -11,7 +11,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from qasync import asyncSlot
 from client.client_env import ClientState
-from engine.models.items import ITEM_NAME_LOOKUP, PokemonItem, TargetType
+from engine.models.items import ITEM_NAME_LOOKUP, ItemName, PokemonItem, TargetType, get_item_class_by_name
 from engine.models.pokemon import Pokemon
 
 from utils.buttons import ItemButton, PokemonButton
@@ -57,6 +57,10 @@ class Ui(QtWidgets.QDialog):
         uic.loadUi('client/qtassets/pokeitemwindow.ui', self)
         self.update_state()
 
+        # track stuff
+        self.primary_item = None
+        self.combine_item = None
+
         # instantiate buttons
         self.pokemonIcon = self.findChild(QtWidgets.QPushButton, "pokemonIcon")
         self.pokemonLabel = self.findChild(QtWidgets.QLabel, "pokemonLabel")
@@ -66,16 +70,27 @@ class Ui(QtWidgets.QDialog):
         self.combineItems = self.findChild(QtWidgets.QPushButton, "combineItems")
         self.itemIcon = self.findChild(QtWidgets.QPushButton, "itemIcon")
         self.primaryIcon = self.findChild(QtWidgets.QPushButton, "primaryIcon")
+        self.combineIcon = self.findChild(QtWidgets.QPushButton, "combineIcon")
 
-        self.pokemonIconButton = PokemonButton(self.pokemonIcon, self.env, label=self.pokemonLabel)
+        self.pokemon_icon_button = PokemonButton(self.pokemonIcon, self.env, label=self.pokemonLabel)
+        self.primary_icon_button = ItemButton(self.primaryIcon, self.env)
         self.item_icon_button = ItemButton(self.itemIcon, self.env)
+        self.combine_icon_button = ItemButton(self.combineIcon, self.env)
 
         # item view
         self.itemView = self.findChild(QtWidgets.QListView, "itemView")
         self.item_view_model = None
 
+        # connect buttons
+        self.removePrimary.clicked.connect(self.remove_primary_callback)
+        self.invToPrimary.clicked.connect(self.inv_to_primary_callback)
+        self.invToCombine.clicked.connect(self.inv_to_combine_callback)
+        self.combineItems.clicked.connect(self.combine_items_callback)
+
         for callback in [
-            self.render_selected_item
+            self.render,
+            self.render_selected_item,
+            self.render_item_buttons
         ]:
             timer = QtCore.QTimer(self)
             timer.timeout.connect(callback)
@@ -99,9 +114,18 @@ class Ui(QtWidgets.QDialog):
         """
         Render the state after a state update
         """
-        self.render_pokemon()
+        # need to do a per-item comparison
+        if self._last_seen_inventory is not None:
+            if len(self._last_seen_inventory) == len(self.inventory):
+                for (x, y) in zip(self._last_seen_inventory, self.inventory):
+                    if x != y:
+                        break
+                else:
+                    return
+        self._last_seen_inventory = [_ for _ in self.inventory]
+
         self.render_item_view()
-        self.render_item_buttons()
+        self.render_pokemon()
 
     def set_pokemon(self, pokemon: Pokemon):
         """
@@ -120,28 +144,16 @@ class Ui(QtWidgets.QDialog):
         self.inventory = self.parent.inventory
 
     def render_pokemon(self):
-        self.pokemonIconButton.render_pokemon_card(self.pokemon)
+        self.pokemon_icon_button.render_pokemon_card(self.pokemon)
 
     def render_item_view(self):
         """
         Only show items that can be given to Pokemon
         """
-        # need to do a per-item comparison
-        if self._last_seen_inventory is not None:
-            for (x, y) in zip(self._last_seen_inventory, self.inventory):
-                if x != y:
-                    break
-            else:
-                return
-
-        self._last_seen_inventory = [_ for _ in self.inventory]
-
         poke_items: T.List[PokemonItem] = []
         for item in self.inventory:
             if item.tt == TargetType.POKEMON:
                 poke_items.append(item)
-            else:
-                print(f'Ignoring {item} because it is not a pokemon item {type(item)}')
 
         print('Doing update of item view')
         self.item_view_model = QtGui.QStandardItemModel()
@@ -161,13 +173,31 @@ class Ui(QtWidgets.QDialog):
         else:
             self.item_icon_button.set_item(None)
 
+    def _get_primary_item(self):
+        """
+        If Pokemon is holding an item, return it.
+        """
+        poke_held_item_raw = self.state.pokemon_held_items_raw.get(self.pokemon.id)
+        if poke_held_item_raw is not None:
+            item_name = ItemName(poke_held_item_raw.name).name
+            item_class = get_item_class_by_name(item_name)
+            return item_class(self.env, id=poke_held_item_raw.id)
+        return None
+
     def render_item_buttons(self):
         """
         Check if the Pokemon target has an equipped item or not.
 
         Render the item icon if it does.
+
+        Also render the combine staging item.
         """
-        pass
+        self.primary_icon_button.set_item(self._get_primary_item())
+
+        if self.combine_item is not None:
+            self.combine_icon_button.set_item(self.combine_item)
+        else:
+            self.combine_icon_button.clear()
 
     @asyncSlot()
     async def inv_to_primary_callback(self):
@@ -177,6 +207,12 @@ class Ui(QtWidgets.QDialog):
         This should be done via API request to ensure the backend acknowledges the request.
         """
         print('Running inv_to_primary')
+        item_selected = self.itemView.selectedIndexes()
+        # TODO: this currently really just supports 1 moving at a time, maybe fix that
+        for item_member in item_selected:
+            item = self._inventory_lookup[item_member.row()]
+            await self.websocket.give_item_to_pokemon(self.ctx, item.id, self.pokemon.id)
+        self.render()
 
     def inv_to_combine_callback(self):
         """
@@ -185,6 +221,11 @@ class Ui(QtWidgets.QDialog):
         This is only done locally.
         """
         print('Running inv_to_combine')
+        item_selected = self.itemView.selectedIndexes()
+        for item_member in item_selected:
+            item = self._inventory_lookup[item_member.row()]
+            self.combine_item = item
+        self.render()
 
     @asyncSlot()
     async def remove_primary_callback(self):
@@ -194,6 +235,8 @@ class Ui(QtWidgets.QDialog):
         This should be done via API request.
         """
         print('Running remove_primary')
+        await self.websocket.remove_item_from_pokemon(self.ctx, self.pokemon.id)
+        self.render()
 
     @asyncSlot()
     async def combine_items_callback(self):
@@ -203,6 +246,21 @@ class Ui(QtWidgets.QDialog):
         This should be done via API request.
         """
         print('Running combine items.')
+        # get primary from Pokemon holder
+        primary_item = self._get_primary_item()
+        if primary_item is None:
+            print('No primary item to combine.')
+            return
+
+        secondary_item = self.combine_item
+        if secondary_item is None:
+            print('No secondary item to combine.')
+            return
+
+        await self.websocket.combine_items(self.ctx, primary_item.id, secondary_item.id)
+
+        self.combine_item = None
+        self.render()
 
     def closeEvent(self, *args, **kwargs):
         self.parent.poke_item_window = None

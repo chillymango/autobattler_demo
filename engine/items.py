@@ -98,7 +98,7 @@ class ItemManager(Component):
         self.combined_item_schema[items.ExpShare] = (items.Stats.DEF, items.Stats.ENG)
         self.combined_item_schema[items.IntimidatingMask] = (items.Stats.ATK, items.Stats.DEF)
         self.combined_item_schema[items.IronBarb] = (items.Stats.DEF, items.Stats.HP)
-        self.combined_item_schema[items.AssaultVest] = (items.Stats.ATK, items.Stats.DEF)
+        self.combined_item_schema[items.AssaultVest] = (items.Stats.SPD, items.Stats.DEF)
         self.combined_item_schema[items.Metronome] = (items.Stats.SPD, items.Stats.SPD)
         self.combined_item_schema[items.QuickPowder] = (items.Stats.SPD, items.Stats.HP)
         self.combined_item_schema[items.ChoiceSpecs] = (items.Stats.SPD, items.Stats.ENG)
@@ -143,7 +143,9 @@ class ItemManager(Component):
         """
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
-        return submanager.factory[item_name](self.env)
+        item = submanager.factory[item_name](self.env)
+        self.state._item_registry.append(item)
+        return item
 
     def combine_items(self, primary: items.Item, secondary: items.Item):
         """
