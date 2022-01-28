@@ -2,9 +2,17 @@
 Hero Models
 """
 import typing as T
+from enum import Enum
 from pydantic import BaseModel
 
 from engine.models.items import PlayerHeroPower
+
+
+class HeroGrade(Enum):
+    # TODO: rename so no sue by rito
+    SILVER = 0
+    GOLD = 1
+    PRISMATIC = 2
 
 
 class Hero(BaseModel):
@@ -15,9 +23,9 @@ class Hero(BaseModel):
     """
 
     name: str
+    grade: HeroGrade = HeroGrade.SILVER
     ability_name: str
     power: PlayerHeroPower = None  # TODO: make this not default
-    context: str = None
 
 
 NORMAL_HEROES: T.List[Hero] = [
@@ -46,3 +54,5 @@ PRISMATIC_HEROES: T.List[Hero] = [
     Hero(name='Koga', ability_name='Ninjutsu Art of Summoning'),
     Hero(name='Lance', ability_name='"Dragon" Master')
 ]
+
+HERO_CONTEXT: T.Dict[Hero, str] = {}

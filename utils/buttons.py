@@ -1,8 +1,11 @@
 """
 Helpers for buttons
 """
+from email.charset import QP
 import typing as T
 from PyQt5.QtWidgets import QLabel, QPushButton
+from engine.models.enums import PokemonId
+from engine.models.items import Item
 
 from engine.models.pokemon import Pokemon
 from engine.shop import ShopManager
@@ -19,6 +22,10 @@ def clear_button_image(button):
     Reset the button image
     """
     button.setStyleSheet("border: 1px solid;")
+
+def set_button_color(button, color):
+    button.setText('')
+    button.setStyleSheet("background-color: {color};".format(color=color))
 
 
 def set_button_image(button, image, color):
@@ -59,11 +66,11 @@ def set_border_color_and_image(button, image, color, width=5):
     )
 
 
-class PokemonButton:
+class SpriteButton:
     """
     Wraps a QPushButton.
 
-    Renders a Pokemon sprite or text or blank, depending on configuration.
+    Renders a sprite or text or blank, depending on configuration.
     """
 
     def __init__(self, button, env, default_text="", label=None):
@@ -71,8 +78,6 @@ class PokemonButton:
         self.label: QLabel = label
         self.env = env
         self.default_text = default_text
-        self.pokemon: Pokemon = None
-        # TODO: add some more config options here probably
 
     def clear(self):
         clear_button_image(self.button)
@@ -88,6 +93,49 @@ class PokemonButton:
 
     def disable(self):
         self.button.setDisabled(True)
+
+
+class ItemButton(SpriteButton):
+    """
+    Wraps a QPushButton
+
+    Renders an item sprite or text or blank, depending on configuration.
+    """
+
+    def __init__(self, button, env, default_text="", label=None):
+        super().__init__(button, env, default_text=default_text, label=label)
+        self.item: Item = None
+
+    def set_item(self, item: T.Optional[Item]):
+        self.item = item
+        self.render_item()
+
+    def render_item(self):
+        if self.item is None:
+            self.clear()
+            self.disable()
+            return
+
+        self.enable()
+        sprite_manager: SpriteManager = self.env.sprite_manager
+        sprite = sprite_manager.get_item_sprite(self.item.__class__)
+        if sprite is not None:
+            # TODO: implement item tier colors here
+            set_button_image(self.button, sprite, "transparent")
+            self.button.setText('')
+            self.set_label(str(self.item))
+        else:
+            clear_button_image(self.button)
+            self.button.setText(str(self.item))
+            self.set_label('')
+
+
+class PokemonButton(SpriteButton):
+
+    def __init__(self, button, env, default_text="", label=None):
+        super().__init__(button, env, default_text=default_text, label=label)
+        self.pokemon: Pokemon = None
+        # TODO: add some more config options here probably
 
     def set_pokemon(self, pokemon: T.Optional[Pokemon]):
         self.pokemon = pokemon
@@ -105,9 +153,9 @@ class PokemonButton:
         self.enable()
         sprite_manager: SpriteManager = self.env.sprite_manager
         if pokemon.battle_card.shiny:
-            sprite = sprite_manager.get_shiny_sprite(pokemon.name)
+            sprite = sprite_manager.get_shiny_sprite(pokemon.name.name)
         else:
-            sprite = sprite_manager.get_normie_sprite(pokemon.name)
+            sprite = sprite_manager.get_normie_sprite(pokemon.name.name)
 
         if sprite is None:
             # set text to pokemon name
@@ -131,16 +179,23 @@ class ShopPokemonButton(PokemonButton):
     def __init__(self, button, state, default_text=""):
         super().__init__(button, state, default_text=default_text)
 
-    def set_pokemon(self, pokemon_name: str):
-        if pokemon_name is None:
+    def set_pokemon(self, pokemon_id_enum: PokemonId):
+        if pokemon_id_enum is None:
             self.clear()
             self.disable()
             return
 
+        pokemon_name = pokemon_id_enum.name
         pokemon_factory: PokemonFactory = self.env.pokemon_factory
-        if self.pokemon is None or pokemon_name != self.pokemon.name:
-            # create new default
+        if self.pokemon is None:
+            # create new object
             self.pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
+        elif pokemon_name != self.pokemon.name.name:
+            # create new default
+            # delete old object first
+            self.pokemon.delete()
+            self.pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
+
         # otherwise can assume it did not change and no need to instantiate a new one
         self.render_pokemon_card(self.pokemon)
 
@@ -153,17 +208,18 @@ class ShopPokemonButton(PokemonButton):
             self.disable()
             return
 
+        sprite_key: str = pokemon.name.name
         self.enable()
         sprite_manager: SpriteManager = self.env.sprite_manager
-        sprite = sprite_manager.get_normie_sprite(pokemon.name)
+        sprite = sprite_manager.get_normie_sprite(sprite_key)
 
         if sprite is None:
             # set text to pokemon name
             clear_button_image(self.button)
-            self.button.setText(pokemon.nickname)
+            self.button.setText(str(pokemon))
         else:
             self.button.setText('')
             shop_manager: ShopManager = self.env.shop_manager
-            tier = shop_manager.pokemon_tier_lookup[pokemon.name]
+            tier = shop_manager.pokemon_tier_lookup[sprite_key]
             color = shop_manager.tier_colors[tier]
             set_button_image(self.button, sprite, color)

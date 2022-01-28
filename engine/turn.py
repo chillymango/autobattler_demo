@@ -2,6 +2,11 @@ import typing as T
 from engine.base import Component
 from engine.models.stage_config import StageConfig
 
+class GameOver(Exception):
+    """
+    raise when game is over
+    """
+
 
 class Turn(Component):
     """
@@ -12,7 +17,10 @@ class Turn(Component):
 
     def advance(self):
         self.state.turn_number += 1
-        self.state.stage = self.stages[self.state.turn_number]
+        try:
+            self.state.stage = self.stages[self.state.turn_number]
+        except KeyError:
+            raise GameOver("No more turns left")
 
     def retract(self):
         if self.state.turn_number > 0:

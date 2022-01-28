@@ -90,6 +90,9 @@ class PlayerManager(Component):
         associate(PlayerRoster, player, pokemon)
         if pokemon not in self.state._pokemon_registry:
             self.state._pokemon_registry.append(pokemon)
+        player.party_config.add_to_party(pokemon.id)
+        print(f'{player} - {pokemon.name}: {pokemon.id}')
+        return pokemon
 
     def create_and_give_pokemon_to_player(self, player: Player, pokemon_name: str) -> Pokemon:
         """
@@ -97,11 +100,7 @@ class PlayerManager(Component):
         """
         pokemon_factory: PokemonFactory = self.env.pokemon_factory
         pokemon = pokemon_factory.create_pokemon_by_name(pokemon_name)
-        associate(PlayerRoster, player, pokemon)
-        # update party config to put pokemon in party if party is not full
-        self.state._pokemon_registry.append(pokemon)
-        player.party_config.add_to_party(pokemon.id)
-        print(f'{player} - {pokemon.name}: {pokemon.id}')
+        self.give_pokemon_to_player(player, pokemon)
         return pokemon
 
     def create_and_give_item_to_player(self, player: Player, item_name: str) -> Item:

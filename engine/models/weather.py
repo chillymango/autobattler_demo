@@ -11,3 +11,4 @@ class WeatherType(Enum):
     RAINY = 6
     SNOWY = 7
     WINDY = 8
+    CLOUDY = 9

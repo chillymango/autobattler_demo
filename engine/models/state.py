@@ -4,10 +4,9 @@
 
 # maybe we just do a `mutate` function or something
 import codecs
-from io import StringIO
+from multiprocessing.sharedctypes import Value
 import typing as T
 from pydantic import BaseModel, PrivateAttr, StrBytes
-from pydantic import Field
 from engine.models.association import Association, PlayerRoster, PlayerShop
 from engine.models.association import PlayerInventory
 from engine.models.hero import Hero
@@ -68,7 +67,7 @@ class State(BaseModel):
     player_roster_raw: T.Dict[str, T.List[Pokemon]] = dict()
 
     # Inventory containers
-    player_inventory_raw: T.Dict[str, T.List[T.Any]] = dict()  # maps player ID to a list of items
+    player_inventory_raw: T.Dict[str, T.List[Item]] = dict()  # maps player ID to a list of items
 
     # Player hero associations
     player_hero: T.Dict[str, Hero] = dict()  # maps player ID to their hero
@@ -78,8 +77,9 @@ class State(BaseModel):
 
     def load_containers(self):
         self.shop_window_raw = {p.id: PlayerShop.get_shop(p) for p in self.players}
-        self.player_roster_raw = {p.id: PlayerRoster.get_roster(p) for p in self.players}
         self.player_inventory_raw = {p.id: PlayerInventory.get_inventory(p) for p in self.players}
+        # creeps should load rosters
+        self.player_roster_raw = {p.id: PlayerRoster.get_roster(p) for p in self.all_player_entities}
 
     def for_player(self, player: Player):
         """
@@ -95,24 +95,27 @@ class State(BaseModel):
         * pokemon
         * items
         """
+        self.load_containers()
+        player_ids = [player.id]
+        for match in self.current_matches:
+            if match.has_player(player.id):
+                if match.player1 == player.id:
+                    player_ids.append(match.player2)
+                    break
+                elif match.player2 == player.id:
+                    player_ids.append(match.player1)
+                    break
+                else:
+                    raise ValueError("Come find this and read how ridiculous this looks")
+
         shop_window = {player.id: self.shop_window_raw[player.id]}
         player_inventory = {player.id: self.player_inventory_raw[player.id]}
-        player_roster = {player.id: self.player_roster_raw[player.id]}
-        # only transmit the creep if player is against them
-        creeps = []
-        for match in self.current_matches:
-            if match.has_player(player):
-                if match.player1 == player and match.player2.is_creep:
-                    creeps.append(match.player2)
-                    break
-                elif match.player2 == player and match.player1.is_creep:
-                    creeps.append(match.player1)
-                    break
+        player_roster = {p_id: self.player_roster_raw[p_id] for p_id in player_ids}
 
         return self.__class__(
             phase=self.phase,
             players=self.players,
-            creeps=creeps,
+            creeps=self.creeps,
             shop_window_raw=shop_window,
             current_matches=self.current_matches,
             turn_number=self.turn_number,
@@ -124,6 +127,13 @@ class State(BaseModel):
             player_hero=self.player_hero,
             weather=self.weather,
         )
+
+    @property
+    def all_player_entities(self):
+        """
+        Humans, computers, creeps
+        """
+        return self.players + self.creeps
 
     @classmethod
     def default(cls):
@@ -143,11 +153,12 @@ class State(BaseModel):
             return super().parse_raw(b, **kwargs)
         return super().parse_raw(codecs.decode(b, 'zlib'), **kwargs)
 
-    def json(self, *args, compress=False, **kwargs):
+    def json(self, *args, load_containers=True, compress=False, **kwargs):
         """
         By default compress this message
         """
-        self.load_containers()
+        if load_containers:
+            self.load_containers()
         if not compress:
             return super().json(*args, **kwargs)
         return codecs.encode(bytes(super().json(*args, **kwargs), 'ascii'), 'zlib')
@@ -173,7 +184,7 @@ class State(BaseModel):
         Return all player rosters
         """
         self.load_containers()
-        return {p: self.player_roster_raw.get(p.id) for p in self.players}
+        return {p: self.player_roster_raw.get(p.id) for p in self.all_player_entities}
 
     @property
     def shop_window(self):
@@ -184,7 +195,7 @@ class State(BaseModel):
         }
 
     def get_player_by_id(self, id):
-        matches = [x for x in self.players if str(x.id) == id]
+        matches = [x for x in self.all_player_entities if str(x.id) == id]
         if len(matches) < 1:
             raise ValueError("No match found for player id {}".format(id))
         if len(matches) > 1:

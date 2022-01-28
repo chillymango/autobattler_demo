@@ -5,8 +5,11 @@ Primarily deals with the asynchronous implementation
 """
 import asyncio
 import json
-import aiohttp
+import sys
+import traceback
 import typing as T
+import aiohttp
+
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
 from server.api.websocket import AddToTeam, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, UpdatePartyConfig
@@ -55,6 +58,8 @@ class WebSocketClient:
             if not response.success:
                 raise RuntimeError(f"Websocket remote error: {response.message}")
         except Exception as exc:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
             print(f'Encountered exception in WebSocket client: {repr(exc)}')
 
     async def implement_api_client(self, api_class, context: GameContext, **kwargs):

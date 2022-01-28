@@ -20,4 +20,36 @@
     <file>../sprites/typeicons/Steel.png</file>
     <file>../sprites/typeicons/Water.png</file>
   </qresource>
+  <qresource prefix="newPrefix2">
+    <file>../sprites/itemicons/combineditems/assault-vest.png</file>
+    <file>../sprites/itemicons/combineditems/assault-vest.png</file>
+    <file>../sprites/itemicons/combineditems/cell-battery.png</file>
+    <file>../sprites/itemicons/combineditems/choice-specs.png</file>
+    <file>../sprites/itemicons/combineditems/eject-button.png</file>
+    <file>../sprites/itemicons/combineditems/exp-share.png</file>
+    <file>../sprites/itemicons/combineditems/focus-band.png</file>
+    <file>../sprites/itemicons/combineditems/intimidating-mask.png</file>
+    <file>../sprites/itemicons/combineditems/iron-barb.png</file>
+    <file>../sprites/itemicons/combineditems/leftovers.png</file>
+    <file>../sprites/itemicons/combineditems/life-orb.png</file>
+    <file>../sprites/itemicons/combineditems/light-clay.png</file>
+    <file>../sprites/itemicons/combineditems/metronome.png</file>
+    <file>../sprites/itemicons/combineditems/quick-powder.png</file>
+    <file>../sprites/itemicons/combineditems/shell-bell.png</file>
+    <file>../sprites/itemicons/heropower/brock-solid.png</file>
+    <file>../sprites/itemicons/heropower/janine-eject.png</file>
+    <file>../sprites/itemicons/heropower/lance-scale.png</file>
+    <file>../sprites/itemicons/heropower/red-cooking.png</file>
+    <file>../sprites/itemicons/other/ditto.png</file>
+    <file>../sprites/itemicons/other/fire-stone.png</file>
+    <file>../sprites/itemicons/other/master-ball.png</file>
+    <file>../sprites/itemicons/other/poke-flute.png</file>
+    <file>../sprites/itemicons/other/tm.png</file>
+    <file>../sprites/itemicons/other/water-stone.png</file>
+    <file>../sprites/itemicons/shards/atk-shard.png</file>
+    <file>../sprites/itemicons/shards/def-shard.png</file>
+    <file>../sprites/itemicons/shards/eng-shard.png</file>
+    <file>../sprites/itemicons/shards/hp-shard.png</file>
+    <file>../sprites/itemicons/shards/spd-shard.png</file>
+  </qresource>
 </RCC>

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1465</width>
-    <height>855</height>
+    <height>865</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -182,7 +182,7 @@ Wilds
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>540</x>
+      <x>450</x>
       <y>260</y>
       <width>451</width>
       <height>31</height>
@@ -449,7 +449,7 @@ Wilds
    <widget class="QLabel" name="opponentName">
     <property name="geometry">
      <rect>
-      <x>540</x>
+      <x>450</x>
       <y>290</y>
       <width>451</width>
       <height>31</height>
@@ -735,9 +735,9 @@ Team</string>
    <widget class="QPushButton" name="manageStorage">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>60</x>
       <y>460</y>
-      <width>251</width>
+      <width>161</width>
       <height>51</height>
      </rect>
     </property>
@@ -1212,9 +1212,9 @@ Team</string>
     <property name="geometry">
      <rect>
       <x>1025</x>
-      <y>70</y>
+      <y>60</y>
       <width>411</width>
-      <height>511</height>
+      <height>421</height>
      </rect>
     </property>
     <property name="html">
@@ -1252,7 +1252,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>1050</x>
-      <y>600</y>
+      <y>610</y>
       <width>361</width>
       <height>31</height>
      </rect>
@@ -1316,7 +1316,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>1030</x>
-      <y>650</y>
+      <y>660</y>
       <width>191</width>
       <height>151</height>
      </rect>
@@ -1329,7 +1329,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>1240</x>
-      <y>650</y>
+      <y>660</y>
       <width>211</width>
       <height>31</height>
      </rect>
@@ -1352,7 +1352,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>1240</x>
-      <y>710</y>
+      <y>720</y>
       <width>211</width>
       <height>61</height>
      </rect>
@@ -1374,16 +1374,203 @@ p, li { white-space: pre-wrap; }
    <widget class="QPushButton" name="weatherIcon">
     <property name="geometry">
      <rect>
-      <x>930</x>
-      <y>600</y>
-      <width>81</width>
-      <height>61</height>
+      <x>1020</x>
+      <y>500</y>
+      <width>121</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="text">
      <string>Weather</string>
     </property>
    </widget>
+   <widget class="QLabel" name="playerNameLabel_2">
+    <property name="geometry">
+     <rect>
+      <x>1160</x>
+      <y>490</y>
+      <width>261</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Weather Report</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="weatherType0">
+    <property name="geometry">
+     <rect>
+      <x>1180</x>
+      <y>530</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>WeatherType1</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="weatherType1">
+    <property name="geometry">
+     <rect>
+      <x>1270</x>
+      <y>530</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>WeatherType2</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="opponentIcon">
+    <property name="geometry">
+     <rect>
+      <x>860</x>
+      <y>260</y>
+      <width>91</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Opponent Icon</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="playerArchetypeIconBackground">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>650</y>
+      <width>211</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Hero Icon Background</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="weatherType2">
+    <property name="geometry">
+     <rect>
+      <x>1360</x>
+      <y>530</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>WeatherType3</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="manageItems">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>460</y>
+      <width>161</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Manage Items</string>
+    </property>
+   </widget>
+   <zorder>playerArchetypeIconBackground</zorder>
+   <zorder>exploreWilds</zorder>
+   <zorder>shopPokemon1</zorder>
+   <zorder>shopPokemon2</zorder>
+   <zorder>shopPokemon3</zorder>
+   <zorder>shopPokemon4</zorder>
+   <zorder>shopPokemon0</zorder>
+   <zorder>timeToNextStage</zorder>
+   <zorder>teamMember0</zorder>
+   <zorder>label</zorder>
+   <zorder>label_2</zorder>
+   <zorder>opposingPokemon1</zorder>
+   <zorder>opposingPokemon2</zorder>
+   <zorder>opposingPokemon3</zorder>
+   <zorder>opposingPokemon4</zorder>
+   <zorder>opposingPokemon5</zorder>
+   <zorder>teamMember1</zorder>
+   <zorder>teamMember2</zorder>
+   <zorder>removeTeamMember0</zorder>
+   <zorder>removeTeamMember1</zorder>
+   <zorder>removeTeamMember2</zorder>
+   <zorder>shiftTeam0Up</zorder>
+   <zorder>shiftTeam1Up</zorder>
+   <zorder>shiftTeam2Up</zorder>
+   <zorder>shiftTeam0Down</zorder>
+   <zorder>shiftTeam1Down</zorder>
+   <zorder>shiftTeam2Down</zorder>
+   <zorder>label_3</zorder>
+   <zorder>opposingPokemon0</zorder>
+   <zorder>opponentName</zorder>
+   <zorder>shopLocationLabel</zorder>
+   <zorder>partyItems1</zorder>
+   <zorder>partyPokemon5</zorder>
+   <zorder>addParty0</zorder>
+   <zorder>partyItems5</zorder>
+   <zorder>partyItems3</zorder>
+   <zorder>addParty2</zorder>
+   <zorder>partyPokemon0</zorder>
+   <zorder>partyItems0</zorder>
+   <zorder>partyPokemon2</zorder>
+   <zorder>partyItems4</zorder>
+   <zorder>addParty4</zorder>
+   <zorder>partyPokemon3</zorder>
+   <zorder>addParty3</zorder>
+   <zorder>partyItems2</zorder>
+   <zorder>partyPokemon4</zorder>
+   <zorder>partyPokemon1</zorder>
+   <zorder>addParty1</zorder>
+   <zorder>addParty5</zorder>
+   <zorder>manageStorage</zorder>
+   <zorder>pokeBallCount</zorder>
+   <zorder>opponentName_2</zorder>
+   <zorder>energyCount</zorder>
+   <zorder>opponentName_3</zorder>
+   <zorder>hitPoints</zorder>
+   <zorder>opponentName_4</zorder>
+   <zorder>party0Label</zorder>
+   <zorder>party1Label</zorder>
+   <zorder>party2Label</zorder>
+   <zorder>party3Label</zorder>
+   <zorder>party4Label</zorder>
+   <zorder>party5Label</zorder>
+   <zorder>teamLabel0</zorder>
+   <zorder>teamLabel1</zorder>
+   <zorder>teamLabel2</zorder>
+   <zorder>opposingLabel0</zorder>
+   <zorder>opposingLabel1</zorder>
+   <zorder>opposingLabel2</zorder>
+   <zorder>opposingLabel5</zorder>
+   <zorder>opposingLabel3</zorder>
+   <zorder>opposingLabel4</zorder>
+   <zorder>logMessages</zorder>
+   <zorder>label_4</zorder>
+   <zorder>playerNameLabel</zorder>
+   <zorder>opponentName_5</zorder>
+   <zorder>masterBalls</zorder>
+   <zorder>playerArchetypeIcon</zorder>
+   <zorder>playerArchetypeName</zorder>
+   <zorder>playerArchetypeAbility</zorder>
+   <zorder>weatherIcon</zorder>
+   <zorder>playerNameLabel_2</zorder>
+   <zorder>weatherType0</zorder>
+   <zorder>weatherType1</zorder>
+   <zorder>opponentIcon</zorder>
+   <zorder>weatherType2</zorder>
+   <zorder>manageItems</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

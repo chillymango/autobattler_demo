@@ -24,15 +24,13 @@ class CreepRoundManager(Component):
     Responsible for creating Creep Rounds
 
     Creates creep players and assigns Pokemon as required.
-
-    Creep Pokemon do not have spare party members -- i.e they will run three units in both
-    party and team for a predetermined matchup.
     """
 
     CONFIG_PATH = "data/creep_rounds.txt"
 
     def initialize(self):
         self.creep_round_pokemon = defaultdict(lambda: [])
+        self.creep_round_name = defaultdict(lambda: "Creep Round")
         with open(self.CONFIG_PATH, 'r') as creep_rounds_file:
             creep_rounds_raw = creep_rounds_file.readlines()
 
@@ -44,9 +42,11 @@ class CreepRoundManager(Component):
                 continue
             try:
                 round_num = int(line)
-                # load the next six lines with it
+                # next line is the trainer name
+                self.creep_round_name[round_num] = creep_rounds_raw[idx + 1].strip()
+                # next six lines are the pokemon battle cards
                 pokemon_names = [
-                    pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 1:idx + 7]
+                    pokemon.strip().split(',')[0] for pokemon in creep_rounds_raw[idx + 2:idx + 8]
                 ]
                 team = [
                     pokemon_factory.create_PVEpokemon_by_name(pokemon) for pokemon in pokemon_names
@@ -60,12 +60,19 @@ class CreepRoundManager(Component):
 
     def create_creep_player(self):
         # do a lookup based on the current run
-        creep_player = Player(name="Creep Round", type=EntityType.CREEP)
+        creep_player = Player(
+            name=self.creep_round_name[self.state.turn_number], type=EntityType.CREEP
+        )
         self.state.creeps.append(creep_player)
+
         player_manager: PlayerManager = self.env.player_manager
+        pokemon_factory: PokemonFactory = self.env.pokemon_factory
+
         turn = self.state.turn_number
         for pokemon in self.creep_round_pokemon[turn]:
-            player_manager.give_pokemon_to_player(creep_player, pokemon)
+            # create a new instance of the creep round pokemon
+            poke = pokemon_factory.create_PVEpokemon_by_name(pokemon.name.name)
+            player_manager.give_pokemon_to_player(creep_player, poke)
         return creep_player
 
     def remove_creeps(self):
@@ -116,7 +123,7 @@ class Matchmaker(Component):
 
 
     @staticmethod
-    def get_player_opponent_in_round(player, matches: T.List[Match]):
+    def get_player_opponent_in_round(player: Player, matches: T.List[Match]):
         """
         In a group of matches, determine the one the specified player is participating in.
 
@@ -124,9 +131,10 @@ class Matchmaker(Component):
         """
         for match in matches:
             if match.has_player(player.id):
-                if match.player1 == player:
+                if match.player1 == player.id:
                     return match.player2
-                return match.player1
+                elif match.player2 == player.id:
+                    return match.player1
 
         return None
 

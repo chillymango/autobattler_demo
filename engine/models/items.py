@@ -3,6 +3,7 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
+import aenum
 from enum import Enum
 import typing as T
 
@@ -42,24 +43,42 @@ RARE_STONE_COST = 6
 TM_COST = 1
 
 
+class TargetType(Enum):
+    """
+    Intended use target
+    """
+
+    PLAYER = 1
+    POKEMON = 2
+
+
 class Item(Entity):
     """
     Base Class for Item
     """
 
     # if item is marked as consumed, the item manager should clean it up
+    name: int = 0  # maps to ItemName enum
     consumed: bool = False
     holder: Entity = Field(default=None, exclude={"inventory"})
     cost: int = 1  # the "value" of a specific item
     level: int = 0  # the "power" of a specific item
     _env: "Environment" = PrivateAttr()
+    tt: TargetType = None
 
-    def __init__(self, env: "Environment", **kwargs):
+    def __init__(self, env: "Environment" = None, **kwargs):
         """
         Hydrate each item instance with any other required keyword inputs and set env
         """
         super().__init__(**kwargs)
         self._env = env
+
+        if self.__class__ == Item:
+            # NOTE: a base Item constructor would always override the name field.
+            # The base Item should not run the next segment to ensure that the name
+            # field is still encoded properly in the JSON message.
+            return
+        self.name = ItemName[self.__class__.__name__].value
 
 
 class PersistentItemMixin:
@@ -97,7 +116,7 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
-    holder: "Player" = Field(default=None, exclude={"inventory"})
+    tt: TargetType = TargetType.PLAYER  # target type
 
 
 class PokemonItem(Item):
@@ -105,7 +124,7 @@ class PokemonItem(Item):
     Base class for items which get assigned to Pokemon
     """
 
-    holder: "Pokemon" = Field(default=None, exclude={"battle_card"})
+    tt: TargetType = TargetType.POKEMON
 
 
 class CombatItem(PokemonItem):
@@ -737,7 +756,7 @@ class RedCooking(InstantPokemonItem):
 # INSTANT ITEM
 class Stone(InstantPokemonItem):
 
-    target_type: str
+    _target_type: str = PrivateAttr()
     cost = COMMON_STONE_COST
 
     def use(self):
@@ -783,7 +802,7 @@ class FireStone(CommonStone):
     Used to evolve fire-type Pokemon (and Eevee!)
     """
 
-    target_type = "fire"
+    _target_type = "fire"
     cost = COMMON_STONE_COST
 
 
@@ -791,7 +810,7 @@ class WaterStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-    target_type = 'water'
+    _target_type = 'water'
     cost = COMMON_STONE_COST
 
 
@@ -906,7 +925,7 @@ class GiovanniGains(PlayerHeroPower):
             self.oncepergame == True
 
 
-class BrockShield(PlayerHeroPower):
+class BrockShieldPower(PlayerHeroPower):
     
     hp_cost: int = 2
 
@@ -1276,16 +1295,32 @@ AllPokemonItems = T.Union[PersistentPokemonItem, InstantPokemonItem]
 AllPlayerItems = T.Union[PersistentPlayerItem, InstantPlayerItem]
 
 # by default just convert to snakecase and capitalize
-ITEM_NAME_LOOKUP: T.Dict[T.Type[Item], str] = {}
+ITEM_NAME_LOOKUP: T.Dict[T.Type[Item], str] = dict()
+ITEM_REGISTRY: T.Dict[str, T.Type[Item]] = dict()
+# create a dynamic enum to encode item names from server to client
+class ItemName(Enum):
+    pass
 
+idx = 0
 def get_item_name_for_subclasses(klass):
     """
     Recursively update ITEM_NAME_LOOKUP for all subclasses of klass
     """
+    global idx
     words = camel_case_to_snake_case(klass.__name__).split('_')
     ITEM_NAME_LOOKUP[klass] = ' '.join([word.capitalize() for word in words])
+    ITEM_REGISTRY[klass.__name__] = klass
+    aenum.extend_enum(ItemName, klass.__name__, idx)
+    idx += 1
 
     for subclass in klass.__subclasses__():
         get_item_name_for_subclasses(subclass)
 
 get_item_name_for_subclasses(Item)
+
+
+def get_item_class_by_name(name: str) -> T.Type[Item]:
+    """
+    Get an item type class by name
+    """
+    return ITEM_REGISTRY[name]

@@ -18,13 +18,16 @@ class queryable_meta(ModelMetaclass):
         return _cls
 
 
-EntityType = T.TypeVar("Entity")
+_Entity = T.TypeVar("Entity")
 
 class Queryable(BaseModel, metaclass=queryable_meta):
     """
     Generic queryable object.
 
     Should be searchable with a weakref to itself being recorded as a class attribute.
+
+    TODO: namespace this by env.Environment so all entities associated with an env can be
+    collected and destroyed when a game ends. This is causing significant pollution...
     """
     __slots__ = ['__weakref__']
 
@@ -47,13 +50,15 @@ class Queryable(BaseModel, metaclass=queryable_meta):
     # TODO: i'm sure i can figure out how to mimic that smooth interface...
     # the `generative` decorator is probably the way to go
     @classmethod
-    def query(cls, **params) -> T.Iterator[EntityType]:
+    def query(cls, **params) -> T.Iterator[_Entity]:
         """
         Query all instances for parameter match. The parameter match acts as a strong filter,
         so if multiple parameter inputs are provided, only the instances that match all of them
         will be returned.
         """
         # TODO: making a copy is expensive, shouldn't do it...
+        # not using the original list is important to allow the iterator to modify the instances
+        # list without throwing an Exception
         entities = copy.copy(cls._INSTANCES)
         # search self first
         for entity in entities.values():
@@ -69,7 +74,7 @@ class Queryable(BaseModel, metaclass=queryable_meta):
                 yield item
 
     @classmethod
-    def get_by_id(cls, id: str) -> EntityType:
+    def get_by_id(cls, id: str) -> _Entity:
         """
         Return an exact match by ID
         """
@@ -88,7 +93,7 @@ class Queryable(BaseModel, metaclass=queryable_meta):
         return None
 
     @classmethod
-    def all(cls, **params) -> T.List[EntityType]:
+    def all(cls, **params) -> T.List[_Entity]:
         """
         Return all matches with params
         """
