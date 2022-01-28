@@ -190,6 +190,7 @@ class CombatItem(PokemonItem):
         """
         pass
 
+
 class BasicHeroPowerMixIn:
     """
     Hero Powers that can be used once per turn
@@ -403,7 +404,7 @@ class SmallAttackShard(Shard):
 
     Grants a small amount of Attack at combat start
     """
-    stat = Stats.DEF
+    stat = Stats.ATK
     cost = SMALL_SHARD_COST
     level = 1
 
@@ -414,7 +415,7 @@ class LargeAttackShard(Shard):
 
     Grants a large amount of Attack at combat start
     """
-    stat = Stats.DEF
+    stat = Stats.ATK
     cost = LARGE_SHARD_COST
     level = 2
 
@@ -424,7 +425,7 @@ class SmallSpeedShard(Shard):
 
     Grants a small amount of Speed at combat start
     """
-    stat = Stats.DEF
+    stat = Stats.SPD
     cost = SMALL_SHARD_COST
     level = 1
 
@@ -435,24 +436,25 @@ class LargeSpeedShard(Shard):
 
     Grants a large amount of Speed at combat start
     """
-    stat = Stats.DEF
+    stat = Stats.SPD
     cost = LARGE_SHARD_COST
     level = 2
 
-'''
+
 # COMBAT ITEM
 class CombinedItem(CombatItem):
 
     name: str = "CombinedItem"  # assign a default name here
-    stat_contribution = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
-    
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
+
+
 class LifeOrb(CombinedItem):
     """
     Life Orb
     Significantly increases damage, deals damage per tick to holder
     """
-    name = "Life Orb"
-    stat_contribution = Field(default_factory=lambda:  [1,0,0,0,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,0,0])
 
     def on_battle_start(self, context: T.Dict):
         """
@@ -465,13 +467,15 @@ class LifeOrb(CombinedItem):
         deal damage to self 
         """
         pass
+
+
 class LightClay(CombinedItem):
     """
     Light Clay
     Provide extra shield
     """
-    name = "Light Clay"
-    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
     def pre_battle_action(self, context: T.Dict):
         """
@@ -484,34 +488,38 @@ class CellBattery(CombinedItem):
     Cell Battery
     Provide energy per tick
     """
-    name = "Cell Battery"
-    stat_contribution = Field(default_factory=lambda:   [0,0,1,0,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
     def on_tick_action(self, context: T.Dict):
         """
         energy per tick 
         """
         pass
+
+
 class Leftovers(CombinedItem):
     """
     Leftovers
     Provide energy per tick
     """
-    name = "Leftovers"
-    stat_contribution = Field(default_factory=lambda:   [0,0,0,1,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
 
     def on_tick_action(self, context: T.Dict):
         """
         HP per tick 
         """
         pass
+
+
 class Metronome(CombinedItem):
     """
     Metronome
     Provide attack speed on hit
     """
-    name = "Metronome"
-    stat_contribution = Field(default_factory=lambda:   [0,0,0,0,1])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,0,1])
 
 
     def on_fast_move_action(self, context: T.Dict):
@@ -525,8 +533,8 @@ class ExpShare(CombinedItem):
     EXP Share
     Provide bonus XP at end of battle
     """
-    name = "EXP Share"
-    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,1])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,0,1])
 
 
     def post_battle_action(self, context: T.Dict):
@@ -541,8 +549,8 @@ class IntimidatingMask(CombinedItem):
     Intimidating Mask
     Lowers enemy attack at battle start
     """
-    name = "EXP Share"
-    stat_contribution = Field(default_factory=lambda:   [1,1,0,0,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,1,0,0,0])
 
 
     def pre_combat_action(self, context: T.Dict):
@@ -551,13 +559,14 @@ class IntimidatingMask(CombinedItem):
         """
         pass
 
+
 class IronBarb(CombinedItem):
     """
     Iron Barb
     Deals damage on hit
     """
-    name = "Iron Barb"
-    stat_contribution = Field(default_factory=lambda:   [0,1,0,1,0])
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,1,0])
     
     def on_enemy_fast_move_action(self, context: T.Dict):
         """
@@ -570,9 +579,9 @@ class FocusBand(CombinedItem):
     Focus Band
     Revive after battle at low health
     """
-    name = "Focus Band"
-    stat_contribution = Field(default_factory=lambda:   [1,0,1,0,0])
-    
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,1,0,0])
+
     def post_combat_action(self, context: T.Dict):
         """
         revive
@@ -584,9 +593,9 @@ class ShellBell(CombinedItem):
     Shell Bell
     Lifesteal
     """
-    name = "Shell Bell"
-    stat_contribution = Field(default_factory=lambda:  [1,0,0,1,0])
-    
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,1,0])
+
     def on_fast_move_action(self, context: T.Dict):
         """
         heal
@@ -598,9 +607,9 @@ class EjectButton(CombinedItem):
     Eject Button
     Swaps out to a favorable matchup
     """
-    name = "Eject Button"
-    stat_contribution = Field(default_factory=lambda:   [0,0,1,1,0])
-    
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,1,0])
+
     def on_tick_action(self, context: T.Dict):
         """
         check HP, then terminate the combat
@@ -613,14 +622,15 @@ class EjectButton(CombinedItem):
         """
         pass
 
+
 class ExpertBelt(CombinedItem):
     """
     Expert Belt
     boosts power of super effective hits
     """
-    name = "Expert Belt"
-    stat_contribution = Field(default_factory=lambda:   [1,0,0,0,1])
-    
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,0,0,1])
+
     def on_fast_move_action(self, context: T.Dict):
         """
         check damage type, then boost power
@@ -637,9 +647,9 @@ class AssaultVest(CombinedItem):
     Assault Vest
     reduces power of enemy charged moves
     """
-    name = "Assault Vest"
-    stat_contribution = Field(default_factory=lambda:   [0,1,0,0,1])
-  
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
+
     def on_enemy_charged_move_action(self, context: T.Dict):
         """
         reduce power
@@ -651,31 +661,30 @@ class QuickPowder(CombinedItem):
     Quick Powder
     boosts attack speed of teammates
     """
-    name = "Quick Powder"
-    stat_contribution = Field(default_factory=lambda:   [0,0,0,1,1])
-    
-  
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,1])
+
     def pre_battle_action(self, context: T.Dict):
         """
         boost speed of team
         """
         pass
 
+
 class ChoiceSpecs(CombinedItem):
     """
     Choice Specs
     Your fast move becomes lock on
     """
-    name = "Choice Specs"
-    stat_contribution = Field(default_factory=lambda:   [0,0,1,0,1])
-    
-  
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
+
     def pre_battle_action(self, context: T.Dict):
         """
         change your fast move
         """
         pass
-'''
+
 
 class TM(InstantPokemonItem):
 
@@ -898,7 +907,7 @@ class BrunoBod(PassiveHeroPower):
 class GiovanniGains(PlayerHeroPower):
     
     oncepergame: bool = False
-    reward_dict: dict = {
+    _reward_dict: dict = PrivateAttr(default={
         1: [1,1,0],
         2: [2,1,1],
         3: [2,2,1],
@@ -908,14 +917,14 @@ class GiovanniGains(PlayerHeroPower):
         7: [5,4,3],
         8: [6,4,4],
         9: [7,5,5]
-    }
+    })
 
     def use(self, player: "Player" = None):
         """
         if you haven't used it before, get rewards according to schedule
         """
         if self.oncepergame == False:
-            rewards = self.reward_dict[self._env.state.turn_number]
+            rewards = self._reward_dict[self._env.state.turn_number]
             player.balls += rewards[0]
             player.energy += rewards[1]
             reward_items =  ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
@@ -1024,14 +1033,15 @@ class KogaNinja(ComplexHeroPower):
 
         
 class SurgeGorilla(PassiveHeroPower):
+
     def pre_battle_action(self, context: T.Dict):
         """
         check largest number of matching types, apply buff
         """
         pass
 
+
 class RedCheater(PassiveHeroPower):
-    
     """
     give plot device at start of game
     """

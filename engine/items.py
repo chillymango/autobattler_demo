@@ -1,6 +1,7 @@
 """
 Item Manager
 """
+from collections import defaultdict
 import typing as T
 from uuid import UUID
 
@@ -51,26 +52,21 @@ class ItemManager(Component):
             items.PlayerHeroPower
         ]
 
-        # TODO: dynamic evaluation
+        self._factories: T.Dict[T.Type, T.Dict[str, T.Callable]] = defaultdict(lambda: dict())
+        def recurse_itemclass(itemtype: T.Type[items.Item], itemclass: T.Type[items.Item]):
+            # only add leaf nodes
+            children = itemclass.__subclasses__()
+            if children:
+                for child in children:
+                    recurse_itemclass(itemtype, child)
+                return
+            self._factories[itemtype][itemclass.__name__] = itemclass
+
+        for itemtype in self.supported_types:
+            recurse_itemclass(itemtype, itemtype)
+
         self.persistent_item_types = (items.PersistentPlayerItem, items.PersistentPokemonItem)
         self.instant_item_types = (items.InstantPlayerItem, items.InstantPokemonItem)
-
-        self._factories: T.Dict[T.Type, T.Dict[str, T.Callable]] = {
-            items.InstantPlayerItem: dict(
-                master_ball=items.MasterBall,
-            ),
-            items.PersistentPlayerItem: dict(
-                poke_flute=items.PokeFlute,
-            ),
-            items.InstantPokemonItem: dict(
-                fire_stone=items.FireStone,
-                water_stone=items.WaterStone,
-            ),
-            items.CombatItem: dict(
-            ),
-            items.PersistentPokemonItem: dict(), 
-            items.PlayerHeroPower: dict()
-        }
 
         self.submanagers: T.Dict[T.Type, ItemSubManager] = {
             type_: ItemSubManager(type_, self._factories[type_])
@@ -92,6 +88,20 @@ class ItemManager(Component):
                 self.item_costs[item_name] = item.cost
                 item.consumed = True
                 item.delete()
+
+        # shards -> combined items lookup
+        self.combined_item_schema: T.Dict[T.Type[items.CombinedItem], T.Tuple[items.Stats]] = dict()
+        self.combined_item_schema[items.LifeOrb] = (items.Stats.ATK, items.Stats.ATK)
+        self.combined_item_schema[items.LightClay] = (items.Stats.DEF, items.Stats.DEF)
+        self.combined_item_schema[items.CellBattery] = (items.Stats.ENG, items.Stats.ENG)
+        self.combined_item_schema[items.Leftovers] = (items.Stats.HP, items.Stats.HP)
+        self.combined_item_schema[items.ExpShare] = (items.Stats.DEF, items.Stats.ENG)
+        self.combined_item_schema[items.IntimidatingMask] = (items.Stats.ATK, items.Stats.DEF)
+        self.combined_item_schema[items.IronBarb] = (items.Stats.DEF, items.Stats.HP)
+        self.combined_item_schema[items.AssaultVest] = (items.Stats.ATK, items.Stats.DEF)
+        self.combined_item_schema[items.Metronome] = (items.Stats.SPD, items.Stats.SPD)
+        self.combined_item_schema[items.QuickPowder] = (items.Stats.SPD, items.Stats.HP)
+        self.combined_item_schema[items.ChoiceSpecs] = (items.Stats.SPD, items.Stats.ENG)
 
     def import_factory(self, itemtype: T.Type, factory: T.Dict[str, T.Callable]):
         """
@@ -134,6 +144,26 @@ class ItemManager(Component):
         # dispatch create request to submanager
         submanager: ItemSubManager = self.item_to_manager[item_name]
         return submanager.factory[item_name](self.env)
+
+    def combine_items(self, primary: items.Item, secondary: items.Item):
+        """
+        Do a check to see if the primary and secondary are valid combines.
+
+        If they are, create the appropriate object with the combined level.
+        """
+        if not isinstance(primary, items.Shard) or not isinstance(secondary, items.Shard):
+            raise Exception(f"One or more objects in {primary} , {secondary} is non-shard")
+
+        tuple_combos = ((primary.stat, secondary.stat), (secondary.stat, primary.stat))
+        for combo_item_class, combo_spec in self.combined_item_schema.items():
+            if combo_spec in tuple_combos:
+                break
+        else:
+            raise Exception(f"No combined item schema for types {primary} {secondary}")
+
+        combo_item = self.create_item(combo_item_class.__name__)
+        combo_item.level = primary.level + secondary.level - 1
+        return combo_item
 
     @property
     def combat_items(self) -> T.Set[items.CombatItem]:

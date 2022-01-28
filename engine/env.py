@@ -255,3 +255,15 @@ class Environment:
         """
         for component in self.components:
             component.cleanup()
+
+
+class _EnvironmentProxy:
+    """
+    Returns the current environment when called.
+    """
+
+    def __init__(self):
+        self.env: Environment = None
+
+
+current_env = _EnvironmentProxy()

@@ -7,7 +7,7 @@ import codecs
 from multiprocessing.sharedctypes import Value
 import typing as T
 from pydantic import BaseModel, PrivateAttr, StrBytes
-from engine.models.association import Association, PlayerRoster, PlayerShop
+from engine.models.association import Association, PlayerRoster, PlayerShop, PokemonHeldItem
 from engine.models.association import PlayerInventory
 from engine.models.hero import Hero
 from engine.models.items import Item
@@ -66,6 +66,9 @@ class State(BaseModel):
     # Pokemon containers
     player_roster_raw: T.Dict[str, T.List[Pokemon]] = dict()
 
+    # Pokemon held items
+    pokemon_held_items_raw: T.Dict[str, T.Optional[Item]] = dict()  # maps pokemon ID to item
+
     # Inventory containers
     player_inventory_raw: T.Dict[str, T.List[Item]] = dict()  # maps player ID to a list of items
 
@@ -80,6 +83,21 @@ class State(BaseModel):
         self.player_inventory_raw = {p.id: PlayerInventory.get_inventory(p) for p in self.players}
         # creeps should load rosters
         self.player_roster_raw = {p.id: PlayerRoster.get_roster(p) for p in self.all_player_entities}
+
+        # update Pokemon held item associations
+        self.pokemon_held_items_raw = {}
+        for roster in self.player_roster_raw.values():
+            self.pokemon_held_items_raw.update({
+                poke.id: PokemonHeldItem.get_held_item(poke)
+                for poke in roster
+            })
+        # pop all `None` to save some space
+        pop_keys = []
+        for poke_id, item in self.pokemon_held_items_raw.items():
+            if item is None:
+                pop_keys.append(poke_id)
+        for key in pop_keys:
+            self.pokemon_held_items_raw.pop(key)
 
     def for_player(self, player: Player):
         """
@@ -111,6 +129,7 @@ class State(BaseModel):
         shop_window = {player.id: self.shop_window_raw[player.id]}
         player_inventory = {player.id: self.player_inventory_raw[player.id]}
         player_roster = {p_id: self.player_roster_raw[p_id] for p_id in player_ids}
+        # TODO: split pokemon_held_items as well
 
         return self.__class__(
             phase=self.phase,
@@ -126,6 +145,7 @@ class State(BaseModel):
             t_phase_duration=self.t_phase_duration,
             player_hero=self.player_hero,
             weather=self.weather,
+            pokemon_held_items_raw=self.pokemon_held_items_raw,
         )
 
     @property
@@ -134,6 +154,18 @@ class State(BaseModel):
         Humans, computers, creeps
         """
         return self.players + self.creeps
+
+    @property
+    def pokemon(self):
+        """
+        A list of Pokemon that the state is aware of.
+
+        This should just be the list of Pokemon in all player rosters.
+        """
+        all_pokemon: T.List[Pokemon] = []
+        for player in self.all_player_entities:
+            all_pokemon.extend(self.player_roster[player])
+        return all_pokemon
 
     @classmethod
     def default(cls):
@@ -154,9 +186,6 @@ class State(BaseModel):
         return super().parse_raw(codecs.decode(b, 'zlib'), **kwargs)
 
     def json(self, *args, load_containers=True, compress=False, **kwargs):
-        """
-        By default compress this message
-        """
         if load_containers:
             self.load_containers()
         if not compress:

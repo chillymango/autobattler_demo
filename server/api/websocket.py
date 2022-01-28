@@ -9,8 +9,10 @@ from fastapi import APIRouter
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from pydantic import BaseModel
+from engine.models.items import Item
 
 from engine.models.party import PartyConfig
+from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
 from server.api.base import PlayerContextRequest
 from server.api.base import ReportingResponse
@@ -355,6 +357,82 @@ class ReleaseFromStorage(WebSocketCallback):
 
 
 # ITEM AND ITEM EVENT APIs
+
+class GiveItemToPokemonRequest(WebSocketPlayerRequest):
+    """
+    Give an Item to a Pokemon
+    """
+
+    item_id: str
+    pokemon_id: str
+
+
+class GiveItemToPokemon(WebSocketCallback):
+
+    REQUEST_TYPE = GiveItemToPokemonRequest
+
+    @staticmethod
+    def callback(hydrated: GiveItemToPokemonRequest):
+        game, _ = get_request_context(hydrated)
+        item_id = hydrated.item_id
+        pokemon_id = hydrated.pokemon_id
+        item = Item.get_by_id(item_id)
+        pokemon = Pokemon.get_by_id(pokemon_id)
+        pm: PlayerManager = game.player_manager
+        pm.give_item_to_pokemon(pokemon, item)
+        return ReportingResponse(success=True)
+
+
+class RemoveItemFromPokemonRequest(WebSocketCallback):
+
+    pokemon_id: str
+
+
+class RemoveItemFromPokemon(WebSocketCallback):
+
+    REQUEST_TYPE = RemoveItemFromPokemonRequest
+
+    @staticmethod
+    def callback(hydrated: GiveItemToPokemonRequest):
+        game, _ = get_request_context(hydrated)
+        pokemon_id = hydrated.pokemon_id
+        pokemon = Pokemon.get_by_id(pokemon_id)
+        pm: PlayerManager = game.player_manager
+        pm.remove_item_from_pokemon(pokemon)
+        return ReportingResponse(success=True)
+
+
+class CombineItemsRequest(WebSocketCallback):
+    """
+    Attempt to combine two items.
+    """
+
+    primary_item_id: str
+    secondary_item_id: str
+
+
+class CombineItems(WebSocketCallback):
+
+    @staticmethod
+    def callback(hydrated: CombineItemsRequest):
+        game, user = get_request_context(hydrated)
+        player: Player = game.state.get_player_by_id(user.id)
+
+        primary_item = Item.get_by_id(hydrated.primary_item_id)
+        if not primary_item:
+            return ReportingResponse(
+                success=False, message=f"Could not find primary item {primary_item}"
+            )
+
+        secondary_item = Item.get_by_id(hydrated.secondary_item_id)
+        if not secondary_item:
+            return ReportingResponse(
+                success=False, message=f"Could not find secondary item {secondary_item}"
+            )
+
+        pm: PlayerManager = game.player_manager
+        pm.combine_player_items(player, primary_item, secondary_item)
+        return ReportingResponse(success=True)
 
 
 # NOTE: this should be at the bottom to do dynamic evaluation
