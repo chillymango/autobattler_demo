@@ -4,5 +4,5 @@ AssaultVest    combineditems/assault-vest.png
 CellBattery    combineditems/cell-battery.png
 ChoiceSpecs    combineditems/choice-specs.png
 
-FireStone       other/fire-stone.png
-WaterStone      other/water-stone.png
+FireStone       stones/fire-stone.png
+WaterStone      stones/water-stone.png
