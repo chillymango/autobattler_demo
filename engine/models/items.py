@@ -884,11 +884,11 @@ class CommonStone(Stone):
         #if eevee, evolve 
         if holder.name == PokemonId.eevee:
             if "water" in self._target_type:
-                self.eve_volve(evo = 'vaporeon', pokemon = holder)
+                self.eve_volve(evo = PokemonId.vaporeon, pokemon = holder)
             elif "fire" in self._target_type:
-                self.eve_volve(evo = 'flareon', pokemon = holder)
+                self.eve_volve(evo = PokemonId.flareon, pokemon = holder)
             elif "electric" in self._target_type:
-                self.eve_volve(evo = 'jolteon', pokemon = holder)
+                self.eve_volve(evo = PokemonId.jolteon, pokemon = holder)
             return
         print('holder is not eevee')
         # try and evolve
@@ -918,6 +918,7 @@ class CommonStone(Stone):
         evolved_card = pokemon_factory.get_evolved_battle_card(
         evolved_form, pokemon.battle_card
             )
+        print(evolved_card)
         if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
             pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
 
@@ -947,7 +948,7 @@ class ThunderStone(CommonStone):
     """
     Used to evolve steel and electric-type Pokemon (and Eevee!)
     """
-    _target_type = [PokemonType.electric, PokemonType.steel]
+    _target_type = [PokemonType.electric, PokemonType.psychic]
     cost = COMMON_STONE_COST
 
 class LeafStone(CommonStone):
@@ -968,7 +969,7 @@ class HardStone(CommonStone):
     """
     Used to evolve rock and ground-type Pokemon
     """
-    _target_type = [PokemonType.rock, PokemonType.ground]
+    _target_type = [PokemonType.rock, PokemonType.ground, PokemonType.steel]
     cost = COMMON_STONE_COST
 
 class MoonStone(CommonStone):
@@ -1217,7 +1218,7 @@ class GiovanniGains(PlayerHeroPower):
             rewards = self._reward_dict[self._env.state.turn_number]
             player.balls += rewards[0]
             player.energy += rewards[1]
-            reward_items =  ['FireStone', 'WaterStone', 'ThunderStone', 'LeafStone', 'MoonStone', 'HardStone', 'DuskStone']
+            reward_items =  ["SmallEnergyShard","SmallAttackShard","SmallSpeedShard","SmallHitPointShard","TechnicalMachine","SmallDefenseShard"]
             player_manager: PlayerManager = self._env.player_manager
             for i in range(rewards[2]):
                 player_manager.create_and_give_item_to_player(player, item_name = random.choice(reward_items))
@@ -1291,7 +1292,7 @@ class LanceFetish(ComplexHeroPower):
 
 class WillSac(PlayerHeroPower):
     
-    hp_cost: int = 2
+    hp_cost: int = 1
 
     def use(self, player: "Player" = None):
         """
@@ -1300,7 +1301,7 @@ class WillSac(PlayerHeroPower):
         if player.hitpoints > self.hp_cost :
             player.hitpoints -= self.hp_cost
             player.flute_charges += 1
-            player.balls += 2
+            player.balls += 3
             self.success = True
 
 
