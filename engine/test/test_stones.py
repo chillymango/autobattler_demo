@@ -9,7 +9,6 @@ from engine.models.items import InstantPlayerItem
 from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
 from engine.models.association import PlayerInventory
-env = TestEnvironment(8)
 env = Environment.create_webless_game(4)
 env.initialize()
 player = Player(name='balbert bang')
