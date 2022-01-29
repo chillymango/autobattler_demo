@@ -36,6 +36,6 @@ class HeroManager(Component):
             heroes.remove(hero)
             if hasattr(hero.power, 'StartOfGame'):
                 hero.power.StartOfGame()
-                
+
     def get_player_hero(self, player: Player) -> Hero:
         return self.state.player_hero[player]

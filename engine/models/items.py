@@ -839,9 +839,9 @@ class CommonStone(Stone):
         # handle eevee specially
         # TODO: make choice evolution types more generic
         im: "ItemManager" = self.env.item_manager
-        holder = im.get_item_holder(self)
-        if not isinstance(holder, Pokemon):
-            raise Exception("Cannot use stone on a non-Pokemon")
+        holder = im.get_pokemon_item_holder(self)
+        if holder is None:
+            raise Exception("No Pokemon found as a valid target")
 
         if self.holder.name == "eevee":
             if self.target_type == "leaf":
@@ -1056,6 +1056,7 @@ class BrunoBod(PassiveHeroPower):
     def StartOfGame(self, player: "Player" = None):
         buffed_hp = 35
         player.hitpoints = buffed_hp
+
 
 class BlastOff(PlayerHeroPower):
     current_cost: int = 5

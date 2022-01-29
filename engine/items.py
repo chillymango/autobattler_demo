@@ -8,10 +8,8 @@ from uuid import UUID
 from engine.base import Component
 from engine.models import items
 from engine.models.association import PlayerInventory, PokemonHeldItem
-
-if T.TYPE_CHECKING:
-    from engine.models.pokemon import Pokemon
-    from engine.models.player import Player
+from engine.models.player import Player
+from engine.models.pokemon import Pokemon
 
 
 class ItemSubManager:
@@ -130,19 +128,21 @@ class ItemManager(Component):
         manager = self.item_to_manager[item_name]
         return manager.factory[item_name]
 
-    def get_item_holder(self, item: items.Item) -> T.Optional[T.Union[Pokemon, Player]]:
+    def get_player_item_holder(self, item: items.PlayerItem) -> T.Optional[Player]:
+        """
+        Get the player item holder for an item
+        """
+        player = PlayerInventory.get_item_holder(item)
+        if player is not None:
+            return player
+
+    def get_pokemon_item_holder(self, item: items.PokemonItem) -> T.Optional[Pokemon]:
         """
         Get the item holder for an item
         """
         poke = PokemonHeldItem.get_item_holder(item)
         if poke is not None:
             return poke
-
-        player = PlayerInventory.get_item_holder(item)
-        if player is not None:
-            return player
-
-        return None  # orphaned?
 
     def get_item_by_id(self, item_id: T.Union[str, UUID]):
         if isinstance(item_id, str):
