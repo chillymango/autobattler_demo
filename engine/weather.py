@@ -29,7 +29,8 @@ class WeatherManager(Component):
             WeatherType.RAINY: [PokemonType.water, PokemonType.electric, PokemonType.bug],
             WeatherType.CLEAR: [PokemonType.grass, PokemonType.fire, PokemonType.ground],
         })
-        self.weather_forecast = random.shuffle([x for x in WeatherType if x is not WeatherType.NONE]*10)
+        self.weather_forecast = [x for x in WeatherType if x is not WeatherType.NONE] * 10
+        random.shuffle(self.weather_forecast)
 
     def turn_setup(self):
         """

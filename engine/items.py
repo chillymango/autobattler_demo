@@ -98,7 +98,7 @@ class ItemManager(Component):
         self.combined_item_schema[items.ExpShare] = (items.Stats.DEF, items.Stats.ENG)
         self.combined_item_schema[items.IntimidatingIdol] = (items.Stats.ATK, items.Stats.DEF)
         self.combined_item_schema[items.IronBarb] = (items.Stats.DEF, items.Stats.HP)
-        self.combined_item_schema[items.FocusBand] = (items.Stats.ATK, items.Stats.HP)
+        self.combined_item_schema[items.FocusBand] = (items.Stats.ATK, items.Stats.ENG)
         self.combined_item_schema[items.ShellBell] = (items.Stats.ATK, items.Stats.HP)
         self.combined_item_schema[items.EjectButton] = (items.Stats.ENG, items.Stats.HP)
         self.combined_item_schema[items.ExpertBelt] = (items.Stats.SPD, items.Stats.ATK)

@@ -31,6 +31,7 @@ from engine.pubsub import Message
 from engine.sprites import SpriteManager
 from engine.models.pokemon import Pokemon
 from engine.models.state import State
+from client.screens.player_item_window import Ui as PlayerItemWindow
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
 from engine.weather import WeatherManager
@@ -80,6 +81,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.debug_window = None
         self.pokedex_window = PokedexWindow(self.env)
         self.poke_item_window = None
+        self.player_item_window = None
         self.pubsub_client = PubSubClient()
         self.state: ClientState = None
 
@@ -228,6 +230,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def add_party_interface(self):
         # party buttons
+        self.manageItems = self.findChild(QtWidgets.QPushButton, "manageItems")
+        self.manageItems.clicked.connect(self.open_player_item_window)
         self.manageStorage = self.findChild(QtWidgets.QPushButton, "manageStorage")
         self.manageStorage.clicked.connect(self.open_storage_window)
         self.partyLabel = [
@@ -398,6 +402,15 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def open_storage_window(self):
         self.storage_window = StorageWindow(
+            self,
+            env=self.env,
+            ctx=self.context,
+            user=self.user,
+            websocket=self.websocket,
+        )
+
+    def open_player_item_window(self):
+        self.player_item_window = PlayerItemWindow(
             self,
             env=self.env,
             ctx=self.context,

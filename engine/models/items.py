@@ -15,8 +15,6 @@ from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
 from engine.weather import WeatherManager
-from engine.models.association import associate, dissociate
-from engine.models.association import PlayerShop
 from engine.models.enums import PokemonId
 from engine.models.shop import ShopOffer
 
@@ -994,8 +992,13 @@ class BlaineButton(ChargedHeroPower):
         """
         pass
 
-class BlueSmell(Player):
+
+class BlueSmell(PassiveHeroPower):
     def use(self, player: "Player" = None):
+        # TODO: fix deferred import
+        from engine.models.association import associate
+        from engine.models.association import dissociate
+        from engine.models.association import PlayerShop
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
             shop_manager: ShopManager = self.env.shop_manager

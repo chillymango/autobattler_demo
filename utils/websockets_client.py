@@ -13,7 +13,7 @@ from engine.models.items import CombinedItem
 
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig
+from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig, UseItem
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -140,6 +140,13 @@ class WebSocketClient:
         await self.implement_api_client(ReleaseFromStorage, context, storage_index=storage_index)
 
     # ITEM APIs
+    async def use_item(self, context: GameContext, item_id: str):
+        await self.implement_api_client(
+            UseItem,
+            context,
+            item_id=item_id
+        )
+    
     async def give_item_to_pokemon(self, context: GameContext, item_id: str, pokemon_id: str):
         await self.implement_api_client(
             GiveItemToPokemon,

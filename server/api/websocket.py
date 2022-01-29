@@ -402,6 +402,28 @@ class RemoveItemFromPokemon(WebSocketCallback):
         return ReportingResponse(success=True)
 
 
+class UseItemRequest(WebSocketPlayerRequest):
+    """
+    Player attempts to use item
+    """
+
+    item_id: str
+
+
+class UseItem(WebSocketCallback):
+
+    REQUEST_TYPE = UseItemRequest
+
+    @staticmethod
+    def callback(hydrated: UseItemRequest):
+        game, user = get_request_context(hydrated)
+        player = game.state.get_player_by_id(user.id)
+        item = Item.get_by_id(hydrated.item_id)
+        pm: PlayerManager = game.player_manager
+        pm.use_item(player, item)
+        return ReportingResponse(success=True)
+
+
 class CombineItemsRequest(WebSocketPlayerRequest):
     """
     Attempt to combine two items.

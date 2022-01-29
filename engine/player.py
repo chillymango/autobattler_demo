@@ -6,7 +6,7 @@ import typing as T
 
 from engine.base import Component
 from engine.models.association import PlayerInventory, PlayerRoster, PlayerShop, PokemonHeldItem, associate, dissociate
-from engine.models.items import Item
+from engine.models.items import InstantPlayerItem, Item, PlayerItem
 from engine.models.party import PartyConfig
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
@@ -76,13 +76,13 @@ class PlayerManager(Component):
         """
         return [Pokemon.get_by_id(x) if x else None for x in player.party_config.team]
 
-    def get_pokemon_holder(self, pokemon: Pokemon) -> T.Optional[Player]:
+    def use_item(self, player: Player, item: InstantPlayerItem):
         """
-        Get the player that currently holds a Pokemon
+        Use a player item
         """
-        for player in self.state.players:
-            if pokemon in player.roster:
-                return player
+        if item not in PlayerInventory.get_inventory(player):
+            raise Exception(f'{player} does not own {item}')
+        item.immediate_action()
 
     def give_pokemon_to_player(self, player: Player, pokemon: Pokemon):
         """

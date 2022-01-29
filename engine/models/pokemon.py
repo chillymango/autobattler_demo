@@ -2,20 +2,16 @@ from __future__ import annotations
 import typing as T
 from collections import namedtuple
 from enum import Enum
-from uuid import UUID
 from pydantic import BaseModel
-from pydantic import Field
 
 from engine.models.base import Entity
 from engine.models.enums import Move
 from engine.models.enums import PokemonId
-from engine.models.enums import PokemonName
 from engine.models.enums import PokemonType
 from engine.models.items import Item
 
 if T.TYPE_CHECKING:
-    from engine.models.items import Item
-    from engine.models.player import Player
+    pass
 
 EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolve"])
 

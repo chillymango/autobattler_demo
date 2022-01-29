@@ -1,15 +1,10 @@
 from __future__ import annotations
 import typing as T
 from enum import Enum
-from pydantic import BaseModel
 from pydantic import Field
-from uuid import UUID
 
 from engine.models.base import Entity
-from engine.models.items import Item
 from engine.models.party import PartyConfig
-from engine.models.pokemon import Pokemon
-from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
     from server.api.user import User
