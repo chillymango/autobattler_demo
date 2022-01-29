@@ -359,6 +359,8 @@ class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
     Base class for once-per-turn hero powers
     """
 
+HeroPowerType = T.Union[ChargedHeroPower, PlayerHeroPower, PassiveHeroPower, ComplexHeroPower]
+
 
 # EXAMPLES:
 # COMBAT ITEM
