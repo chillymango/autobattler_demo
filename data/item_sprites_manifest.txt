@@ -1,15 +1,15 @@
 # maps item class name (e.g AssaultVest) to sprite path inside item sprites dir (e.g combineditems/assault-vest.png)
 
 # shards
-LargeAttackShard      shards/atk-shard.png
+LargeAttackShard      shards/atk-shard-large.png
 SmallAttackShard      shards/atk-shard.png
-LargeDefenseShard     shards/def-shard.png
+LargeDefenseShard     shards/def-shard-large.png
 SmallDefenseShard     shards/def-shard.png
-LargeEnergyShard      shards/eng-shard.png
+LargeEnergyShard      shards/eng-shard-large.png
 SmallEnergyShard      shards/eng-shard.png
-LargeHitPointShard    shards/hp-shard.png
+LargeHitPointShard    shards/hp-shard-large.png
 SmallHitPointShard    shards/hp-shard.png
-LargeSpeedShard       shards/spd-shard.png
+LargeSpeedShard       shards/spd-shard-large.png
 SmallSpeedShard       shards/spd-shard.png
 
 # combined items
@@ -37,18 +37,6 @@ MasterBall        other/master-ball.png
 PokeFlute         other/poke-flute.png
 RentalDitto       other/rental-ditto.png
 TechnicalMachine  other/tm.png
-
-SmallHPShard     shards/hp-shard.png
-SmallATKShard    shards/atk-shard.png
-SmallDEFShard    shards/def-shard.png
-SmallENGShard    shards/eng-shard.png
-SmallSPDShard    shards/spd-shard.png
-
-LargeHPShard    shards/hp-shard-large.png
-LargeATKShard    shards/atk-shard-large.png
-LargeDEFShard    shards/def-shard-large.png
-LargeENGShard    shards/eng-shard-large.png
-LargeSPDShard    shards/spd-shard-large.png
 
 
 # stones

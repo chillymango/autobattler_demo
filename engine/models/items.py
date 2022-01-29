@@ -1127,7 +1127,7 @@ class GiovanniGains(PlayerHeroPower):
             rewards = self._reward_dict[self._env.state.turn_number]
             player.balls += rewards[0]
             player.energy += rewards[1]
-            reward_items =  ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            reward_items =  ['FireStone', 'WaterStone', 'ThunderStone', 'LeafStone', 'MoonStone', 'HardStone', 'DuskStone']
             player_manager: PlayerManager = self._env.player_manager
             for i in range(rewards[2]):
                 player_manager.create_and_give_item_to_player(player, item_name = random.choice(reward_items))
@@ -1145,7 +1145,7 @@ class BrockShieldPower(PlayerHeroPower):
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
             player_manager: PlayerManager = self._env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
+            player_manager.create_and_give_item_to_player(player, item_name = "BrockSolid")
             self.success = True
 
 class GreensRocks(PlayerHeroPower):
@@ -1159,7 +1159,7 @@ class GreensRocks(PlayerHeroPower):
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
             player_manager: PlayerManager = self._env.player_manager
-            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'hard_stone', 'dusk_stone']
+            minerals = ['FireStone', 'WaterStone', 'ThunderStone', 'LeafStone', 'MoonStone', 'HardStone', 'DuskStone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
             self.success = True
 
@@ -1175,7 +1175,7 @@ class JanineJutsu(PlayerHeroPower):
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
             player_manager: PlayerManager = self._env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
+            player_manager.create_and_give_item_to_player(player, item_name = "JanineEject")
             self.success = True
 
 class LanceFetish(ComplexHeroPower):
@@ -1189,7 +1189,7 @@ class LanceFetish(ComplexHeroPower):
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
             player_manager: PlayerManager = self._env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
+            player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
             self.success = True
         
     def pre_battle_action(self, context: T.Dict):
