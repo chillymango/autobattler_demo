@@ -229,7 +229,7 @@ class Matchmaker(Component):
         elif len(remaining_players) == 1:
             # organize a creep round for this player
             creep_player = self.env.creep_round_manager.create_creep_player()
-            match = Match(player1=remaining_players[0].id, player2=creep_player.id)
+            match = Match(player1=remaining_players[0], player2=creep_player.id)
             determined_matches.append(match)
 
         # update player opponent history

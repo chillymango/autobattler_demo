@@ -133,6 +133,10 @@ class TestGame(unittest.TestCase):
                 print('Finished the game!')
                 break
             except Exception as exc:
+                import sys
+                import traceback
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_tb(exc_traceback)
                 print(f'Encountered unexpected exception: {repr(exc)}')
                 break
 

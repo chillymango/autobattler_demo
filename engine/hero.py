@@ -29,11 +29,12 @@ class HeroManager(Component):
         else:
             HEROES = NORMAL_HEROES
 
-        heroes = [x for x in HEROES if x.name == 'Bruno']
+        heroes = [x for x in HEROES]
         for player in self.state.players:
             self.state.player_hero[str(player.id)] = hero = sample(heroes, 1)[0]
             print(f'Assigned hero {hero} to {player}')
             heroes.remove(hero)
+            hero.set_env(self.env)
             if hasattr(hero._power, 'StartOfGame'):
                 hero._power.StartOfGame(player=player)
 

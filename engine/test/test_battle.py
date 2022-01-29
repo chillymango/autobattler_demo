@@ -36,6 +36,7 @@ class TestBattleComponent(unittest.TestCase):
         battle: BattleManager = self.env.battle
         res = battle.battle(self.p1, self.env.state.creeps[0])
         self.assertEqual(res['winner'], 'team1')
+        import IPython; IPython.embed()
 
 
 if __name__ == "__main__":

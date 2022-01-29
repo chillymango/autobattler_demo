@@ -31,7 +31,6 @@ class Hero(BaseModel):
     def __init__(self, _env=None, _power=None, **kwargs):
         super().__init__(**kwargs)
         if _power is not None:
-            print(f'{self.__class__} has no power specified')
             self._power = _power(_env=_env)
         else:
             self._power = None

@@ -7,6 +7,7 @@ import typing as T
 
 from engine.base import Component
 from engine.batterulogico import battle
+from engine.batterulogico import Event
 from engine.models.player import Player
 
 if T.TYPE_CHECKING:
@@ -42,8 +43,8 @@ class BattleManager(Component):
 
         p1_team = player_manager.player_team(player1)
         p2_team = player_manager.player_team(player2)
-        p1_cards = [copy.deepcopy(poke.battle_card) for poke in p1_team]
-        p2_cards = [copy.deepcopy(poke.battle_card) for poke in p2_team]
+        p1_cards = [copy.deepcopy(poke.battle_card) for poke in p1_team if poke is not None]
+        p2_cards = [copy.deepcopy(poke.battle_card) for poke in p2_team if poke is not None]
 
         return battle(p1_cards, p2_cards)
 
@@ -56,14 +57,22 @@ class BattleManager(Component):
             p1 = self.state.get_player_by_id(match.player1)
             p2 = self.state.get_player_by_id(match.player2)
             res = self.battle(p1, p2)
+
+            events: T.List[Event] = res.get('events', [])
+            recipients = (p1, p2)
+            for event in events:
+                if event.type:
+                    msg = f"[{event.id}]: {event.type} - {event.value}"
+                    self.log(msg=msg, recipient=[p1, p2])
+
             if res['winner'] == 'team1':
-                self.log(msg=f"{p1} beats {p2}", recipient=[p1, p2])
+                self.log(msg=f"{p1} beats {p2}", recipient=recipients)
                 losing_player = (p2,)
             elif res['winner'] == 'team2':
-                self.log(msg=f"{p2} beats {p1}", recipient=[p1, p2])
+                self.log(msg=f"{p2} beats {p1}", recipient=recipients)
                 losing_player = (p1,)
             else:
-                self.log(msg=f"{p1} and {p2} tie", recipient=[p1, p2])
+                self.log(msg=f"{p1} and {p2} tie", recipient=recipients)
                 losing_player = (p1, p2)
 
             if losing_player is not None:

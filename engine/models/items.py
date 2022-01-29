@@ -808,7 +808,7 @@ class RentalDitto(InstantPokemonItem):
     
     def ditto_clone(self):
         player: "Player" = self.player
-        player_manager: PlayerManager = self.env.player_manager
+        player_manager: PlayerManager = self._env.player_manager
         player_manager.create_and_give_pokemon_to_player(player,self.holder.name)
 
 
@@ -837,10 +837,10 @@ class CommonStone(Stone):
     """
 
     def stone_evo(self):
-        evo_manager: EvolutionManager = self.env.evolution_manager
+        evo_manager: EvolutionManager = self._env.evolution_manager
         # handle eevee specially
         # TODO: make choice evolution types more generic
-        im: "ItemManager" = self.env.item_manager
+        im: "ItemManager" = self._env.item_manager
         holder = im.get_pokemon_item_holder(self)
         if holder is None:
             raise Exception("No Pokemon found as a valid target")
@@ -932,7 +932,7 @@ class MasterBall(InstantPlayerItem):
 class SabrinaFuture(PassiveHeroPower):
 
     def turn_setup(self, player: "Player" = None):
-        weather_manager: WeatherManager = self.env.weather_manager
+        weather_manager: WeatherManager = self._env.weather_manager
         forecast_today = weather_manager.weather_forecast[self._env.state.turn_number]
         forecast_tmrw = weather_manager.weather_forecast[self._env.state.turn_number+1]
         forecast_dat = weather_manager.weather_forecast[self._env.state.turn_number+2]
@@ -1007,7 +1007,7 @@ class BlueSmell(PassiveHeroPower):
         from engine.models.association import PlayerShop
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
-            shop_manager: ShopManager = self.env.shop_manager
+            shop_manager: ShopManager = self._env.shop_manager
             bonus_shop = shop_manager.get_shop_by_turn_number(self, self._env.state.turn_number)
             for card in self.state.shop_window[player]:
                 if card is not None:
@@ -1035,7 +1035,7 @@ class ErikaGarden(PassiveHeroPower):
         """
         turn_divisor = 4
         if self._env.state.turn_number % turn_divisor:
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             for party_member in player_manager.player_party(player):
                 if party_member is None or party_member.name not in self.evolution_config:
                     continue
@@ -1047,7 +1047,7 @@ class ErikaGarden(PassiveHeroPower):
                         .format(party_member.name, party_member.xp, threshold)
                     )
                     self.evolve(party_member)
-                    shop_manager: "ShopManager" = self.env.shop_manager
+                    shop_manager: "ShopManager" = self._env.shop_manager
                     shop_manager.shiny_checker(player, party_member.name)
 
 class BrunoBod(PassiveHeroPower):
@@ -1116,7 +1116,7 @@ class GiovanniGains(PlayerHeroPower):
             player.balls += rewards[0]
             player.energy += rewards[1]
             reward_items =  ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             for i in range(rewards[2]):
                 player_manager.create_and_give_item_to_player(player, item_name = random.choice(reward_items))
             self.oncepergame == True
@@ -1132,7 +1132,7 @@ class BrockShieldPower(PlayerHeroPower):
         """
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
             self.success = True
 
@@ -1146,7 +1146,7 @@ class GreensRocks(PlayerHeroPower):
         """
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'hard_stone', 'dusk_stone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
             self.success = True
@@ -1161,7 +1161,7 @@ class JanineJutsu(PlayerHeroPower):
         """
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "janine_eject")
             self.success = True
 
@@ -1175,7 +1175,7 @@ class LanceFetish(ComplexHeroPower):
         """
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
-            player_manager: PlayerManager = self.env.player_manager
+            player_manager: PlayerManager = self._env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "dragon_scale")
             self.success = True
         
@@ -1215,7 +1215,7 @@ class KogaNinja(ComplexHeroPower):
         if self.unseal_cost == 0:
             if player.balls > self.hp_cost :
                 player.balls -= self.hp_cost
-                player_manager: PlayerManager = self.env.player_manager
+                player_manager: PlayerManager = self._env.player_manager
                 eevees = ['jolteon', 'vaporeon', 'flareon']
                 player_manager.create_and_give_pokemon_to_player(player, random.choice(eevees))
 
@@ -1235,10 +1235,9 @@ class RedCheater(PassiveHeroPower):
     """
 
     def StartOfGame(self, player: "Player" = None):
-        player_manager: PlayerManager = self.env.player_manager 
-        player_manager.create_and_give_item_to_player(player, item_name = "red_cooking")
+        player_manager: PlayerManager = self._env.player_manager 
+        player_manager.create_and_give_item_to_player(player, item_name = "RedCooking")
 
-        
 ## OLDER STUFF BELOW HERE ##
 
 class _Berry:
