@@ -116,7 +116,10 @@ class Battler:
 
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
         
-def battle(team1_cards, team2_cards): # takes two arrays of battlecards
+def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # takes two arrays of battlecards
+    team1_items = team1_items or dict()
+    team2_items = team2_items or dict()
+
     stop_this = False
 
     # creating a dictionary for output

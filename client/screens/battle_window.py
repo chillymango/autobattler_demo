@@ -27,6 +27,7 @@ from engine.models.hero import Hero, HeroGrade
 from engine.models.shop import ShopOffer
 from engine.models.weather import WeatherType
 from engine.player import Player
+from engine.pokemon import EvolutionManager
 from engine.pubsub import Message
 from engine.sprites import SpriteManager
 from engine.models.pokemon import Pokemon
@@ -242,6 +243,15 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.findChild(QtWidgets.QPushButton, "partyPokemon{}".format(idx))
             for idx in range(6)
         ]
+        self.partyXp = [
+            self.findChild(QtWidgets.QProgressBar, f"partyXp{idx}") for idx in range(6)
+        ]
+        # initialize to zero
+        for xpbar in self.partyXp:
+            xpbar.setFormat('')
+            xpbar.setMaximum(1)
+            xpbar.setValue(0)
+
         self.party_pokemon_buttons = [
             PokemonButton(
                 self.partyPokemon[idx],
@@ -521,6 +531,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
     def render_party(self):
         party = self.party
+        evo_manager: EvolutionManager = self.env.evolution_manager
         for idx, party_member in enumerate(party):
             add_party_button = self.addParty[idx]
             item_button = self.partyItems[idx]
@@ -533,6 +544,12 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
             party_button = self.party_pokemon_buttons[idx]
             party_button.set_pokemon(party_member)
+
+            # render XP
+            current_xp = party_member.xp
+            max_xp = evo_manager.get_threshold(party_member.name.name)
+            self.partyXp[idx].setValue(current_xp)
+            self.partyXp[idx].setMaximum(max_xp)
 
     def render_team(self):
         team = self.team
@@ -727,9 +744,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @asyncSlot()
     async def shift_up_callback0(self):
         return
-        #idx = 0
-        #self.player.party_config.shift_team_up(idx)
-        #return await self.websocket.update_party_config(self.context, self.player.party_config)
 
     @asyncSlot()
     async def shift_up_callback1(self):
@@ -762,11 +776,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
     @asyncSlot()
     async def shift_down_callback2(self):
         return
-        #idx = 2
-        #print("Shifting team member at {} down".format(idx))
-        #if idx == 2:
-        #    return
-        #return await self.websocket.shift_team_down(self.context, idx)
 
     def subscribe_pubsub_state(self):
         pubsub_topic = f"pubsub-state-{str(self.user.id)}-{self.game_id}"

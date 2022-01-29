@@ -370,10 +370,16 @@ HeroPowerType = T.Union[ChargedHeroPower, PlayerHeroPower, PassiveHeroPower, Com
 
 # EXAMPLES:
 # COMBAT ITEM
+SHARD_MULT = 2
+
 class Shard(CombatItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
     stat: Stats = None  # stat the Shard adjusts
+
+    def __init__(self, _env: "Environment" = None, **kwargs):
+        super().__init__(_env=_env, **kwargs)
+        self.stat_contribution[self.stat.value] = self.level * SHARD_MULT
 
 
 class SmallHitPointShard(Shard):

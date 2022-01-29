@@ -6,7 +6,7 @@ import typing as T
 
 from engine.base import Component
 from engine.models.association import PlayerInventory, PlayerRoster, PlayerShop, PokemonHeldItem, associate, dissociate
-from engine.models.items import InstantPlayerItem, Item, PlayerItem
+from engine.models.items import CombinedItem, InstantPlayerItem, Item, PlayerItem, Shard
 from engine.models.party import PartyConfig
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
@@ -140,6 +140,10 @@ class PlayerManager(Component):
         dissociate(PlayerInventory, player, item)
         associate(PokemonHeldItem, pokemon, item)
 
+        # if item has stat modifiers, apply them to Pokemon object
+        if isinstance(item, Shard) or isinstance(item, CombinedItem):
+            pokemon.modifiers = [x + y for x, y in zip(pokemon.modifiers, item.stat_contribution)]
+
     def remove_item_from_pokemon(self, pokemon: Pokemon) -> Item:
         """
         Remove an item from a Pokemon and put it in its players inventory.
@@ -151,6 +155,10 @@ class PlayerManager(Component):
         # TODO: make this block atomic
         item = PokemonHeldItem.get_held_item(pokemon)
         if item is not None:
+            if isinstance(item, Shard) or isinstance(item, CombinedItem):
+                pokemon.modifiers = [
+                    x - y for x, y in zip(pokemon.modifiers, item.stat_contribution)
+                ]
             dissociate(PokemonHeldItem, pokemon, item)
             associate(PlayerInventory, player, item)
             return item
@@ -196,13 +204,11 @@ class PlayerManager(Component):
         # if one of the items was held by a Pokemon, give the item to the Pokemon
         elif primary in player_inventory and secondary in pokemon_inventory:
             poke = PokemonHeldItem.get_item_holder(secondary)
-            dissociate(PlayerInventory, player, primary)
-            dissociate(PokemonHeldItem, poke, secondary)
-            associate(PokemonHeldItem, poke, combined_item)
+            self.remove_item_from_pokemon(poke).delete()
+            self.give_item_to_pokemon(poke, combined_item)
         elif primary in pokemon_inventory and secondary in player_inventory:
             poke = PokemonHeldItem.get_item_holder(primary)
-            dissociate(PokemonHeldItem, poke, primary)
-            dissociate(PlayerInventory, player, secondary)
-            associate(PokemonHeldItem, poke, combined_item)
+            self.remove_item_from_pokemon(poke).delete()
+            self.give_item_to_pokemon(poke, combined_item)
         else:
             raise Exception("We lost our way (items, whatever)")

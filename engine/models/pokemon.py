@@ -2,13 +2,13 @@ from __future__ import annotations
 import typing as T
 from collections import namedtuple
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from engine.models.base import Entity
 from engine.models.enums import Move
 from engine.models.enums import PokemonId
 from engine.models.enums import PokemonType
-from engine.models.items import Item
+from engine.models.items import CombatItem, Item
 
 if T.TYPE_CHECKING:
     pass
@@ -64,7 +64,10 @@ class BattleCard(BaseModel):
     status: int = 1
     choiced: bool = False
     team_position: int = None
-    modifiers: T.List[float] = Field(default_factory=lambda: [0] * 5)
+    _item: CombatItem = PrivateAttr()
+
+    def give_item(self, item: CombatItem):
+        self._item = item
 
     def make_shiny(self):
         """
@@ -142,6 +145,7 @@ class Pokemon(Entity):
     battle_card: BattleCard
     nickname: str
     xp: float = 0.0
+    modifiers: T.List[float] = Field(default_factory=lambda: [0] * 5)
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()

@@ -8,7 +8,11 @@ import typing as T
 from engine.base import Component
 from engine.batterulogico import battle
 from engine.batterulogico import Event
+from engine.models.association import PokemonHeldItem
+from engine.models.items import CombatItem
 from engine.models.player import Player
+from engine.models.pokemon import BattleCard
+from engine.models.stats import Stats
 
 if T.TYPE_CHECKING:
     from engine.player import PlayerManager
@@ -32,20 +36,38 @@ class BattleManager(Component):
         """
         super().initialize()
 
+    def assemble_team_cards(self, player: Player) -> T.List[BattleCard]:
+        """
+        Get a set of battle cards with modifiers attached.
+        """
+        player_manager: "PlayerManager" = self.env.player_manager
+        player.party_config.populate_team_from_party()
+        team = player_manager.player_team(player)
+
+        cards: T.List[BattleCard] = []
+        for poke in team:
+            if poke is None:
+                continue
+            battle_card = copy.deepcopy(poke.battle_card)
+
+            # adjust stats by just incrementing IVs
+            # we may want a dedicated field for this in the future but this should suffice...
+            battle_card.a_iv += poke.modifiers[Stats.ATK.value]
+            battle_card.d_iv += poke.modifiers[Stats.DEF.value]
+            battle_card.hp_iv += poke.modifiers[Stats.HP.value]
+            cards.append(battle_card)
+
+            # give any held items
+            battle_card.give_item(PokemonHeldItem.get_held_item(poke))
+
+        return cards
+
     def battle(self, player1: Player, player2: Player):
         """
         Run a battle between two players using the batterulogico engine.
         """
-        player_manager: "PlayerManager" = self.env.player_manager
-        # populate teams for both players in case they did not do so themselves
-        player1.party_config.populate_team_from_party()
-        player2.party_config.populate_team_from_party()
-
-        p1_team = player_manager.player_team(player1)
-        p2_team = player_manager.player_team(player2)
-        p1_cards = [copy.deepcopy(poke.battle_card) for poke in p1_team if poke is not None]
-        p2_cards = [copy.deepcopy(poke.battle_card) for poke in p2_team if poke is not None]
-
+        p1_cards = self.assemble_team_cards(player1)
+        p2_cards = self.assemble_team_cards(player2)
         return battle(p1_cards, p2_cards)
 
     def turn_execute(self):

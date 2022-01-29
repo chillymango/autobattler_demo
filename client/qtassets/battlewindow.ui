@@ -449,9 +449,9 @@ Wilds
    <widget class="QLabel" name="opponentName">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>490</x>
       <y>290</y>
-      <width>451</width>
+      <width>371</width>
       <height>31</height>
      </rect>
     </property>
@@ -1485,6 +1485,102 @@ p, li { white-space: pre-wrap; }
      <string>Manage Items</string>
     </property>
    </widget>
+   <widget class="QProgressBar" name="partyXp4">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>320</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="partyXp5">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>320</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="partyXp2">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>190</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="partyXp3">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>190</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="partyXp1">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>60</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="partyXp0">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>60</y>
+      <width>16</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
    <zorder>playerArchetypeIconBackground</zorder>
    <zorder>exploreWilds</zorder>
    <zorder>shopPokemon1</zorder>
@@ -1571,6 +1667,12 @@ p, li { white-space: pre-wrap; }
    <zorder>opponentIcon</zorder>
    <zorder>weatherType2</zorder>
    <zorder>manageItems</zorder>
+   <zorder>partyXp4</zorder>
+   <zorder>partyXp5</zorder>
+   <zorder>partyXp2</zorder>
+   <zorder>partyXp3</zorder>
+   <zorder>partyXp1</zorder>
+   <zorder>partyXp0</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

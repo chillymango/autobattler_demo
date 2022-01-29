@@ -156,4 +156,7 @@ def dissociate(klass: AssociationType, entity1: Entity, entity2: Entity):
             assn.delete()
             break
     else:
-        raise Exception(f'{entity1} and {entity2} are not associated by {klass}')
+        # NOTE(albert): i'm really not sure if this should raise or not but
+        # i figure for now there's no harm in dissociating two entities that
+        # are already dissociated
+        pass

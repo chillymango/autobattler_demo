@@ -48,8 +48,10 @@ class TestItemCombos(unittest.TestCase):
     def test_give_item_to_pokemon(self):
         pm: PlayerManager = self.env.player_manager
         pika = pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
-        fire_stone = pm.create_and_give_item_to_player(self.p1, 'FireStone')
-        pm.give_item_to_pokemon(pika, fire_stone)
+        shard1 = pm.create_and_give_item_to_player(self.p1, "SmallHitPointShard")
+        pm.give_item_to_pokemon(pika, shard1)
+        shard2 = pm.create_and_give_item_to_player(self.p1, "LargeAttackShard")
+        pm.combine_player_items(self.p1, shard1, shard2)
         import IPython; IPython.embed()
 
 

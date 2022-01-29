@@ -11,6 +11,7 @@ from engine.models.base import Entity
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
 from engine.models.state import State
+from engine.pokemon import EvolutionManager
 from engine.pokemon import PokemonFactory
 from engine.shop import ShopManager
 from engine.sprites import SpriteManager
@@ -59,7 +60,7 @@ class ClientState(State):
 
         return collection
 
-    def party(self, player: Player):
+    def party(self, player: Player) -> T.List[T.Optional[Pokemon]]:
         if player not in self.player_roster:
             raise ValueError(f"Do not have any knowledge of {player}")
         party = self.assemble_collection(
@@ -89,6 +90,7 @@ class ClientEnvironment(Environment):
             PokemonFactory,
             Matchmaker,
             CreepRoundManager,
+            EvolutionManager,
             ShopManager,
             SpriteManager,
         ]

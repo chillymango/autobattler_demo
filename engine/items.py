@@ -185,6 +185,10 @@ class ItemManager(Component):
         combo_item = self.create_item(combo_item_class.__name__)
         combo_item.level = primary.level + secondary.level - 1
         combo_item.stat_contribution = [a+b for a,b in zip(primary.stat_contribution, secondary.stat_contribution )]
+
+        primary.delete()
+        secondary.delete()
+
         return combo_item
 
     @property
