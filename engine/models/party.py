@@ -137,7 +137,7 @@ class PartyConfig(BaseModel):
         """
         for idx, team_poke_id in enumerate(self.team):
             if team_poke_id == poke_id:
-                self.remove_from_team_by_id(idx)
+                self.remove_from_team_by_idx(idx)
 
     def shift_team_up(self, idx: int):
         """
