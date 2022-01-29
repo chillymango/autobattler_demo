@@ -7,7 +7,7 @@ from uuid import UUID
 from uuid import uuid4
 
 from engine.base import Component
-from engine.battle_seq import BattleManager
+from engine.battle import BattleManager
 from engine.gamemaster import GameMaster
 from engine.hero import HeroManager
 from engine.logger import __ALL_PLAYERS__
@@ -102,6 +102,7 @@ class Environment:
             ShopManager,
             ItemEventManager,
             EvolutionManager,
+            BattleManager,
         ]
         return cls(max_players, component_classes=component_classes)
 

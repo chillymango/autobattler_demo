@@ -74,7 +74,7 @@ class PlayerManager(Component):
         """
         Use the players party config to generate a team
         """
-        return [Pokemon.get_by_id(x)() if x else None for x in player.party_config.team]
+        return [Pokemon.get_by_id(x) if x else None for x in player.party_config.team]
 
     def get_pokemon_holder(self, pokemon: Pokemon) -> T.Optional[Player]:
         """

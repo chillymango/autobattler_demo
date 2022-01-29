@@ -57,11 +57,8 @@ import math
 from random import randint
 
 import os.path
-from shutil import which
-import string
-from typing_extensions import Self
+from engine.models.enums import PokemonId
 
-from more_itertools import first
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
 parent_directory = os.path.split(parent_directory)[0]
@@ -90,6 +87,7 @@ class Event:
         self.id = sequence_number
         self.type = category
         self.value = value
+
 
 class Battler:
     def __init__(self, battle_card, index):

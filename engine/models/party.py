@@ -78,6 +78,16 @@ class PartyConfig(BaseModel):
         self.party[idx] = poke_id
         return True
 
+    def populate_team_from_party(self):
+        """
+        If the team is not full, pull party members from team until there are either
+        no party members left to pull, or the team is full.
+        """
+        idx = 0
+        while not self.team_is_full and idx < len(self.party):
+            self.add_to_team_by_idx(idx)
+            idx += 1
+
     def remove_from_party_by_idx(self, idx: int):
         """
         Remove Pokemon from party by index
