@@ -224,6 +224,29 @@ class BasicHeroPowerMixIn:
                 self.used = True
     
 
+class ChargedHeroPowerMixIn:
+    """
+    Hero Powers that can be used until inactive
+    """
+    active: bool = True
+
+    def can_use(self):
+        """
+        ensure correct timing
+        """
+        if self.active == True:
+            return True
+        else:
+            print('hero power inactive')
+            return False
+
+    def immediate_action(self, player: "Player" = None):
+        """
+        ensure once per turn
+        """
+        if self.can_use() == True:
+            self.use(player)
+
 class PassiveHeroPowerMixin:
     """
     Hero powers that accept no player input
@@ -316,6 +339,11 @@ class PersistentPokemonItem(PersistentItemMixin, PokemonItem):
 class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
     """
     Base class for type checking
+    """
+
+class ChargedHeroPower(ChargedHeroPowerMixIn, PlayerItem):
+    """
+    Base class for multi-turn hero powers
     """
 
 class PlayerHeroPower(BasicHeroPowerMixIn, PlayerItem):
@@ -897,7 +925,7 @@ class MasterBall(InstantPlayerItem):
 
 #HERO POWERS
 
-class MistyNOAA(PassiveHeroPower):
+class SabrinaFuture(PassiveHeroPower):
 
     def turn_setup(self, player: "Player" = None):
         weather_manager: WeatherManager = self.env.weather_manager
@@ -916,13 +944,55 @@ class MistyNOAA(PassiveHeroPower):
         pass
 
 
-class BlaineBlaze(PassiveHeroPower):
+class BlaineButton(ChargedHeroPower):
     
+    counter: int = 0
+    _max_dict: dict = PrivateAttr(default={
+        1: 9,
+        2: 9,
+        3: 9,
+        4: 11,
+        5: 11,
+        6: 11,
+        7: 12,
+        8: 12,
+        9: 13,
+        10:13,
+        11:13,
+        12:14,
+        13:14,
+        14:15,
+        15:15,
+        16:15,
+        17:16,
+        18:16,
+        19:17,
+        20:17,
+        21:17,
+    })
+
     def turn_setup(self, player: "Player" = None):
         """
         next reroll is free 
         """
-        player.energy += 1
+        self.counter = 0
+        self.bust = False
+    
+    def use(self, player: "Player" = None):
+        max = self._env.state.turn_number
+        roll = random.randint(1,6)
+        self.counter += roll
+        if self.counter > max:
+            self.active = False
+            self.bust = True
+
+        return
+    
+    def pre_battle_action(self, context: T.Dict):
+        """
+        buff team based on button 
+        """
+        pass
 
 class BlueSmell(Player):
     def use(self, player: "Player" = None):
@@ -935,6 +1005,17 @@ class BlueSmell(Player):
                     dissociate(PlayerShop, player, card)
             for rolled in bonus_shop.roll_shop():
                 associate(PlayerShop, player, ShopOffer(pokemon=PokemonId[rolled]))
+
+class MistyTrustFund(PassiveHeroPower):
+    
+    def turn_setup(self, player: "Player" = None):
+        """
+        if it's the correct turn grow your pokes
+        """
+        turn_divisor = 4
+        income = 4
+        if self._env.state.turn_number % turn_divisor:
+            player.balls += income
 
 
 class ErikaGarden(PassiveHeroPower):
