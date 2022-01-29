@@ -351,8 +351,8 @@ class ReleaseFromStorage(WebSocketCallback):
         game, player_model = get_request_context(hydrated)
         player: Player = game.state.get_player_by_id(player_model.id)
         player_manager: PlayerManager = game.player_manager
-        party = player_manager.player_party(player)
-        player_manager.release_pokemon(player, party[idx])
+        storage = player_manager.player_storage(player)
+        player_manager.release_pokemon(player, storage[idx])
         return ReportingResponse(success=True)
 
 

@@ -82,6 +82,7 @@ class PlayerManager(Component):
         """
         if item not in PlayerInventory.get_inventory(player):
             raise Exception(f'{player} does not own {item}')
+        item.set_player_target(player)
         item.immediate_action()
 
     def give_pokemon_to_player(self, player: Player, pokemon: Pokemon):

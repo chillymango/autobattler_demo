@@ -122,6 +122,9 @@ class PlayerItem(Item):
 
     tt: TargetType = TargetType.PLAYER  # target type
 
+    def set_player_target(self, player: Player):
+        self.player = player
+
 
 class PokemonItem(Item):
     """
@@ -129,6 +132,9 @@ class PokemonItem(Item):
     """
 
     tt: TargetType = TargetType.POKEMON
+
+    def set_pokemon_target(self, pokemon: Pokemon):
+        self.pokemon = pokemon
 
 
 class CombatItem(PokemonItem):
