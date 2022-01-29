@@ -16,7 +16,46 @@ SmallSpeedShard       shards/spd-shard.png
 AssaultVest    combineditems/assault-vest.png
 CellBattery    combineditems/cell-battery.png
 ChoiceSpecs    combineditems/choice-specs.png
+EjectButton    combineditems/eject-button.png
+ExpertBelt     combineditems/expert-belt.png
+ExpShare       combineditems/exp-share.png
+IntimidatingIdol    combineditems/intimidating-idol.png
+IronBarb    combineditems/iron-barb.png
+Leftovers    combineditems/leftovers.png
+LifeOrb    combineditems/life-orb.png
+LightClay    combineditems/light-clay.png
+Metronome    combineditems/metronome.png
+QuickPowder    combineditems/quick-powder.png
+ShellBell    combineditems/shell-bell.png
+
+BrockSolid     heropower/brock-solid.png
+DragonScale    heropower/dragon-scale.png
+JanineEject    heropower/janine-eject.png
+RedCooking     heropower/red-cooking.ong
+
+MasterBall     other/master-ball.png
+PokeFlute      other/poke-flute.png
+RentalDitto    other/rental-ditto.png
+TM             other/tm.png
+
+SmallHPShard    shards/hp-shard.png
+SmallATKShard    shards/atk-shard.png
+SmallDEFShard    shards/def-shard.png
+SmallENGShard    shards/eng-shard.png
+SmallSPDShard    shards/spd-shard.png
+
+LargeHPShard    shards/hp-shard-large.png
+LargeATKShard    shards/atk-shard-large.png
+LargeDEFShard    shards/def-shard-large.png
+LargeENGShard    shards/eng-shard-large.png
+LargeSPDShard    shards/spd-shard-large.png
+
 
 # stones
 FireStone       stones/fire-stone.png
 WaterStone      stones/water-stone.png
+LeafStone      stones/leaf-stone.png
+MoonStone      stones/moon-stone.png
+HardStone      stones/hard-stone.png
+ThunderStone      stones/thunder-stone.png
+RareCandy      stones/rare-candy.png

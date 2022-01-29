@@ -332,6 +332,7 @@ class ComplexHeroPower(PassiveHeroPowerMixin, BasicHeroPowerMixIn, PlayerItem):
 # COMBAT ITEM
 class Shard(CombatItem):
 
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
     stat: Stats = None  # stat the Shard adjusts
 
 
@@ -378,6 +379,7 @@ class LargeEnergyShard(Shard):
     cost = LARGE_SHARD_COST
     level = 2
 
+
 class SmallDefenseShard(Shard):
     """
     Small Defense Shard
@@ -399,6 +401,7 @@ class LargeDefenseShard(Shard):
     cost = LARGE_SHARD_COST
     level = 2
 
+
 class SmallAttackShard(Shard):
     """
     Small Attack Shard
@@ -419,6 +422,7 @@ class LargeAttackShard(Shard):
     stat = Stats.ATK
     cost = LARGE_SHARD_COST
     level = 2
+
 
 class SmallSpeedShard(Shard):
     """
@@ -545,9 +549,9 @@ class ExpShare(CombinedItem):
         pass
 
 
-class IntimidatingMask(CombinedItem):
+class IntimidatingIdol(CombinedItem):
     """
-    Intimidating Mask
+    Intimidating Idol
     Lowers enemy attack at battle start
     """
 
@@ -697,7 +701,7 @@ class TechnicalMachine(InstantPokemonItem):
 
 
 #HERO POWER ITEMS
-class BrockShield(CombatItem):
+class BrockSolid(CombatItem):
 
     slotless = True
 
@@ -758,6 +762,22 @@ class RedCooking(InstantPokemonItem):
 
 
 # INSTANT ITEM
+
+class RentalDitto(InstantPokemonItem):
+
+    _target_type: str = PrivateAttr()
+    
+    def use(self):
+        if not isinstance(self.holder, Pokemon):
+            return
+        self.ditto_clone()
+    
+    def ditto_clone(self):
+        player: "Player" = self.player
+        player_manager: PlayerManager = self.env.player_manager
+        player_manager.create_and_give_pokemon_to_player(player,self.holder.name)
+
+
 class Stone(InstantPokemonItem):
 
     _target_type: str = PrivateAttr()
@@ -844,6 +864,8 @@ class PokeFlute(PersistentPlayerItem):
 
 
 # EXAMPLE: INSTANT PLAYER ITEM
+
+
 class MasterBall(InstantPlayerItem):
 
     ball_count: int = 0
@@ -940,7 +962,7 @@ class BrockShieldPower(PlayerHeroPower):
         if player.balls >= self.hp_cost :
             player.balls -= self.hp_cost
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "brock_shield")
+            player_manager.create_and_give_item_to_player(player, item_name = "brock_solid")
             self.success = True
 
 class GreensRocks(PlayerHeroPower):
