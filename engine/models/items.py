@@ -3,6 +3,7 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
+from ast import Pass
 import aenum
 from enum import Enum
 import typing as T
@@ -13,6 +14,11 @@ from pydantic import PrivateAttr
 from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
+from engine.weather import WeatherManager
+from engine.models.association import associate, dissociate
+from engine.models.association import PlayerShop
+from engine.models.enums import PokemonId
+from engine.models.shop import ShopOffer
 
 from utils.strings import camel_case_to_snake_case, crunch_spaces 
 if T.TYPE_CHECKING:
@@ -891,6 +897,25 @@ class MasterBall(InstantPlayerItem):
 
 #HERO POWERS
 
+class MistyNOAA(PassiveHeroPower):
+
+    def turn_setup(self, player: "Player" = None):
+        weather_manager: WeatherManager = self.env.weather_manager
+        forecast_today = weather_manager.weather_forecast[self._env.state.turn_number]
+        forecast_tmrw = weather_manager.weather_forecast[self._env.state.turn_number+1]
+        forecast_dat = weather_manager.weather_forecast[self._env.state.turn_number+2]
+
+        """
+        display these somehow
+        """
+
+    def pre_battle_action(self, context: T.Dict):
+        """
+        amplify weather buff
+        """
+        pass
+
+
 class BlaineBlaze(PassiveHeroPower):
     
     def turn_setup(self, player: "Player" = None):
@@ -899,17 +924,41 @@ class BlaineBlaze(PassiveHeroPower):
         """
         player.energy += 1
 
+class BlueSmell(Player):
+    def use(self, player: "Player" = None):
+        if player.energy >= self.reroll_cost :
+            player.energy -= self.reroll_cost
+            shop_manager: ShopManager = self.env.shop_manager
+            bonus_shop = shop_manager.get_shop_by_turn_number(self, self._env.state.turn_number)
+            for card in self.state.shop_window[player]:
+                if card is not None:
+                    dissociate(PlayerShop, player, card)
+            for rolled in bonus_shop.roll_shop():
+                associate(PlayerShop, player, ShopOffer(pokemon=PokemonId[rolled]))
 
-class BluePower(PassiveHeroPower):
+
+class ErikaGarden(PassiveHeroPower):
     
     def turn_setup(self, player: "Player" = None):
         """
-        if it's the correct turn get a TM
+        if it's the correct turn grow your pokes
         """
         turn_divisor = 4
         if self._env.state.turn_number % turn_divisor:
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "tm")
+            for party_member in player_manager.player_party(player):
+                if party_member is None or party_member.name not in self.evolution_config:
+                    continue
+                party_member.add_xp(self.XP_PER_TURN)
+                threshold = self.get_threshold(party_member.name)
+                if party_member.xp >= threshold:
+                    print(
+                        'Party member {} XP exceeds threshold ({} >= {})'
+                        .format(party_member.name, party_member.xp, threshold)
+                    )
+                    self.evolve(party_member)
+                    shop_manager: "ShopManager" = self.env.shop_manager
+                    shop_manager.shiny_checker(player, party_member.name)
 
 class BrunoBod(PassiveHeroPower):
     """
