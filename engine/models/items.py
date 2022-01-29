@@ -1050,6 +1050,25 @@ class BrunoBod(PassiveHeroPower):
         buffed_hp = 35
         player.hitpoints = buffed_hp
 
+class BlastOff(PlayerHeroPower):
+    current_cost: int = 5
+    immune: bool = False
+    
+    def turn_setup(self, player: "Player" = None):
+        self.immune = False
+
+    def use(self, player: "Player" = None):
+        if player.balls >= self.current_cost :
+            player.balls -= self.current_cost
+            self.current_cost += 2
+            self.immune = True
+    def post_battle_action(self, context: T.Dict):
+        """
+        if lose and immune, don't take damage.
+        """
+        pass
+
+
 
 class GiovanniGains(PlayerHeroPower):
     
