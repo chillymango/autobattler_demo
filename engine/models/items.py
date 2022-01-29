@@ -979,7 +979,7 @@ class BlaineButton(ChargedHeroPower):
         self.bust = False
     
     def use(self, player: "Player" = None):
-        max = self._env.state.turn_number
+        max = self._max_dict[self._env.state.turn_number]
         roll = random.randint(1,6)
         self.counter += roll
         if self.counter > max:
@@ -1053,7 +1053,7 @@ class BrunoBod(PassiveHeroPower):
 class BlastOff(PlayerHeroPower):
     current_cost: int = 5
     immune: bool = False
-    
+
     def turn_setup(self, player: "Player" = None):
         self.immune = False
 
@@ -1137,7 +1137,7 @@ class GreensRocks(PlayerHeroPower):
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
             player_manager: PlayerManager = self.env.player_manager
-            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'hard_stone', 'dusk_stone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
             self.success = True
 
