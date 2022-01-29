@@ -3,6 +3,7 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
+from ast import Pass
 import aenum
 from enum import Enum
 import typing as T
@@ -13,6 +14,11 @@ from pydantic import PrivateAttr
 from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
+from engine.weather import WeatherManager
+from engine.models.association import associate, dissociate
+from engine.models.association import PlayerShop
+from engine.models.enums import PokemonId
+from engine.models.shop import ShopOffer
 
 from utils.strings import camel_case_to_snake_case, crunch_spaces 
 if T.TYPE_CHECKING:
@@ -218,6 +224,29 @@ class BasicHeroPowerMixIn:
                 self.used = True
     
 
+class ChargedHeroPowerMixIn:
+    """
+    Hero Powers that can be used until inactive
+    """
+    active: bool = True
+
+    def can_use(self):
+        """
+        ensure correct timing
+        """
+        if self.active == True:
+            return True
+        else:
+            print('hero power inactive')
+            return False
+
+    def immediate_action(self, player: "Player" = None):
+        """
+        ensure once per turn
+        """
+        if self.can_use() == True:
+            self.use(player)
+
 class PassiveHeroPowerMixin:
     """
     Hero powers that accept no player input
@@ -310,6 +339,11 @@ class PersistentPokemonItem(PersistentItemMixin, PokemonItem):
 class PersistentPlayerItem(PersistentItemMixin, PlayerItem):
     """
     Base class for type checking
+    """
+
+class ChargedHeroPower(ChargedHeroPowerMixIn, PlayerItem):
+    """
+    Base class for multi-turn hero powers
     """
 
 class PlayerHeroPower(BasicHeroPowerMixIn, PlayerItem):
@@ -891,25 +925,121 @@ class MasterBall(InstantPlayerItem):
 
 #HERO POWERS
 
-class BlaineBlaze(PassiveHeroPower):
+class SabrinaFuture(PassiveHeroPower):
+
+    def turn_setup(self, player: "Player" = None):
+        weather_manager: WeatherManager = self.env.weather_manager
+        forecast_today = weather_manager.weather_forecast[self._env.state.turn_number]
+        forecast_tmrw = weather_manager.weather_forecast[self._env.state.turn_number+1]
+        forecast_dat = weather_manager.weather_forecast[self._env.state.turn_number+2]
+
+        """
+        display these somehow
+        """
+
+    def pre_battle_action(self, context: T.Dict):
+        """
+        amplify weather buff
+        """
+        pass
+
+
+class BlaineButton(ChargedHeroPower):
     
+    counter: int = 0
+    _max_dict: dict = PrivateAttr(default={
+        1: 9,
+        2: 9,
+        3: 9,
+        4: 11,
+        5: 11,
+        6: 11,
+        7: 12,
+        8: 12,
+        9: 13,
+        10:13,
+        11:13,
+        12:14,
+        13:14,
+        14:15,
+        15:15,
+        16:15,
+        17:16,
+        18:16,
+        19:17,
+        20:17,
+        21:17,
+    })
+
     def turn_setup(self, player: "Player" = None):
         """
         next reroll is free 
         """
-        player.energy += 1
+        self.counter = 0
+        self.bust = False
+    
+    def use(self, player: "Player" = None):
+        max = self._max_dict[self._env.state.turn_number]
+        roll = random.randint(1,6)
+        self.counter += roll
+        if self.counter > max:
+            self.active = False
+            self.bust = True
 
+        return
+    
+    def pre_battle_action(self, context: T.Dict):
+        """
+        buff team based on button 
+        """
+        pass
 
-class BluePower(PassiveHeroPower):
+class BlueSmell(Player):
+    def use(self, player: "Player" = None):
+        if player.energy >= self.reroll_cost :
+            player.energy -= self.reroll_cost
+            shop_manager: ShopManager = self.env.shop_manager
+            bonus_shop = shop_manager.get_shop_by_turn_number(self, self._env.state.turn_number)
+            for card in self.state.shop_window[player]:
+                if card is not None:
+                    dissociate(PlayerShop, player, card)
+            for rolled in bonus_shop.roll_shop():
+                associate(PlayerShop, player, ShopOffer(pokemon=PokemonId[rolled]))
+
+class MistyTrustFund(PassiveHeroPower):
     
     def turn_setup(self, player: "Player" = None):
         """
-        if it's the correct turn get a TM
+        if it's the correct turn grow your pokes
+        """
+        turn_divisor = 4
+        income = 4
+        if self._env.state.turn_number % turn_divisor:
+            player.balls += income
+
+
+class ErikaGarden(PassiveHeroPower):
+    
+    def turn_setup(self, player: "Player" = None):
+        """
+        if it's the correct turn grow your pokes
         """
         turn_divisor = 4
         if self._env.state.turn_number % turn_divisor:
             player_manager: PlayerManager = self.env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "tm")
+            for party_member in player_manager.player_party(player):
+                if party_member is None or party_member.name not in self.evolution_config:
+                    continue
+                party_member.add_xp(self.XP_PER_TURN)
+                threshold = self.get_threshold(party_member.name)
+                if party_member.xp >= threshold:
+                    print(
+                        'Party member {} XP exceeds threshold ({} >= {})'
+                        .format(party_member.name, party_member.xp, threshold)
+                    )
+                    self.evolve(party_member)
+                    shop_manager: "ShopManager" = self.env.shop_manager
+                    shop_manager.shiny_checker(player, party_member.name)
 
 class BrunoBod(PassiveHeroPower):
     """
@@ -920,20 +1050,51 @@ class BrunoBod(PassiveHeroPower):
         buffed_hp = 35
         player.hitpoints = buffed_hp
 
+class BlastOff(PlayerHeroPower):
+    current_cost: int = 5
+    immune: bool = False
+
+    def turn_setup(self, player: "Player" = None):
+        self.immune = False
+
+    def use(self, player: "Player" = None):
+        if player.balls >= self.current_cost :
+            player.balls -= self.current_cost
+            self.current_cost += 2
+            self.immune = True
+    def post_battle_action(self, context: T.Dict):
+        """
+        if lose and immune, don't take damage.
+        """
+        pass
+
+
 
 class GiovanniGains(PlayerHeroPower):
     
     oncepergame: bool = False
     _reward_dict: dict = PrivateAttr(default={
         1: [1,1,0],
-        2: [2,1,1],
-        3: [2,2,1],
-        4: [3,2,2],
-        5: [3,3,2],
-        6: [4,3,3],
-        7: [5,4,3],
-        8: [6,4,4],
-        9: [7,5,5]
+        2: [1,1,0],
+        3: [1,1,0],
+        4: [2,1,1],
+        5: [2,1,1],
+        6: [3,2,1],
+        7: [3,2,1],
+        8: [3,2,2],
+        9: [4,2,2],
+        10: [4,3,2],
+        11: [4,3,2],
+        12: [5,3,3],
+        13: [5,3,3],
+        14: [5,4,3],
+        15: [6,4,3],
+        16: [7,4,4],
+        17: [8,4,4],
+        18: [9,5,5],
+        19: [10,5,5],
+        20: [11,5,5],
+        21: [12,5,5]
     })
 
     def use(self, player: "Player" = None):
@@ -976,7 +1137,7 @@ class GreensRocks(PlayerHeroPower):
         if player.energy >= self.reroll_cost :
             player.energy -= self.reroll_cost
             player_manager: PlayerManager = self.env.player_manager
-            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone']
+            minerals = ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'hard_stone', 'dusk_stone']
             player_manager.create_and_give_item_to_player(player, item_name = random.choice(minerals))
             self.success = True
 
