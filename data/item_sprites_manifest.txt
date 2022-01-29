@@ -33,12 +33,12 @@ DragonScale    heropower/dragon-scale.png
 JanineEject    heropower/janine-eject.png
 RedCooking     heropower/red-cooking.ong
 
-MasterBall     other/master-ball.png
-PokeFlute      other/poke-flute.png
-RentalDitto    other/rental-ditto.png
-TM             other/tm.png
+MasterBall        other/master-ball.png
+PokeFlute         other/poke-flute.png
+RentalDitto       other/rental-ditto.png
+TechnicalMachine  other/tm.png
 
-SmallHPShard    shards/hp-shard.png
+SmallHPShard     shards/hp-shard.png
 SmallATKShard    shards/atk-shard.png
 SmallDEFShard    shards/def-shard.png
 SmallENGShard    shards/eng-shard.png

@@ -446,7 +446,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             icon = sprite_manager.get_trainer_sprite(self.player_hero.name)
             if icon is not None:
                 set_button_image(self.playerArchetypeIcon, icon, color=None)
-                if self.player_hero.power == HeroGrade.PRISMATIC:
+                if self.player_hero._power == HeroGrade.PRISMATIC:
                     set_button_color(self.playerArchetypeIconBackground, 'gold')
                 else:
                     set_button_color(self.playerArchetypeIconBackground, 'blue')

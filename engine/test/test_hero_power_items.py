@@ -69,6 +69,12 @@ class TestItemManager(unittest.TestCase):
         super().setUp()
         self.env = Environment.create_webless_game(8)
 
+    def test_bruno_bod(self):
+        player = Player(name='Big Bruno')
+        self.env.add_player(player)
+        self.env.initialize()
+        import IPython; IPython.embed()
+
     def test_item_usage_valid_targets(self):
         """
         Provide valid item targets
