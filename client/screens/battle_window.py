@@ -36,7 +36,7 @@ from client.screens.player_item_window import Ui as PlayerItemWindow
 from client.screens.debug_battle_window import Ui as DebugWindow
 from client.screens.storage_window import Ui as StorageWindow
 from engine.weather import WeatherManager
-from utils.buttons import PokemonButton, clear_button_image, set_button_color, set_button_image
+from utils.buttons import ItemButton, PokemonButton, clear_button_image, set_button_color, set_button_image
 from utils.buttons import ShopPokemonButton
 from utils.collections_util import extract_from_container_by_id
 from utils.context import GameContext
@@ -268,6 +268,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.partyItems = [
             self.findChild(QtWidgets.QPushButton, "partyItems{}".format(idx))
             for idx in range(6)
+        ]
+        self.party_item_buttons = [
+            ItemButton(self.partyItems[idx], self.env, default_text="Items") for idx in range(6)
         ]
         for idx, add_party in enumerate(self.addParty):
             add_party.clicked.connect(getattr(self, f"add_to_team_callback{idx}"))
@@ -534,16 +537,28 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         evo_manager: EvolutionManager = self.env.evolution_manager
         for idx, party_member in enumerate(party):
             add_party_button = self.addParty[idx]
-            item_button = self.partyItems[idx]
+            item_button = self.party_item_buttons[idx]
             if party_member is None:
                 add_party_button.setDisabled(True)
-                item_button.setDisabled(True)
+                item_button.clear()
+                continue
             else:
                 add_party_button.setDisabled(False)
-                item_button.setDisabled(False)
 
+            # render pokemon
             party_button = self.party_pokemon_buttons[idx]
             party_button.set_pokemon(party_member)
+
+            # render item
+            # TODO: refactor below
+            poke_held_item_raw = self.state.pokemon_held_items_raw.get(party_member.id)
+            if poke_held_item_raw is not None:
+                item_name = ItemName(poke_held_item_raw.name).name
+                item_class = get_item_class_by_name(item_name)
+                item = item_class(self.env, id=poke_held_item_raw.id)
+                item_button.set_item(item)
+            else:
+                item_button.clear()
 
             # render XP
             current_xp = party_member.xp

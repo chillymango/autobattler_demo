@@ -48,7 +48,7 @@ class BattleManager(Component):
         for poke in team:
             if poke is None:
                 continue
-            battle_card = copy.deepcopy(poke.battle_card)
+            battle_card = copy.copy(poke.battle_card)
 
             # adjust stats by just incrementing IVs
             # we may want a dedicated field for this in the future but this should suffice...
