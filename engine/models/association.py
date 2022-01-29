@@ -76,6 +76,10 @@ class PlayerInventory(OMAssociation):
         """
         return [x.entity2 for x in cls.all(entity1=player)]
 
+    @classmethod
+    def get_item_holder(cls, item: Item) -> Player:
+        return cls.all(entity2=item)
+
 
 class PlayerRoster(OMAssociation):
     """

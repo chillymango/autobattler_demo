@@ -3,7 +3,6 @@ Items and Inventory
 
 TODO: split this into multiple modules
 """
-from ast import Pass
 import aenum
 from enum import Enum
 import typing as T
@@ -15,7 +14,7 @@ from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
 from engine.weather import WeatherManager
-from engine.models.enums import PokemonId
+from engine.models.enums import PokemonId, PokemonType
 from engine.models.shop import ShopOffer
 
 from utils.strings import camel_case_to_snake_case, crunch_spaces 
@@ -23,6 +22,7 @@ if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
     from engine.env import Environment
+    from engine.items import ItemManager
     from engine.pokemon import EvolutionManager, PokemonFactory
     from engine.player import PlayerManager
     from engine.models.player import Player
@@ -838,6 +838,11 @@ class CommonStone(Stone):
         evo_manager: EvolutionManager = self.env.evolution_manager
         # handle eevee specially
         # TODO: make choice evolution types more generic
+        im: "ItemManager" = self.env.item_manager
+        holder = im.get_item_holder(self)
+        if not isinstance(holder, Pokemon):
+            raise Exception("Cannot use stone on a non-Pokemon")
+
         if self.holder.name == "eevee":
             if self.target_type == "leaf":
                 # invalid Eeveelution (for now!!)
@@ -857,7 +862,6 @@ class FireStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-
     _target_type = "fire"
     cost = COMMON_STONE_COST
 
