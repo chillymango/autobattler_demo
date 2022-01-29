@@ -824,16 +824,40 @@ class RentalDitto(InstantPokemonItem):
         player_manager.create_and_give_pokemon_to_player(player,self.holder.name)
 
 
+class RareCandy(InstantPokemonItem):
+    def use(self):
+        evo_manager: EvolutionManager = self._env.evolution_manager
+        # handle eevee specially
+        # TODO: make choice evolution types more generic
+        im: "ItemManager" = self._env.item_manager
+        holder = im.get_pokemon_item_holder(self)
+        if holder is None:
+            raise Exception("No Pokemon found as a valid target")
+
+        if not evo_manager.get_evolution(holder.name):
+            return
+        holder.add_xp(50)
+        threshold = self.get_threshold(holder.name.name)
+        if holder.xp >= threshold:
+            print(
+                'Party member {} XP exceeds threshold ({} >= {})'
+                .format(holder.name.name, holder.xp, threshold)
+            )
+            self.evolve(holder)
+            shop_manager: "ShopManager" = self.env.shop_manager
+            shop_manager.check_shiny(self.player, holder.name.name)
+            self.consumed = True
+
+
+
+
 class Stone(InstantPokemonItem):
 
     _target_type: str = PrivateAttr()
     cost = COMMON_STONE_COST
 
     def use(self):
-        if not isinstance(self.holder, Pokemon):
-            return
-        if not self.holder.is_type(self.target_type):
-            return
+        print("using stone")
         self.stone_evo()
 
     def stone_evo(self):
@@ -857,18 +881,50 @@ class CommonStone(Stone):
         if holder is None:
             raise Exception("No Pokemon found as a valid target")
 
-        if self.holder.name == "eevee":
-            if self.target_type == "leaf":
-                # invalid Eeveelution (for now!!)
-                return
-            evo_manager.evolve(self.holder, choice=self.target_type)
-            self.consumed = True
+        #if eevee, evolve 
+        if holder.name == PokemonId.eevee:
+            if "water" in self._target_type:
+                self.eve_volve(evo = 'vaporeon', pokemon = holder)
+            elif "fire" in self._target_type:
+                self.eve_volve(evo = 'flareon', pokemon = holder)
+            elif "electric" in self._target_type:
+                self.eve_volve(evo = 'jolteon', pokemon = holder)
             return
-
+        print('holder is not eevee')
         # try and evolve
-        if not evo_manager.get_evolution(self.holder.name):
+        if not evo_manager.get_evolution(holder.name.name):
             return
-        evo_manager.evolve(self.holder)
+        if (holder.is_type(PokemonType.dragon)) or (holder.name == PokemonId.magikarp):
+            print('not compatable with stones')
+            return
+        if ((holder.battle_card.poke_type1 in self._target_type) or (holder.battle_card.poke_type2 in self._target_type)):
+            print('holder qualifies for stone')
+            holder.add_xp(150)
+            threshold = evo_manager.get_threshold(holder.name.name)
+            if holder.xp >= threshold:
+                print(
+                    'Party member {} XP exceeds threshold ({} >= {})'
+                    .format(holder.name.name, holder.xp, threshold)
+                )
+                evo_manager.evolve(holder)
+                shop_manager: "ShopManager" = self._env.shop_manager
+                shop_manager.check_shiny(self.player, holder.name.name)
+                self.consumed = True
+    
+    def eve_volve(self, evo, pokemon):
+        pokemon_factory: PokemonFactory = self._env.pokemon_factory
+        pokemon.xp == 0
+        evolved_form = evo
+        evolved_card = pokemon_factory.get_evolved_battle_card(
+        evolved_form, pokemon.battle_card
+            )
+        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+            pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
+
+        # update name and battle card
+        pokemon.name = evolved_form
+        pokemon.battle_card = evolved_card
+        pokemon_factory.shiny_checker(self.player, evo)
         self.consumed = True
 
 
@@ -876,7 +932,7 @@ class FireStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-    _target_type = "fire"
+    _target_type = [PokemonType.fire]
     cost = COMMON_STONE_COST
 
 
@@ -884,9 +940,43 @@ class WaterStone(CommonStone):
     """
     Used to evolve fire-type Pokemon (and Eevee!)
     """
-    _target_type = 'water'
+    _target_type = [PokemonType.water, PokemonType.ice]
     cost = COMMON_STONE_COST
 
+class ThunderStone(CommonStone):
+    """
+    Used to evolve steel and electric-type Pokemon (and Eevee!)
+    """
+    _target_type = [PokemonType.electric, PokemonType.steel]
+    cost = COMMON_STONE_COST
+
+class LeafStone(CommonStone):
+    """
+    Used to evolve grass and bug-type Pokemon
+    """
+    _target_type = [PokemonType.grass, PokemonType.bug]
+    cost = COMMON_STONE_COST
+
+class DuskStone(CommonStone):
+    """
+    Used to evolve dark and poison-type Pokemon
+    """
+    _target_type = [PokemonType.dark, PokemonType.poison]
+    cost = COMMON_STONE_COST
+
+class HardStone(CommonStone):
+    """
+    Used to evolve rock and ground-type Pokemon
+    """
+    _target_type = [PokemonType.rock, PokemonType.ground]
+    cost = COMMON_STONE_COST
+
+class MoonStone(CommonStone):
+    """
+    Used to evolve fairy and normal-type Pokemon
+    """
+    _target_type = [PokemonType.fairy, PokemonType.normal]
+    cost = COMMON_STONE_COST
 
 # EXAMPLE: PERSISTENT PLAYER ITEM
 class PokeFlute(PersistentPlayerItem):

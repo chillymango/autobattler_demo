@@ -165,7 +165,6 @@ class Pokemon(Entity):
 
         References the battle card
         """
-        poketype = poketype.lower()
         return poketype in (self.battle_card.poke_type1, self.battle_card.poke_type2)
 
     @classmethod
@@ -183,4 +182,5 @@ class Pokemon(Entity):
         """
         Add experience to a Pokemon
         """
+        print("adding xp")
         self.xp += amount
