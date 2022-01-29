@@ -1,16 +1,27 @@
-do some shit
+# Pokemon Go Battle Palace
+## (Pokemon Rolldown)
 
-AYYYYY
+For Developers
+How to run locally:
+---
+Step 0: install everything
+* python 3.8.10
+* python -m pip install requirements.txt
 
-use python3
+Step 0.5: add environment variable for PATH / PYTHONPATH
+add the current working directory to your PYTHONPATH
 
+Step 1: run server
+```bash
+python run_server.py
+```
 
-TODO: 
-nowish
--type icons
--item distribution and usage
--battle damage logging
--new battle engine (https://github.com/biowpn/GoBattleSim-Engine)
+Step 2: run client (dev)
+```bash
+set DEVELOPMENT=1
+set DEBUG=1
+python client\\main.py
+```
 
-later
--tuning energy and pokeball gain 
+NOTE!!!!!!
+*At this time you must restart the server between games.*
