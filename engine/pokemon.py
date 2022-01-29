@@ -250,7 +250,7 @@ class EvolutionManager(Component):
         * update nickname if it's default nickname, otherwise retain nickname
         """
         # check evolution
-        evolved_form = self.get_evolution(pokemon.name)
+        evolved_form = self.get_evolution(pokemon.name.name)
         if evolved_form is None:
             return
 
@@ -269,11 +269,11 @@ class EvolutionManager(Component):
         )
 
         # if nickname is default, update nickname
-        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name.name) == pokemon.nickname:
             pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
 
         # update name and battle card
-        pokemon.name = evolved_form
+        pokemon.name = PokemonId[evolved_form]
         pokemon.battle_card = evolved_card
 
     def turn_cleanup(self):
@@ -285,15 +285,15 @@ class EvolutionManager(Component):
                 continue
             player_manager: "PlayerManager" = self.env.player_manager
             for party_member in player_manager.player_party(player):
-                if party_member is None or party_member.name not in self.evolution_config:
+                if party_member is None or party_member.name.name not in self.evolution_config:
                     continue
                 party_member.add_xp(self.XP_PER_TURN)
-                threshold = self.get_threshold(party_member.name)
+                threshold = self.get_threshold(party_member.name.name)
                 if party_member.xp >= threshold:
                     print(
                         'Party member {} XP exceeds threshold ({} >= {})'
-                        .format(party_member.name, party_member.xp, threshold)
+                        .format(party_member.name.name, party_member.xp, threshold)
                     )
                     self.evolve(party_member)
                     shop_manager: "ShopManager" = self.env.shop_manager
-                    shop_manager.shiny_checker(player, party_member.name)
+                    shop_manager.check_shiny(player, party_member.name.name)

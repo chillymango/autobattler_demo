@@ -2,7 +2,7 @@ from __future__ import annotations
 import typing as T
 from collections import namedtuple
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from engine.models.base import Entity
 from engine.models.enums import Move
@@ -64,7 +64,7 @@ class BattleCard(BaseModel):
     status: int = 1
     choiced: bool = False
     team_position: int = None
-    berry: Item = None
+    modifiers: T.List[float] = Field(default_factory=lambda: [0] * 5)
 
     def make_shiny(self):
         """
@@ -180,18 +180,3 @@ class Pokemon(Entity):
         Add experience to a Pokemon
         """
         self.xp += amount
-
-    def give_item(self, item: "Item"):
-        """
-        Give an item to a Pokemon
-        """
-        self.battle_card.berry = item
-        item.holder = self
-
-    def remove_item(self) -> T.Optional[Item]:
-        """
-        Takes item from Pokemon. Returns it if there is one.
-        """
-        if self.battle_card.berry is not None:
-            self.battle_card.berry.holder = None
-            return self.battle_card.berry
