@@ -620,7 +620,7 @@ class Leftovers(CombinedItem):
         attacker: BattleCard = context['current_team1']
         before = attacker.health
         after = attacker.health + self._HEALTH_PER_TICK
-        print(f'LifeOrb {attacker.name.name}: {before} -> {after}')
+        print(f'Leftovers {attacker.name.name}: {before} -> {after}')
         attacker.health = after
 
 
@@ -697,6 +697,7 @@ class FocusBand(CombinedItem):
         """
         revive
         """
+        
         pass
 
 
@@ -802,7 +803,7 @@ class QuickPowder(CombinedItem):
 class ChoiceSpecs(CombinedItem):
     """
     Choice Specs
-    Your fast move becomes lock on
+    Your fast move becomes lock on, you get energy on hit
     """
     _LIFESTEAL = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
