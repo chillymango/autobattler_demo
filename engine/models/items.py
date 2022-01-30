@@ -545,17 +545,26 @@ class LifeOrb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,0])
 
-    def on_battle_start(self, **context: T.Dict):
-        """
-        even more damage 
-        """
-        pass
+    _HEALTH_LOSS = 2
+    _DAMAGE_BUFF = 2
 
+    def pre_battle_action(self, **context: T.Dict):
+        """
+        more damage
+        """
+        attacker: BattleCard = context['current_team1']
+        attacker.a_iv += self._DAMAGE_BUFF
+        
     def on_tick_action(self, **context: T.Dict):
         """
-        deal damage to self 
+        health per tick 
         """
-        pass
+        attacker: BattleCard = context['current_team1']
+        before = attacker.health
+        after = attacker.health - self._HEALTH_LOSS
+        print(f'LifeOrb {attacker.name.name}: {before} -> {after}')
+        attacker.health = after
+
 
 
 class LightClay(CombinedItem):
@@ -606,8 +615,13 @@ class Leftovers(CombinedItem):
 
     def on_tick_action(self, **context: T.Dict):
         """
-        HP per tick 
+        health per tick 
         """
+        attacker: BattleCard = context['current_team1']
+        before = attacker.health
+        after = attacker.health + self._HEALTH_PER_TICK
+        print(f'LifeOrb {attacker.name.name}: {before} -> {after}')
+        attacker.health = after
 
 
 class Metronome(CombinedItem):
