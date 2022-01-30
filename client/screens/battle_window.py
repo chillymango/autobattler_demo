@@ -136,6 +136,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         NOTE: the query attributes and instancing mechanisms don't seem to work in the client.
         I am not totally sure why that's the case.
         """
+        print(self.state.party(self.player))
         return self.state.party(self.player)
 
     @property
@@ -482,10 +483,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             self.weatherType0.hide()
             self.weatherType1.hide()
             self.weatherType2.hide()
-            #clear_button_image(self.weatherIcon)
-            #clear_button_image(self.weatherType0)
-            #clear_button_image(self.weatherType1)
-            #clear_button_image(self.weatherType2)
             return
         sprite_manager: SpriteManager = self.env.sprite_manager
         icon = sprite_manager.get_weather_sprite(weather.name.lower())
@@ -546,16 +543,15 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         for idx, party_member in enumerate(party):
             add_party_button = self.addParty[idx]
             item_button = self.party_item_buttons[idx]
+            # render pokemon
+            party_button = self.party_pokemon_buttons[idx]
+            party_button.set_pokemon(party_member)
             if party_member is None:
                 add_party_button.setDisabled(True)
                 item_button.clear()
                 continue
             else:
                 add_party_button.setDisabled(False)
-
-            # render pokemon
-            party_button = self.party_pokemon_buttons[idx]
-            party_button.set_pokemon(party_member)
 
             # render item
             # TODO: refactor below
@@ -821,6 +817,12 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         # check if debug window exists and close it as well
         if self.debug_window is not None:
             self.debug_window.close()
+        if self.poke_item_window is not None:
+            self.poke_item_window.close()
+        if self.pokedex_window is not None:
+            self.pokedex_window.close()
+        if self.storage_window is not None:
+            self.storage_window.close()
 
         # have the player leave the game
         if self.game_id is not None:

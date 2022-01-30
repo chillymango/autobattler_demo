@@ -123,10 +123,19 @@ class Battler:
         # can look at pokemon.js line 595 "self.activechargedmoves = []" to see sorting charged move array by cost, selecting an optimal move
 
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
-        
-def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # takes two arrays of battlecards
-    team1_items = team1_items or dict()
-    team2_items = team2_items or dict()
+
+
+def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
+    """
+    Takes two arrays of battle cards and simulates combat between them.
+
+    The original battle cards are shallow-copied and modified during the battle.
+    """
+    team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
+    team2_items = {poke.item: team2_cards[poke] for poke in team2_cards}
+
+    print(f'{team1_items=}')
+    print(f'{team2_items=}')
 
     stop_this = False
 
@@ -187,7 +196,14 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
     team1_switches = 5 # max number of switches the team can make
     team2_switches = 5
     turnnumber = 1
+
+    # COMBAT ITEM HOOK: pre_battle_action
+
+    combat_rising_edge = False
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
+        if not combat_rising_edge:
+            # COMBAT ITEM HOOK: pre_combat_action
+            pass
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
         sequence.append(Event(-1, '',"turn number: "+str(turnnumber)))
@@ -297,12 +313,15 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
         current_team1.timer += 500
         current_team2.timer += 500
 
+        combat_over = False
         if pokemon1_dead:
+            combat_over = True
             # print(current_team1.name.name+" fainted")
             sequence.append(
                 Event(-1, "faint", f"team2 {current_team2.battlecard.name.name} KOs {current_team1.battlecard.name.name}")
             )
         if pokemon2_dead:
+            combat_over = True
             sequence.append(
                 Event(-1, "faint", f"team1 {current_team1.battlecard.name.name} KO's {current_team2.battlecard.name.name}")
             )
@@ -317,6 +336,12 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
             if current_team1 == None:
                 stop_this = True
             team1_live.pop(0)
+
+        if combat_over:
+            combat_rising_edge = False
+            # COMBAT ITEM HOOK: post_combat_action
+
+    # COMBAT ITEM HOOK: post_battle_action
 
     # closing messages
     survivor1 = len(team1_live) # how many pokemon left on the team
@@ -380,6 +405,8 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
         move = attacker.battlecard.move_f.name
     else:
         if move == attacker.battlecard.move_tm.name or move == attacker.battlecard.move_ch.name: # if the optimal move needs energy
+            # COMBAT ITEM HOOK: on_charged_move
+            # COMBAT ITEM HOOK: on_enemy_charged_move
             # print(attacker.name.name+' used '+move)
             sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+move+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
@@ -488,6 +515,8 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
                 fatal = True
 
         elif move == attacker.battlecard.move_f.name: # if the optimal move was a fast move
+            # COMBAT ITEM HOOK: on_fast_move_action
+            # COMBAT ITEM HOOK: on_enemy_fast_move_action
             # print(attacker.name.name+' used '+attacker.move_f.name)
             sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy += moves[attacker.battlecard.move_f.name]["energyGain"] # gain energy

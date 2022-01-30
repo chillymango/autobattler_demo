@@ -66,6 +66,10 @@ class BattleCard(BaseModel):
     team_position: int = None
     _item: "CombatItem" = PrivateAttr()
 
+    @property
+    def item(self):
+        return self._item
+
     def give_item(self, item: "CombatItem"):
         self._item = item
 
@@ -77,8 +81,6 @@ class BattleCard(BaseModel):
         """
         if self.shiny:
             return False
-
-        self.a
         self.shiny = True
 
         return True
