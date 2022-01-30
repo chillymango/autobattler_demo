@@ -2,6 +2,8 @@
 Items and Inventory
 
 TODO: split this into multiple modules
+
+TODO: more structuring on the context field that gets passed from battle engine
 """
 import aenum
 from enum import Enum
@@ -139,64 +141,113 @@ class PokemonItem(Item):
         self.holder = pokemon
 
 
+class CombatHook(Enum):
+    """
+    Combat Phases
+    """
+
+    INSTANT = 0
+    PRE_BATTLE = 1
+    PRE_COMBAT = 2
+    ON_TICK = 3
+    ON_FAST_MOVE = 4
+    ON_ENEMY_FAST_MOVE = 5
+    ON_CHARGED_MOVE = 6
+    ON_ENEMY_CHARGED_MOVE = 7
+    POST_COMBAT = 8
+    POST_BATTLE = 9
+    POST_MALONE = 10
+
+
 class CombatItem(PokemonItem):
     """
     Base class for items which trigger before or after combat.
 
     The battle sequencer should handle this
     """
-    
-    slotless: bool = False #some items don't compete for slots
 
-    def pre_battle_action(self, context: T.Dict):
+    _slotless: bool = False #some items don't compete for slots
+
+    _is_remote: bool = False  # some items apply effects from bench (while Poke alive)
+    _is_global: bool = False  # some items always apply effects
+
+    @property
+    def is_remote(self):
+        return self._is_remote
+
+    @property
+    def is_global(self):
+        return self._is_global
+
+    def get_method(self, combat_hook: CombatHook) -> T.Callable:
+        if combat_hook == CombatHook.PRE_BATTLE:
+            return self.pre_battle_action
+        if combat_hook == CombatHook.PRE_COMBAT:
+            return self.pre_combat_action
+        if combat_hook == CombatHook.ON_TICK:
+            return self.on_tick_action
+        if combat_hook == CombatHook.ON_FAST_MOVE:
+            return self.on_fast_move_action
+        if combat_hook == CombatHook.ON_ENEMY_FAST_MOVE:
+            return self.on_enemy_fast_move_action
+        if combat_hook == CombatHook.ON_CHARGED_MOVE:
+            return self.on_charged_move_action
+        if combat_hook == CombatHook.ON_ENEMY_CHARGED_MOVE:
+            return self.on_enemy_charged_move_action
+        if combat_hook == CombatHook.POST_COMBAT:
+            return self.post_combat_action
+        if combat_hook == CombatHook.POST_BATTLE:
+            return self.post_battle_action
+
+    def pre_battle_action(self, **context: T.Dict):
         """
         Run this before any fighting happens
         """
         pass
 
-    def pre_combat_action(self, context: T.Dict):
+    def pre_combat_action(self, **context: T.Dict):
         """
         During battle sequencing, run this before each individual combat
         """
         pass
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         Run this action on all ticks
         """
         pass
 
-    def on_fast_move_action(self, context: T.Dict):
+    def on_fast_move_action(self, **context: T.Dict):
         """
         Run this action on all fast hits
         """
         pass
 
-    def on_enemy_fast_move_action(self, context: T.Dict):
+    def on_enemy_fast_move_action(self, **context: T.Dict):
         """
         Run this action on all enemy fast hits
         """
         pass
 
-    def on_enemy_charged_move_action(self, context: T.Dict):
+    def on_enemy_charged_move_action(self, **context: T.Dict):
         """
         Run this action on all enemy charged hits
         """
         pass
 
-    def on_charged_move_action(self, context: T.Dict):
+    def on_charged_move_action(self, **context: T.Dict):
         """
         Run this action on all charged moves
         """
         pass
 
-    def post_combat_action(self, context: T.Dict):
+    def post_combat_action(self, **context: T.Dict):
         """
         During battle sequencing, run this after each individual combat
         """
         pass
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         Run this after all fighting happens
         """
@@ -257,13 +308,13 @@ class PassiveHeroPowerMixin:
     """
     Hero powers that accept no player input
     """
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         Run this before any fighting happens
         """
         pass
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         Run this after all fighting happens
         """
@@ -511,13 +562,13 @@ class LifeOrb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,0,0])
 
-    def on_battle_start(self, context: T.Dict):
+    def on_battle_start(self, **context: T.Dict):
         """
         even more damage 
         """
         pass
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         deal damage to self 
         """
@@ -532,7 +583,7 @@ class LightClay(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         give shields to teammates 
         """
@@ -546,7 +597,7 @@ class CellBattery(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         energy per tick 
         """
@@ -561,7 +612,7 @@ class Leftovers(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         HP per tick 
         """
@@ -577,7 +628,7 @@ class Metronome(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,0,1])
 
 
-    def on_fast_move_action(self, context: T.Dict):
+    def on_fast_move_action(self, **context: T.Dict):
         """
         atk spd per tick 
         """
@@ -592,7 +643,7 @@ class ExpShare(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,0,1])
 
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         xp post battle 
         """
@@ -608,7 +659,7 @@ class IntimidatingIdol(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,1,0,0,0])
 
 
-    def pre_combat_action(self, context: T.Dict):
+    def pre_combat_action(self, **context: T.Dict):
         """
         debuff enemy attack 
         """
@@ -623,7 +674,7 @@ class IronBarb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,1,0,0])
     
-    def on_enemy_fast_move_action(self, context: T.Dict):
+    def on_enemy_fast_move_action(self, **context: T.Dict):
         """
         deal damage
         """
@@ -637,7 +688,7 @@ class FocusBand(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,1,0,0])
 
-    def post_combat_action(self, context: T.Dict):
+    def post_combat_action(self, **context: T.Dict):
         """
         revive
         """
@@ -651,7 +702,7 @@ class ShellBell(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
-    def on_fast_move_action(self, context: T.Dict):
+    def on_fast_move_action(self, **context: T.Dict):
         """
         heal
         """
@@ -665,13 +716,13 @@ class EjectButton(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,1,0])
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         check HP, then terminate the combat
         """
         pass
 
-    def post_combat_action(self, context: T.Dict):
+    def post_combat_action(self, **context: T.Dict):
         """
         exhaust the button
         """
@@ -686,12 +737,12 @@ class ExpertBelt(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,0,0,1])
 
-    def on_fast_move_action(self, context: T.Dict):
+    def on_fast_move_action(self, **context: T.Dict):
         """
         check damage type, then boost power
         """
         pass
-    def on_charged_move_action(self, context: T.Dict):
+    def on_charged_move_action(self, **context: T.Dict):
         """
         check damage type, then boost power
         """
@@ -705,7 +756,7 @@ class AssaultVest(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
 
-    def on_enemy_charged_move_action(self, context: T.Dict):
+    def on_enemy_charged_move_action(self, **context: T.Dict):
         """
         reduce power
         """
@@ -719,7 +770,7 @@ class QuickPowder(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         boost speed of team
         """
@@ -734,7 +785,7 @@ class ChoiceSpecs(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         change your fast move
         """
@@ -756,13 +807,13 @@ class BrockSolid(CombatItem):
 
     slotless = True
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         give shields to teammates 
         """
         pass
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         remove shields 
         """
@@ -771,19 +822,19 @@ class BrockSolid(CombatItem):
 
 class JanineEject(CombatItem):
 
-    def on_tick_action(self, context: T.Dict):
+    def on_tick_action(self, **context: T.Dict):
         """
         check HP, then terminate the combat
         """
         pass
 
-    def post_combat_action(self, context: T.Dict):
+    def post_combat_action(self, **context: T.Dict):
         """
         exhaust the button
         """
         pass
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         remove button 
         """
@@ -885,7 +936,6 @@ class CommonStone(Stone):
         # TODO: make choice evolution types more generic
         im: "ItemManager" = self._env.item_manager
         if self.holder is None:
-            print('oioioioioi')
             raise Exception("No Pokemon found as a valid target")
         player = evo_manager.find_owner(self.holder)
         #if eevee, evolve 
@@ -1053,7 +1103,7 @@ class SabrinaFuture(PassiveHeroPower):
         display these somehow
         """
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         amplify weather buff
         """
@@ -1109,7 +1159,7 @@ class BlaineButton(ChargedHeroPower):
 
         return
     
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         buff team based on button 
         """
@@ -1189,7 +1239,7 @@ class BlastOff(PlayerHeroPower):
             player.balls -= self.current_cost
             self.current_cost += 2
             self.immune = True
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         if lose and immune, don't take damage.
         """
@@ -1297,7 +1347,7 @@ class LanceFetish(ComplexHeroPower):
             player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
             self.success = True
         
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         if dragon, buff 
         """
@@ -1330,7 +1380,7 @@ class KogaNinja(ComplexHeroPower):
     hp_cost: int = 2
     unseal_cost = 4
 
-    def post_battle_action(self, context: T.Dict):
+    def post_battle_action(self, **context: T.Dict):
         """
         if win, lower unseal cost
         """
@@ -1347,7 +1397,7 @@ class KogaNinja(ComplexHeroPower):
         
 class SurgeGorilla(PassiveHeroPower):
 
-    def pre_battle_action(self, context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict):
         """
         check largest number of matching types, apply buff
         """

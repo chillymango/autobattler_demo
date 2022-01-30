@@ -61,6 +61,9 @@ import os.path
 from engine.models.enums import PokemonId
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 
+if T.TYPE_CHECKING:
+    from engine.models.items import CombatHook, CombatItem
+
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
 parent_directory = os.path.split(parent_directory)[0]
@@ -125,17 +128,81 @@ class Battler:
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
 
 
+class HookExecutor:
+
+    def __init__(
+        self,
+        team1: T.List[BattleCard],
+        team2: T.List[BattleCard],
+    ):
+        self.team1 = team1
+        self.team2 = team2
+
+    def __call__(
+        self,
+        hook: "CombatHook",
+        current_team1: BattleCard,
+        current_team2: BattleCard,
+        **context: T.Dict
+    ) -> None:
+        """
+        Run combat item execution
+        """
+        context = context or dict()
+
+        # determine the active items
+        # for pre / post-battle hooks, all item effects should always trigger by default
+        if hook in (CombatHook.PRE_BATTLE, CombatHook.POST_BATTLE):
+            active_items = [card.item for card in self.team1 + self.team2]
+        else:
+            # all global items are active (including *beyond the grave*)
+            # remote items are active if the holding pokemon is not fainted
+            # other items are only active if the pokemon is currently in combat
+            active_items: T.List[CombatItem] = []
+            for teammate in self.team1 + self.team2:
+                if teammate in (current_team1, current_team2):
+                    active_items.append(teammate.item)
+                elif teammate.item:
+                    if teammate.item.is_global:
+                        active_items.append(teammate.item)
+                    elif teammate.item.is_remote and teammate.status:
+                        active_items.append(teammate.item)
+
+        # run item callbacks
+        print(f'Determined active items {active_items}')
+        for item in active_items:
+            method = item.get_method(hook)
+            method(current_team1=current_team1, current_team2=current_team2, **context)
+
+
+def run_item_callbacks(
+    current_team1: BattleCard,
+    current_team2: BattleCard,
+    team1: T.List[BattleCard],
+    team2: T.List[BattleCard],
+    hook: "CombatHook",
+    context: T.Dict = None
+) -> None:
+    """
+    Run combat item execution
+    """
+    context = context or {}
+
+# TODO(albert): this is gross
+execute_hook = None
+
+
 def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     """
     Takes two arrays of battle cards and simulates combat between them.
 
     The original battle cards are shallow-copied and modified during the battle.
     """
-    team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
-    team2_items = {poke.item: team2_cards[poke] for poke in team2_cards}
+    #team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
+    #team2_items = {poke.item: team2_cards[poke] for poke in team2_cards}
 
-    print(f'{team1_items=}')
-    print(f'{team2_items=}')
+    #print(f'{team1_items=}')
+    #print(f'{team2_items=}')
 
     stop_this = False
 
@@ -169,7 +236,7 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     bench1_permanent = bench1
     bench2_permanent = bench2
 
-    try:    
+    try:
         current_team1 = bench1[0]
     except IndexError:
         pass
@@ -197,13 +264,20 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     team2_switches = 5
     turnnumber = 1
 
+    # TODO(albert): should this be cards or live?
+    global execute_hook
+    execute_hook = HookExecutor(team1_cards, team2_cards)
+
     # COMBAT ITEM HOOK: pre_battle_action
+    execute_hook(CombatHook.PRE_BATTLE, current_team1, current_team2)
 
     combat_rising_edge = False
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
+
         if not combat_rising_edge:
             # COMBAT ITEM HOOK: pre_combat_action
-            pass
+            execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
+
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
         sequence.append(Event(-1, '',"turn number: "+str(turnnumber)))
@@ -339,9 +413,10 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
 
         if combat_over:
             combat_rising_edge = False
-            # COMBAT ITEM HOOK: post_combat_action
+            execute_hook(CombatHook.POST_COMBAT, current_team1, current_team2)
 
     # COMBAT ITEM HOOK: post_battle_action
+    execute_hook(CombatHook.POST_BATTLE, current_team1, current_team2)
 
     # closing messages
     survivor1 = len(team1_live) # how many pokemon left on the team
@@ -406,7 +481,9 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
     else:
         if move == attacker.battlecard.move_tm.name or move == attacker.battlecard.move_ch.name: # if the optimal move needs energy
             # COMBAT ITEM HOOK: on_charged_move
+            execute_hook(CombatHook.ON_CHARGED_MOVE, attacker, defender)
             # COMBAT ITEM HOOK: on_enemy_charged_move
+            execute_hook(CombatHook.ON_ENEMY_CHARGED_MOVE, attacker, defender)
             # print(attacker.name.name+' used '+move)
             sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+move+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
@@ -517,6 +594,8 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
         elif move == attacker.battlecard.move_f.name: # if the optimal move was a fast move
             # COMBAT ITEM HOOK: on_fast_move_action
             # COMBAT ITEM HOOK: on_enemy_fast_move_action
+            execute_hook(CombatHook.ON_FAST_MOVE, attacker, defender)
+            execute_hook(CombatHook.ON_ENEMY_FAST_MOVE, attacker, defender)
             # print(attacker.name.name+' used '+attacker.move_f.name)
             sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy += moves[attacker.battlecard.move_f.name]["energyGain"] # gain energy
