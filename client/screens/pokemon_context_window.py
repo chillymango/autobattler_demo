@@ -95,37 +95,35 @@ class Ui(QtWidgets.QMainWindow):
 
         # TODO: implement full stat calc formula
         cpm = gm.get_lvl_cpm(pokemon.battle_card.level)
-        if pokemon.battle_card.shiny:
-            cpm *= SHINY_STAT_MULT
-        _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm
-        _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm
-        _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm
+        _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm * SHINY_STAT_MULT
+        _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm * SHINY_STAT_MULT
+        _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm * SHINY_STAT_MULT
 
         self.atkStat.setText(str(int(_atk)))
         self.defStat.setText(str(int(_def)))
         self.hpStat.setText(str(int(_hp)))
 
         # TODO: set modified colors if there are any
-        if _atk > (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value]) * cpm:
+        if _atk > (pokemon.battle_card.a_iv + atk_base) * cpm:
             self.atkStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _atk < (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value]) * cpm:
+        elif _atk < (pokemon.battle_card.a_iv + atk_base) * cpm:
             self.atkStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.atkStat.setStyleSheet("color: black;")
 
-        if _def > (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value]) * cpm:
-            self.atkStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _def < (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value]) * cpm:
-            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
+        if _def > (pokemon.battle_card.d_iv + def_base) * cpm:
+            self.defStat.setStyleSheet("color: green; font-weight: bold;")
+        elif _def < (pokemon.battle_card.d_iv + def_base) * cpm:
+            self.defStat.setStyleSheet("color: red; font-weight: bold;")
         else:
-            self.atkStat.setStyleSheet("color: black;")
+            self.defStat.setStyleSheet("color: black;")
 
-        if _hp > (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value]) * cpm:
-            self.atkStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _hp < (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value]) * cpm:
-            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
+        if _hp > (pokemon.battle_card.hp_iv + hp_base) * cpm:
+            self.hpStat.setStyleSheet("color: green; font-weight: bold;")
+        elif _hp < (pokemon.battle_card.hp_iv + hp_base) * cpm:
+            self.hpStat.setStyleSheet("color: red; font-weight: bold;")
         else:
-            self.atkStat.setStyleSheet("color: black;")
+            self.hpStat.setStyleSheet("color: black;")
 
         pokemon_name = pokemon.name.name
         primary_type, secondary_type = pokemon_factory.get_pokemon_type_reference(pokemon_name)

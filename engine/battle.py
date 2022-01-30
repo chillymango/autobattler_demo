@@ -139,7 +139,7 @@ class BattleManager(Component):
                 battle_stats=stats
             )
             # TODO: render
-            msg = f"Battle between {p1} and {p2} won by {res['winner']}"
+            msg = f"Battle between {p1} and {p2}"
             msg += f"Team 1 Summary:\n\t" + "\n\t".join(
                 [f"{poke.nickname} - {summary.battle_stats[poke.id]}" for poke in team1]
             )

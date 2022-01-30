@@ -180,6 +180,7 @@ class PlayerManager(Component):
         """
         Release a Pokemon
         """
+        print(f'Releasing {pokemon} from {player}')
         dissociate(PlayerRoster, player, pokemon)
         self.state._pokemon_registry.remove(pokemon)
         player.party_config.remove_from_party(pokemon.id)
