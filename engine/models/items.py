@@ -500,7 +500,7 @@ class LargeSpeedShard(Shard):
 class CombinedItem(CombatItem):
 
     name: str = "CombinedItem"  # assign a default name here
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,HP,ENG,SPD
 
 
 class LifeOrb(CombinedItem):
@@ -544,7 +544,7 @@ class CellBattery(CombinedItem):
     Provide energy per tick
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
 
     def on_tick_action(self, context: T.Dict):
         """
@@ -559,7 +559,7 @@ class Leftovers(CombinedItem):
     Provide energy per tick
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
     def on_tick_action(self, context: T.Dict):
         """
@@ -621,7 +621,7 @@ class IronBarb(CombinedItem):
     Deals damage on hit
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,1,0,0])
     
     def on_enemy_fast_move_action(self, context: T.Dict):
         """
@@ -649,7 +649,7 @@ class ShellBell(CombinedItem):
     Lifesteal
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
     def on_fast_move_action(self, context: T.Dict):
         """
@@ -717,7 +717,7 @@ class QuickPowder(CombinedItem):
     boosts attack speed of teammates
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,1])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
     def pre_battle_action(self, context: T.Dict):
         """
@@ -878,6 +878,7 @@ class CommonStone(Stone):
     """
 
     def stone_evo(self):
+
         print('running stone evo')
         evo_manager: EvolutionManager = self._env.evolution_manager
         # handle eevee specially
@@ -886,15 +887,15 @@ class CommonStone(Stone):
         if self.holder is None:
             print('oioioioioi')
             raise Exception("No Pokemon found as a valid target")
-
+        player = evo_manager.find_owner(self.holder)
         #if eevee, evolve 
         if self.holder.name == PokemonId.eevee:
             if PokemonType.water in self._target_type:
-                self.eve_volve(evo = "vaporeon", pokemon = self.holder, evo_name = PokemonId.vaporeon)
+                self.eve_volve(evo = "vaporeon", pokemon = self.holder, evo_name = PokemonId.vaporeon, player = player)
             elif PokemonType.fire in self._target_type:
-                self.eve_volve(evo = "flareon", pokemon = self.holder, evo_name = PokemonId.flareon)
+                self.eve_volve(evo = "flareon", pokemon = self.holder, evo_name = PokemonId.flareon, player = player)
             elif PokemonType.electric in self._target_type:
-                self.eve_volve(evo = "jolteon", pokemon = self.holder, evo_name = PokemonId.jolteon)
+                self.eve_volve(evo = "jolteon", pokemon = self.holder, evo_name = PokemonId.jolteon, player = player)
             return
         print('holder is not eevee')
         # try and evolve
@@ -914,10 +915,10 @@ class CommonStone(Stone):
                 )
                 evo_manager.evolve(self.holder)
                 shop_manager: "ShopManager" = self._env.shop_manager
-                shop_manager.check_shiny(self.player, self.holder.name.name)
+                shop_manager.check_shiny(player, self.holder.name.name)
                 self.consumed = True
     
-    def eve_volve(self, evo, pokemon, evo_name):
+    def eve_volve(self, evo, pokemon, evo_name, player):
         print("evolving eevee with stone")
         pokemon_factory: PokemonFactory = self._env.pokemon_factory
         pokemon.xp = 0
@@ -933,7 +934,7 @@ class CommonStone(Stone):
         pokemon.name = evo_name
         pokemon.battle_card = evolved_card
         shop_manager: "ShopManager" = self._env.shop_manager
-        shop_manager.check_shiny(self.player, pokemon.name.name)
+        shop_manager.check_shiny(player, pokemon.name.name)
         self.consumed = True
 
 

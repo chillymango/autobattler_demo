@@ -298,3 +298,15 @@ class EvolutionManager(Component):
                     self.evolve(party_member)
                     shop_manager: "ShopManager" = self.env.shop_manager
                     shop_manager.check_shiny(player, party_member.name.name)
+    
+    def find_owner(self, pokemon):
+        """
+        figure out who the owner of a pokemon is
+        """
+        player_manager: PlayerManager = self.env.player_manager
+        owner_dict = {}
+        for player in self.env.state.players:
+            for poke_id in player_manager.player_roster(player):
+                owner_dict[poke_id] = player
+        return(owner_dict[pokemon.id])
+
