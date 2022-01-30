@@ -40,3 +40,9 @@ class HeroManager(Component):
 
     def get_player_hero(self, player: Player) -> Hero:
         return self.state.player_hero[player]
+
+    def use_hero_power(self, player: Player) -> None:
+        """
+        Use a Player hero power
+        """
+        hero = self.get_player_hero(player)

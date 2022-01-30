@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from pydantic import BaseModel
+from engine.hero import HeroManager
 from engine.models.items import Item
 
 from engine.models.party import PartyConfig
@@ -456,6 +457,23 @@ class CombineItems(WebSocketCallback):
 
         pm: PlayerManager = game.player_manager
         pm.combine_player_items(player, primary_item, secondary_item)
+        return ReportingResponse(success=True)
+
+
+# HERO POWER
+
+class UseHeroPower(WebSocketCallback):
+    """
+    Use a player hero power
+    """
+
+    @staticmethod
+    def callback(hydrated: WebSocketPlayerRequest):
+        game, user = get_request_context(hydrated)
+        player: Player = game.state.get_player_by_id(user.id)
+        hero_manager: HeroManager = game.hero
+        if not hero_manager.use_hero_power(player):
+            return ReportingResponse(success=False, message="Could not use Hero Power")
         return ReportingResponse(success=True)
 
 

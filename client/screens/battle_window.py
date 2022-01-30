@@ -359,6 +359,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             QtWidgets.QPushButton, "playerArchetypeIconBackground"
         )
 
+        self.playerArchetypeIcon.clicked.connect(self.use_hero_power_callback)
+
     def add_stage_timer_interface(self):
         # time to next stage
         self.timeToNextStage = self.findChild(QtWidgets.QProgressBar, "timeToNextStage")
@@ -645,6 +647,11 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
             print(f'Failed to parse message: {repr(exc)}')
             raise
         self.render_log_messages()
+
+    @asyncSlot()
+    async def use_hero_power_callback(self):
+        print("Using hero power")
+        await self.websocket.use_hero_power(self.context)
 
     @asyncSlot()
     async def roll_shop_callback(self):

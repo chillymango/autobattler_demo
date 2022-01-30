@@ -746,8 +746,9 @@ class TechnicalMachine(InstantPokemonItem):
     def use(self):
         print('Using TM')
         card: "BattleCard" = self.holder.battle_card
-        if card.tm_flag != True:
-            self.holder.battle_card.tm_flag = True
+        if card.tm_flag:
+            raise Exception("Target already has TM move")
+        self.holder.battle_card.tm_flag = True
 
 
 #HERO POWER ITEMS
