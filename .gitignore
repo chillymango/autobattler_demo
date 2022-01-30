@@ -2,3 +2,9 @@
 *.log
 *.pyc
 current_player.json
+ranking.ipynb
+.ipynb_checkpoints/ranking-checkpoint.ipynb
+battle_engine/src/js/battle/Battle.js
+battle_engine/src/js/battle/pvpoke_Battle.py
+battle_engine/src/js/battle/Battle.js
+battle_engine/src/js/battle/Battle.js
