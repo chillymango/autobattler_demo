@@ -8,6 +8,7 @@ from uuid import UUID
 from engine.base import Component
 from engine.models import items
 from engine.models.association import PlayerInventory, PokemonHeldItem
+from engine.models.association import dissociate
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
 
@@ -200,6 +201,18 @@ class ItemManager(Component):
             x for x in self._item_factory[items.PersistentPokemonItem]
             if isinstance(x, items.CombatItem)
         )
+
+    def remove_item(self, item: items.Item):
+        """
+        Remove an item. Remove from player or Pokemon and delete.
+        """
+        item_holder = PlayerInventory.get_item_holder(item)
+        if item_holder is not None:
+            dissociate(PlayerInventory, item_holder, item)
+            return
+        item_holder = PokemonHeldItem.get_item_holder(item)
+        if item_holder is not None:
+            dissociate(PokemonHeldItem, item_holder, item)
 
     def remove_orphaned_items(self):
         """

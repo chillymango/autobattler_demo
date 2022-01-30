@@ -310,6 +310,8 @@ class InstantItemMixin:
         More complex consumption criteria could count number of uses or something like that.
         """
         self.consumed = True
+        item_manager: "ItemManager" = self._env.item_manager
+        item_manager.remove_item(self)
 
     def use(self):
         """
