@@ -16,7 +16,8 @@ from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
 from engine.weather import WeatherManager
-from engine.models.enums import PokemonId, PokemonType
+from engine.models.combat_hooks import CombatHook
+from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.shop import ShopOffer
 from engine.models.player import Player
 from engine.models.pokemon import BattleCard
@@ -139,24 +140,6 @@ class PokemonItem(Item):
 
     def set_pokemon_target(self, pokemon: "Pokemon"):
         self.holder = pokemon
-
-
-class CombatHook(Enum):
-    """
-    Combat Phases
-    """
-
-    INSTANT = 0
-    PRE_BATTLE = 1
-    PRE_COMBAT = 2
-    ON_TICK = 3
-    ON_FAST_MOVE = 4
-    ON_ENEMY_FAST_MOVE = 5
-    ON_CHARGED_MOVE = 6
-    ON_ENEMY_CHARGED_MOVE = 7
-    POST_COMBAT = 8
-    POST_BATTLE = 9
-    POST_MALONE = 10
 
 
 class CombatItem(PokemonItem):
@@ -551,7 +534,7 @@ class LargeSpeedShard(Shard):
 class CombinedItem(CombatItem):
 
     name: str = "CombinedItem"  # assign a default name here
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,HP,ENG,SPD
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,0,0]) #contribution of ATK,DEF,HP,ENG,SPD
 
 
 class LifeOrb(CombinedItem):
@@ -560,7 +543,7 @@ class LifeOrb(CombinedItem):
     Significantly increases damage, deals damage per tick to holder
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,0,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,0])
 
     def on_battle_start(self, **context: T.Dict):
         """
@@ -589,19 +572,26 @@ class LightClay(CombinedItem):
         """
         pass
 
+
 class CellBattery(CombinedItem):
     """
     Cell Battery
     Provide energy per tick
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
+    _ENERGY_PER_TICK = 1.0
+
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,1,0])
 
     def on_tick_action(self, **context: T.Dict):
         """
         energy per tick 
         """
-        pass
+        attacker: BattleCard = context['current_team1']
+        before = attacker.energy
+        after = attacker.energy + self._ENERGY_PER_TICK * self.level
+        print(f'CellBattery {attacker.name.name}: {before} -> {after}')
+        attacker.energy = after
 
 
 class Leftovers(CombinedItem):
@@ -610,13 +600,14 @@ class Leftovers(CombinedItem):
     Provide energy per tick
     """
 
+    _HEALTH_PER_TICK = 1.0
+
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
     def on_tick_action(self, **context: T.Dict):
         """
         HP per tick 
         """
-        pass
 
 
 class Metronome(CombinedItem):
@@ -627,12 +618,12 @@ class Metronome(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,0,1])
 
-
     def on_fast_move_action(self, **context: T.Dict):
         """
         atk spd per tick 
         """
         pass
+
 
 class ExpShare(CombinedItem):
     """
@@ -641,7 +632,6 @@ class ExpShare(CombinedItem):
     """
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,0,1])
-
 
     def post_battle_action(self, **context: T.Dict):
         """
@@ -680,6 +670,7 @@ class IronBarb(CombinedItem):
         """
         pass
 
+
 class FocusBand(CombinedItem):
     """
     Focus Band
@@ -694,11 +685,16 @@ class FocusBand(CombinedItem):
         """
         pass
 
+
 class ShellBell(CombinedItem):
     """
     Shell Bell
     Lifesteal
     """
+
+    # TODO: this would be more interesting if it was percent damage dealt
+    # ... but for now it's a flat scaling amount
+    _LIFESTEAL: float = 3.0
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
@@ -706,7 +702,12 @@ class ShellBell(CombinedItem):
         """
         heal
         """
-        pass
+        attacker: BattleCard = context['current_team1']
+        before = attacker.health
+        after = attacker.health + self._LIFESTEAL * self.level
+        attacker.health = after
+        print(f'ShellBell lifesteal {attacker.name.name}: {before} -> {after}')
+
 
 class EjectButton(CombinedItem):
     """
@@ -755,12 +756,19 @@ class AssaultVest(CombinedItem):
     """
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
+    _POWER_REDUCTION: int = 2
 
     def on_enemy_charged_move_action(self, **context: T.Dict):
         """
         reduce power
         """
-        pass
+        attacker: BattleCard = context['current_team1']
+        # TODO(albert/will): balance this because it's pretty sloppy
+        before = attacker.a_iv
+        after = attacker.a_iv - self._POWER_REDUCTION * self.level
+        print(f'Reduced {attacker.name.name} ATK from {before} to {after}')
+        attacker.a_iv = after
+
 
 class QuickPowder(CombinedItem):
     """
@@ -789,7 +797,10 @@ class ChoiceSpecs(CombinedItem):
         """
         change your fast move
         """
-        pass
+        lock_on = Move.LOCK_ON
+        attacker: BattleCard = context['current_team1']
+        attacker.move_f = lock_on
+        print(f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}')
 
 
 class TechnicalMachine(InstantPokemonItem):

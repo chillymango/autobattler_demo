@@ -59,10 +59,11 @@ from random import randint
 
 import os.path
 from engine.models.enums import PokemonId
+from engine.models.combat_hooks import CombatHook
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 
 if T.TYPE_CHECKING:
-    from engine.models.items import CombatHook, CombatItem
+    from engine.models.items import CombatItem
 
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
@@ -153,14 +154,16 @@ class HookExecutor:
         # determine the active items
         # for pre / post-battle hooks, all item effects should always trigger by default
         if hook in (CombatHook.PRE_BATTLE, CombatHook.POST_BATTLE):
-            active_items = [card.item for card in self.team1 + self.team2]
+            active_items = [card.item for card in self.team1 + self.team2 if card.item is not None]
         else:
             # all global items are active (including *beyond the grave*)
             # remote items are active if the holding pokemon is not fainted
             # other items are only active if the pokemon is currently in combat
             active_items: T.List[CombatItem] = []
             for teammate in self.team1 + self.team2:
-                if teammate in (current_team1, current_team2):
+                if current_team1 is not None and teammate == current_team1.battlecard:
+                    active_items.append(teammate.item)
+                elif current_team2 is not None and teammate == current_team2.battlecard:
                     active_items.append(teammate.item)
                 elif teammate.item:
                     if teammate.item.is_global:
@@ -169,26 +172,27 @@ class HookExecutor:
                         active_items.append(teammate.item)
 
         # run item callbacks
-        print(f'Determined active items {active_items}')
         for item in active_items:
+            if item is None:
+                continue
             method = item.get_method(hook)
-            method(current_team1=current_team1, current_team2=current_team2, **context)
+            if current_team1:
+                battlecard1 = current_team1.battlecard
+            else:
+                battlecard1 = None
+            if current_team2:
+                battlecard2 = current_team2.battlecard
+            else:
+                battlecard2 = None
+
+            method(
+                current_team1=battlecard1,
+                current_team2=battlecard2,
+                **context
+            )
 
 
-def run_item_callbacks(
-    current_team1: BattleCard,
-    current_team2: BattleCard,
-    team1: T.List[BattleCard],
-    team2: T.List[BattleCard],
-    hook: "CombatHook",
-    context: T.Dict = None
-) -> None:
-    """
-    Run combat item execution
-    """
-    context = context or {}
-
-# TODO(albert): this is gross
+# TODO(albert): this global is gross
 execute_hook = None
 
 
@@ -239,11 +243,11 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     try:
         current_team1 = bench1[0]
     except IndexError:
-        pass
+        current_team1 = None
     try:
         current_team2 = bench2[0]
     except IndexError:
-        pass
+        current_team2 = None
 
     # current_team1 = team1_live[0] # picks the leading pokemon
     # current_team2 = team2_live[0]
@@ -278,6 +282,9 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
             # COMBAT ITEM HOOK: pre_combat_action
             execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
 
+        # COMBAT ITEM HOOK: on_tick
+        execute_hook(CombatHook.ON_TICK, current_team1, current_team2)
+
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
         sequence.append(Event(-1, '',"turn number: "+str(turnnumber)))
@@ -301,7 +308,7 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
             sequence.append(Event(-1, "switch", "team 2"))
             can_attack_2 = False
             team2_switches -= 1
-       
+
         # was considering making array of possible moves, but handled in optimal moves function
 
         pokemon1_dead = False # at the resolution of a turn, will decide if pokemon is switched   
