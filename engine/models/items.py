@@ -1307,6 +1307,12 @@ class LanceFetish(ComplexHeroPower):
 class WillSac(PlayerHeroPower):
     
     hp_cost: int = 1
+    success: bool = False
+    used: bool = False
+
+    def turn_setup(self):
+        self.success = False
+        self.used = False
 
     def use(self, player: "Player" = None):
         """
