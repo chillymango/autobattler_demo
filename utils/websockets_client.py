@@ -13,7 +13,7 @@ from engine.models.items import CombinedItem
 
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig, UseItem, UseItemRequest
+from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig, UseHeroPower, UseItem, UseItemRequest
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -167,4 +167,4 @@ class WebSocketClient:
         )
 
     async def use_hero_power(self, ctx: GameContext):
-        await self.implement_api_client(UseItemRequest,ctx)
+        await self.implement_api_client(UseHeroPower, ctx)

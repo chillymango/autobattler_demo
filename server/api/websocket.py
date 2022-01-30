@@ -467,6 +467,8 @@ class UseHeroPower(WebSocketCallback):
     Use a player hero power
     """
 
+    REQUEST_TYPE = WebSocketPlayerRequest
+
     @staticmethod
     def callback(hydrated: WebSocketPlayerRequest):
         game, user = get_request_context(hydrated)

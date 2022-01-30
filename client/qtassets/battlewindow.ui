@@ -1355,7 +1355,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>1240</x>
-      <y>720</y>
+      <y>690</y>
       <width>211</width>
       <height>61</height>
      </rect>
@@ -1584,6 +1584,19 @@ p, li { white-space: pre-wrap; }
      <enum>Qt::Vertical</enum>
     </property>
    </widget>
+   <widget class="QPushButton" name="useAbility">
+    <property name="geometry">
+     <rect>
+      <x>1300</x>
+      <y>760</y>
+      <width>81</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Use Ability</string>
+    </property>
+   </widget>
    <zorder>playerArchetypeIconBackground</zorder>
    <zorder>exploreWilds</zorder>
    <zorder>shopPokemon1</zorder>
@@ -1676,6 +1689,7 @@ p, li { white-space: pre-wrap; }
    <zorder>partyXp3</zorder>
    <zorder>partyXp1</zorder>
    <zorder>partyXp0</zorder>
+   <zorder>useAbility</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

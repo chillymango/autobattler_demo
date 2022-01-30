@@ -96,6 +96,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.add_team_interface()
         self.add_message_interface()
         self.add_weather_interface()
+        self.add_player_stats_interface()
 
         # register pokemon buttons for context window
         self.register_pokemon_buttons()
@@ -358,8 +359,9 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.playerArchetypeIconBackground = self.findChild(
             QtWidgets.QPushButton, "playerArchetypeIconBackground"
         )
+        self.useAbility = self.findChild(QtWidgets.QPushButton, "useAbility")
 
-        self.playerArchetypeIcon.clicked.connect(self.use_hero_power_callback)
+        self.useAbility.clicked.connect(self.use_hero_power_callback)
 
     def add_stage_timer_interface(self):
         # time to next stage
@@ -436,6 +438,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         )
 
     def open_pokemon_item_window(self, party_idx: int):
+        if self.party[party_idx] is None:
+            return
         self.poke_item_window = PokeItemWindow(
             self,
             env=self.env,
