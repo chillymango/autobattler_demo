@@ -204,6 +204,58 @@
     <string>Enable Log Timestamps</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="pauseGame">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>310</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Pause Game</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="unpauseGame">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>380</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Unpause Game</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="dumpPlayerState">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>320</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Dump Player State</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="dumpAllState">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>380</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Dump All State</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

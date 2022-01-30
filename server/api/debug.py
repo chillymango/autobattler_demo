@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from server.api.base import ReportingResponse
 from server.api.base import PlayerContextRequest
-from server.api.lobby import get_request_context
+from server.api.lobby import PlayerContext, get_request_context
 from engine.models.phase import GamePhase
 
 if T.TYPE_CHECKING:
@@ -91,3 +91,38 @@ def api_initiate_battle(request: PlayerContextRequest):
     game, _ = get_request_context(request)
     battle_manager: BattleManager = game.battle_manager
     battle_manager.turn_execute()
+    return ReportingResponse(success=True)
+
+
+@debug_router.post("/pause_game", response_model=ReportingResponse)
+def api_debug_pause(request: PlayerContextRequest):
+    """
+    Pause the game
+    """
+    game, _ = get_request_context(request)
+    game.paused = True
+    return ReportingResponse(success=True)
+
+
+@debug_router.post("/unpause_game", response_model=ReportingResponse)
+def api_debug_unpause(request: PlayerContextRequest):
+    """
+    Unpause the game
+    """
+    game, _ = get_request_context(request)
+    game.paused = False
+    return ReportingResponse(success=True)
+
+
+class DumpStateRequest(PlayerContextRequest):
+    
+    dump_all: bool = True
+
+
+@debug_router.post("/dump_state", response_model=State)
+def api_dump_state(request: DumpStateRequest):
+    game, player = get_request_context(request)
+    if request.dump_all:
+        return game.state
+    else:
+        return game.state.for_player(player)

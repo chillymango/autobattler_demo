@@ -80,6 +80,18 @@ class Ui(QtWidgets.QDialog, GameWindow):
         self.enableLogTimestamps = self.findChild(QtWidgets.QPushButton, "enableLogTimestamps")
         self.enableLogTimestamps.clicked.connect(self.enable_log_timestamps)
 
+        self.pauseGame = self.findChild(QtWidgets.QPushButton, "pauseGame")
+        #self.pauseGame.clicked.connect(self.pause_game)
+
+        self.unpauseGame = self.findChild(QtWidgets.QPushButton, "unpauseGame")
+        #self.unpauseGame.clicked.connect(self.unpause_game)
+
+        self.dumpPlayerState = self.findChild(QtWidgets.QPushButton, "dumpPlayerState")
+        #self.dumpPlayerState.clicked.connect(self.dump_player_state)
+
+        self.dumpAllState = self.findChild(QtWidgets.QPushButton, "dumpAllState")
+        self.dumpAllState.clicked.connect(self.dump_all_state)
+
         for callback in [
             #self.update_game_phase
         ]:
@@ -95,6 +107,9 @@ class Ui(QtWidgets.QDialog, GameWindow):
         TODO: probably want to implement something cleaner here
         """
         return self.parent.context
+
+    def dump_all_state(self):
+        print(self.client.dump_all_state())
 
     def disable_log_timestamps(self):
         logger: Logger = self.env.logger

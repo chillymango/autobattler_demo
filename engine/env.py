@@ -82,6 +82,8 @@ class Environment:
         # uh i don't think we actually use this anymore
         self.current_player = None
 
+        self.paused = False
+
         for component in self.component_classes:
             self.components.append(component(self, self.state))
 
@@ -184,6 +186,9 @@ class Environment:
         # if no players left in game, stop the count (game)
         if not self.state.players:
             raise GameOver("No players left in game.")
+
+        if self.paused:
+            return
 
         # TODO: figure out a better way to toggle for dev
         #if len(self.state.alive_players) == 1:

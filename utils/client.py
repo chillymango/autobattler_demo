@@ -313,6 +313,9 @@ class AsynchronousServerClient:
         if not response.success:
             raise ServerRequestFailure(response.message)
 
+    async def dump_all_state(self, game_id: T.Union[str, UUID]):
+        pass
+
 
 class GameServerClient(AsynchronousServerClient):
     """
