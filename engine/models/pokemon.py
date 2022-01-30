@@ -8,7 +8,6 @@ from engine.models.base import Entity
 from engine.models.enums import Move
 from engine.models.enums import PokemonId
 from engine.models.enums import PokemonType
-from engine.models.items import CombatItem, Item
 
 if T.TYPE_CHECKING:
     pass
@@ -64,9 +63,9 @@ class BattleCard(BaseModel):
     status: int = 1
     choiced: bool = False
     team_position: int = None
-    _item: CombatItem = PrivateAttr()
+    _item: "CombatItem" = PrivateAttr()
 
-    def give_item(self, item: CombatItem):
+    def give_item(self, item: "CombatItem"):
         self._item = item
 
     def make_shiny(self):
@@ -184,3 +183,8 @@ class Pokemon(Entity):
         """
         print("adding xp")
         self.xp += amount
+
+
+from engine.models.items import CombatItem
+BattleCard.update_forward_refs()
+Pokemon.update_forward_refs()

@@ -16,6 +16,9 @@ import random
 from engine.weather import WeatherManager
 from engine.models.enums import PokemonId, PokemonType
 from engine.models.shop import ShopOffer
+from engine.models.player import Player
+from engine.models.pokemon import BattleCard
+from engine.models.pokemon import Pokemon
 
 from utils.strings import camel_case_to_snake_case, crunch_spaces 
 if T.TYPE_CHECKING:
@@ -25,9 +28,6 @@ if T.TYPE_CHECKING:
     from engine.items import ItemManager
     from engine.pokemon import EvolutionManager, PokemonFactory
     from engine.player import PlayerManager
-    from engine.models.player import Player
-    from engine.models.pokemon import BattleCard
-    from engine.models.pokemon import Pokemon
     from engine.shop import ShopManager
 
 # DEFAULT ITEM COSTS

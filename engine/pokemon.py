@@ -299,7 +299,7 @@ class EvolutionManager(Component):
                     shop_manager: "ShopManager" = self.env.shop_manager
                     shop_manager.check_shiny(player, party_member.name.name)
     
-    def find_owner(self, pokemon):
+    def find_owner(self, pokemon: Pokemon):
         """
         figure out who the owner of a pokemon is
         """
