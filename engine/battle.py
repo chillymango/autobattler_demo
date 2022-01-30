@@ -9,9 +9,12 @@ from engine.base import Component
 from engine.batterulogico import battle
 from engine.batterulogico import Event
 from engine.models.association import PokemonHeldItem
+from engine.models.battle import BattleStat
+from engine.models.battle import BattleStatus
+from engine.models.battle import BattleSummary
 from engine.models.items import CombatItem
 from engine.models.player import Player
-from engine.models.pokemon import BattleCard
+from engine.models.pokemon import BattleCard, Pokemon
 from engine.models.stats import Stats
 
 if T.TYPE_CHECKING:
@@ -36,13 +39,20 @@ class BattleManager(Component):
         """
         super().initialize()
 
+    def get_team(self, player: Player) -> T.List[Pokemon]:
+        """
+        Get a Player team
+        """
+        player_manager: "PlayerManager" = self.env.player_manager
+        return player_manager.player_team(player)
+
     def assemble_team_cards(self, player: Player) -> T.List[BattleCard]:
         """
         Get a set of battle cards with modifiers attached.
         """
         player_manager: "PlayerManager" = self.env.player_manager
         player.party_config.populate_team_from_party()
-        team = player_manager.player_team(player)
+        team = self.get_team(player)
 
         cards: T.List[BattleCard] = []
         for poke in team:
@@ -83,9 +93,12 @@ class BattleManager(Component):
             events: T.List[Event] = res.get('events', [])
             recipients = (p1, p2)
             for event in events:
+                if event.type == "faint":
+                    msg = (event.value.replace("team1", f"{p1.name}'s")
+                                      .replace("team2", f"{p2.name}'s"))
+                    self.log(msg=msg, recipient=recipients)
                 if event.type:
-                    msg = f"[{event.id}]: {event.type} - {event.value}"
-                    self.log(msg=msg, recipient=[p1, p2])
+                    print(f"[{event.id}]: {event.type} - {event.value}")
 
             if res['winner'] == 'team1':
                 self.log(msg=f"{p1} beats {p2}", recipient=recipients)
@@ -105,3 +118,46 @@ class BattleManager(Component):
                         player.hitpoints -= 4
                     else:
                         player.hitpoints -= 6
+            stats = dict()
+            team1 = self.get_team(p1)
+            team2 = self.get_team(p2)
+            team1_battle_dict = {
+                'damagedealt': res['team1damagedealt'], 'damagetaken': res['team1damagetaken']
+            }
+            team2_battle_dict = {
+                'damagedealt': res['team2damagedealt'], 'damagetaken': res['team2damagetaken']
+            }
+            stats.update(self.calcualate_battle_stats(team1, team1_battle_dict))
+            stats.update(self.calcualate_battle_stats(team2, team2_battle_dict))
+
+            summary = BattleSummary(
+                winner=res['winner'],
+                player1_id = p1.id,
+                player2_id=p2.id,
+                team1=[poke.id for poke in team1],
+                team2=[poke.id for poke in team2],
+                battle_stats=stats
+            )
+            # TODO: render
+            msg = f"Battle between {p1} and {p2} won by {res['winner']}"
+            msg += f"Team 1 Summary:\n\t" + "\n\t".join(
+                [f"{poke.nickname} - {summary.battle_stats[poke.id]}" for poke in team1]
+            )
+            msg += "\n\n"
+            msg += f"Team 2 Summary:\n\t" + "\n\t".join(
+                [f"{poke.nickname} - {summary.battle_stats[poke.id]}" for poke in team2]
+            )
+            msg += "\n\n"
+            self.log(msg=msg, recipient=recipients)
+
+    def calcualate_battle_stats(self, team: T.List[Pokemon], battle_dict: T.Dict) -> BattleStat:
+        stats: T.Dict[str, BattleStat] = dict()
+        for idx, poke in enumerate(team):
+            stats[poke.id] = BattleStat(
+                poke_id=poke.id,
+                damage_taken=battle_dict['damagetaken'][idx],
+                damage_dealt=battle_dict['damagedealt'][idx],
+                # TODO: implement
+                battle_status=BattleStatus.UNKNOWN
+            )
+        return stats

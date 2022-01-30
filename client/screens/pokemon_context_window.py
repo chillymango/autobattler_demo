@@ -6,6 +6,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from engine.models.pokemon import SHINY_STAT_MULT
 from engine.models.enums import PokemonType
 from engine.models.stats import Stats
 
@@ -94,6 +95,8 @@ class Ui(QtWidgets.QMainWindow):
 
         # TODO: implement full stat calc formula
         cpm = gm.get_lvl_cpm(pokemon.battle_card.level)
+        if pokemon.battle_card.shiny:
+            cpm *= SHINY_STAT_MULT
         _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm
         _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm
         _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm
@@ -103,9 +106,23 @@ class Ui(QtWidgets.QMainWindow):
         self.hpStat.setText(str(int(_hp)))
 
         # TODO: set modified colors if there are any
-        if pokemon.modifiers[Stats.ATK.value] > 0:
+        if _atk > (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value]) * cpm:
             self.atkStat.setStyleSheet("color: green; font-weight: bold;")
-        elif pokemon.modifiers[Stats.ATK.value] < 0:
+        elif _atk < (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value]) * cpm:
+            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
+        else:
+            self.atkStat.setStyleSheet("color: black;")
+
+        if _def > (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value]) * cpm:
+            self.atkStat.setStyleSheet("color: green; font-weight: bold;")
+        elif _def < (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value]) * cpm:
+            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
+        else:
+            self.atkStat.setStyleSheet("color: black;")
+
+        if _hp > (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value]) * cpm:
+            self.atkStat.setStyleSheet("color: green; font-weight: bold;")
+        elif _hp < (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value]) * cpm:
             self.atkStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.atkStat.setStyleSheet("color: black;")

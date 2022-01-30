@@ -54,10 +54,12 @@
 import json
 import copy
 import math
+import typing as T
 from random import randint
 
 import os.path
 from engine.models.enums import PokemonId
+from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 
 current_directory = os.path.dirname(__file__)
 parent_directory = os.path.split(current_directory)[0]
@@ -84,13 +86,13 @@ cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456
 
 class Event:
     def __init__(self, sequence_number, category, value):
-        self.id = sequence_number
-        self.type = category
-        self.value = value
+        self.id: int = sequence_number
+        self.type: str = category
+        self.value: str = value
 
 
 class Battler:
-    def __init__(self, battle_card, index):
+    def __init__(self, battle_card: BattleCard, index):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
         self.battlecard.bonus_shield = 1
 
@@ -102,6 +104,12 @@ class Battler:
         self.hp = math.floor(cpm * (pokedex[battle_card.name.name]["baseStats"]["hp"] + self.battlecard.hp_iv))
         if self.hp < 10:
             self.hp = 10
+        # TODO(albert/tone): maybe something unified for buffing with shiny
+        if battle_card.shiny:
+            self.a *= SHINY_STAT_MULT
+            self.d *= SHINY_STAT_MULT
+            self.hp *= SHINY_STAT_MULT
+
         self.id = index # keep track of where on the bench it is. for keeping track of how much damage it does
         self.dmg_dealt = 0
         self.dmg_taken = 0
@@ -137,9 +145,9 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
     t2_dmg_taken = []
     sequence = []
     
-    team1_live = copy.deepcopy(team1_cards) # create an instance of the team for the battle
-    team2_live = copy.deepcopy(team2_cards)
-    
+    team1_live: T.List[BattleCard] = copy.copy(team1_cards) # create an instance of the team for the battle
+    team2_live: T.List[BattleCard] = copy.copy(team2_cards)
+
     bench1 = []
     bench2 = []
 
@@ -209,9 +217,9 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
         pokemon1_dead = False # at the resolution of a turn, will decide if pokemon is switched   
         pokemon2_dead = False
 
-        dummy1 = copy.deepcopy(current_team1)
-        dummy2 = copy.deepcopy(current_team2)
-        dumseq = [] # copy.deepcopy(sequence)
+        dummy1 = copy.copy(current_team1)
+        dummy2 = copy.copy(current_team2)
+        dumseq = [] # copy.copy(sequence)
         dumdead1 = False
         dumdead2 = False
         if can_attack_1 and can_attack_2 and dummy1.timer >= 500 and dummy2.timer >=500:
@@ -223,13 +231,13 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
                 # COULD USE IF_LEGAL IN CHOOSE OPTIMAL MOVE FUNCTION, or just take the code out of there
 # the problem here is is_lethal changes the values, because I initially coded it as just a check, but turned it into a move
 # would need to change the is_lethal function, correct the part in the battle loop. get rid of these deep copies then                
-                dummy1_2 = copy.deepcopy(dummy1)
-                dummy2_2 = copy.deepcopy(dummy2)
+                dummy1_2 = copy.copy(dummy1)
+                dummy2_2 = copy.copy(dummy2)
                 if is_lethal(dummy1_2, x, dummy2_2, dummy2_2.hp, dumseq):
                     runtheblock = True
             for x in secondset:
-                dummy1_2 = copy.deepcopy(dummy1)
-                dummy2_2 = copy.deepcopy(dummy2)
+                dummy1_2 = copy.copy(dummy1)
+                dummy2_2 = copy.copy(dummy2)
                 if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
                     runtheblock = True
             if runtheblock:
@@ -291,10 +299,13 @@ def battle(team1_cards, team2_cards, team1_items=None, team2_items=None): # take
 
         if pokemon1_dead:
             # print(current_team1.name.name+" fainted")
-            sequence.append(Event(-1, "death", "team 1 had "+current_team1.battlecard.name.name+" die"))
+            sequence.append(
+                Event(-1, "faint", f"team2 {current_team2.battlecard.name.name} KOs {current_team1.battlecard.name.name}")
+            )
         if pokemon2_dead:
-            # print(current_team2.name.name+" fainted")
-            sequence.append(Event(-1, "death", "team 2 had "+current_team2.battlecard.name.name+" die"))
+            sequence.append(
+                Event(-1, "faint", f"team1 {current_team1.battlecard.name.name} KO's {current_team2.battlecard.name.name}")
+            )
 
         if pokemon2_dead:
             current_team2 = next_pokemon(bench2) # handles the death of current pokemon

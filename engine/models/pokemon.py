@@ -14,6 +14,7 @@ if T.TYPE_CHECKING:
 
 EvolutionConfig = namedtuple("EvolutionConfig", ["evolved_form", "turns_to_evolve"])
 
+SHINY_STAT_MULT = 1.25
 DEFAULT_XP_GAIN = 50.0
 
 
@@ -76,7 +77,10 @@ class BattleCard(BaseModel):
         """
         if self.shiny:
             return False
+
+        self.a
         self.shiny = True
+
         return True
 
     def set_tm_move(self, move):

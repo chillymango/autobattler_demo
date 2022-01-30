@@ -2,7 +2,6 @@
 Data Attribute Dictionary for the Pokemon Go gamemaster.json
 """
 import json
-from multiprocessing.sharedctypes import Value
 from munch import DefaultMunch
 
 from engine.base import Component
