@@ -804,7 +804,7 @@ class ChoiceSpecs(CombinedItem):
     Choice Specs
     Your fast move becomes lock on
     """
-
+    _LIFESTEAL = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
     def pre_battle_action(self, **context: T.Dict):
@@ -815,6 +815,16 @@ class ChoiceSpecs(CombinedItem):
         attacker: BattleCard = context['current_team1']
         attacker.move_f = lock_on
         print(f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}')
+
+    def on_fast_move_action(self, **context: T.Dict):
+        """
+        energy onhit
+        """
+        attacker: BattleCard = context['current_team1']
+        before = attacker.energy
+        after = attacker.energy + self._LIFESTEAL * self.level
+        attacker.energy = after
+        print(f'ChoiceSpecs on-hit {attacker.name.name}: {before} -> {after}')
 
 
 class TechnicalMachine(InstantPokemonItem):
