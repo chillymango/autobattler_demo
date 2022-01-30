@@ -49,7 +49,7 @@ class Hero(BaseModel):
 
 
 NORMAL_HEROES: T.List[Hero] = [
-    Hero(name="Brock", ability_name="Rock Solid", _power=BrockShieldPower),
+    Hero(name="Brock", ability_name="Brock Solid", _power=BrockShieldPower),
     Hero(name="Blaine", ability_name="PUSH THE BUTTON", _power=BlaineButton),
     Hero(name="Blue", ability_name = "Smell 'ya Later", _power=BlueSmell),
     Hero(name="Bruno", ability_name="Thicc Bod", _power=BrunoBod),

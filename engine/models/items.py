@@ -500,7 +500,7 @@ class LargeSpeedShard(Shard):
 class CombinedItem(CombatItem):
 
     name: str = "CombinedItem"  # assign a default name here
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,ENG,HP,SPD
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [0,0,0,0,0]) #contribution of ATK,DEF,HP,ENG,SPD
 
 
 class LifeOrb(CombinedItem):
@@ -544,7 +544,7 @@ class CellBattery(CombinedItem):
     Provide energy per tick
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
 
     def on_tick_action(self, context: T.Dict):
         """
@@ -559,7 +559,7 @@ class Leftovers(CombinedItem):
     Provide energy per tick
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
     def on_tick_action(self, context: T.Dict):
         """
@@ -621,7 +621,7 @@ class IronBarb(CombinedItem):
     Deals damage on hit
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,1,0,0])
     
     def on_enemy_fast_move_action(self, context: T.Dict):
         """
@@ -649,7 +649,7 @@ class ShellBell(CombinedItem):
     Lifesteal
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,0,1,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
     def on_fast_move_action(self, context: T.Dict):
         """
@@ -717,7 +717,7 @@ class QuickPowder(CombinedItem):
     boosts attack speed of teammates
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,1,1])
+    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
     def pre_battle_action(self, context: T.Dict):
         """
