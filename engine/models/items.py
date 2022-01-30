@@ -1150,6 +1150,8 @@ class BlaineButton(ChargedHeroPower):
     
     counter: int = 0
     bust: bool = False
+    jackpot: bool = True
+    _PRIZE: int = 5
     _max_dict: dict = PrivateAttr(default={
         0: 9,
         1: 9,
@@ -1181,6 +1183,7 @@ class BlaineButton(ChargedHeroPower):
         """
         self.counter = 0
         self.bust = False
+        self.jackpot = False
 
     def use(self, player: "Player" = None):
         if self.bust == False:
@@ -1190,6 +1193,10 @@ class BlaineButton(ChargedHeroPower):
             if self.counter > max:
                 self.bust = True
                 print('U busted')
+            elif self.counter == max: 
+                self.jackpot = True
+                player.balls += self._PRIZE
+                print('u hit the jackpot poggers')
         else:
             print('no more rolls')
 
