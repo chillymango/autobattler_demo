@@ -7,12 +7,14 @@ from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from engine.models.enums import PokemonType
+from engine.models.stats import Stats
 
 from utils.buttons import clear_button_image
 from utils.buttons import set_button_image
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
+    from engine.gamemaster import GameMaster
     from engine.models.pokemon import Pokemon
     from engine.pokemon import PokemonFactory
     from engine.sprites import SpriteManager
@@ -83,17 +85,30 @@ class Ui(QtWidgets.QMainWindow):
             return
 
         self.pokemonName.setText(self.pokemon.nickname)
+        gm: "GameMaster" = self.env.game_master
+        atk_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.ATK)
+        def_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.DEF)
+        hp_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.HP)
         sprite_manager: "SpriteManager" = self.env.sprite_manager
         pokemon_factory: "PokemonFactory" = self.env.pokemon_factory
 
         # TODO: implement full stat calc formula
-        _atk = pokemon.battle_card.a_iv
-        _def = pokemon.battle_card.d_iv
-        _hp = pokemon.battle_card.hp_iv
+        cpm = gm.get_lvl_cpm(pokemon.battle_card.level)
+        _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm
+        _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm
+        _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm
 
-        self.atkStat.setText(str(_atk))
-        self.defStat.setText(str(_def))
-        self.hpStat.setText(str(_hp))
+        self.atkStat.setText(str(int(_atk)))
+        self.defStat.setText(str(int(_def)))
+        self.hpStat.setText(str(int(_hp)))
+
+        # TODO: set modified colors if there are any
+        if pokemon.modifiers[Stats.ATK.value] > 0:
+            self.atkStat.setStyleSheet("color: green; font-weight: bold;")
+        elif pokemon.modifiers[Stats.ATK.value] < 0:
+            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
+        else:
+            self.atkStat.setStyleSheet("color: black;")
 
         pokemon_name = pokemon.name.name
         primary_type, secondary_type = pokemon_factory.get_pokemon_type_reference(pokemon_name)
@@ -102,14 +117,8 @@ class Ui(QtWidgets.QMainWindow):
             secondary_type = primary_type
         self.set_type_icon(self.secondaryTypeIcon, secondary_type.name)
 
-        try:
-            self.set_type_icon(self.fastMoveTypeIcon, pokemon.battle_card.f_move_type.name)
-            self.set_type_icon(self.chargeMoveTypeIcon, pokemon.battle_card.ch_move_type.name)
-        except:
-            print(pokemon)
-            print(pokemon.battle_card)
-            print(pokemon.battle_card.f_move_type)
-            print(pokemon.battle_card.ch_move_type)
+        self.set_type_icon(self.fastMoveTypeIcon, pokemon.battle_card.f_move_type.name)
+        self.set_type_icon(self.chargeMoveTypeIcon, pokemon.battle_card.ch_move_type.name)
 
         # only set TM if enabled
         if pokemon.battle_card.tm_flag:

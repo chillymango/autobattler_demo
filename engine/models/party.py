@@ -114,6 +114,8 @@ class PartyConfig(BaseModel):
             return False
         if poke_id is None:
             return False
+        if poke_id in self.team:
+            return False
         self.team.append(poke_id)
         return True
 

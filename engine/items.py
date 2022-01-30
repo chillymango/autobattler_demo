@@ -184,7 +184,7 @@ class ItemManager(Component):
         else:
             raise Exception(f"No combined item schema for types {primary} {secondary}")
 
-        combo_item = self.create_item(combo_item_class.__name__)
+        combo_item: items.CombinedItem = self.create_item(combo_item_class.__name__)
         combo_item.level = primary.level + secondary.level - 1
         combo_item.stat_contribution = [a+b for a,b in zip(primary.stat_contribution, secondary.stat_contribution )]
 
