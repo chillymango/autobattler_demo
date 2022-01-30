@@ -806,7 +806,7 @@ class RedCooking(InstantPokemonItem):
     def use(self):
         if not isinstance(self.holder, Pokemon):
             return
-        if self.holder.shiny == True:
+        if self.holder.battle_card.shiny == True:
             return
 
         self.holder.battle_card.shiny = True
@@ -1063,7 +1063,9 @@ class SabrinaFuture(PassiveHeroPower):
 class BlaineButton(ChargedHeroPower):
     
     counter: int = 0
+    bust: bool = False
     _max_dict: dict = PrivateAttr(default={
+        0: 9,
         1: 9,
         2: 9,
         3: 9,
@@ -1093,14 +1095,17 @@ class BlaineButton(ChargedHeroPower):
         """
         self.counter = 0
         self.bust = False
-    
+
     def use(self, player: "Player" = None):
-        max = self._max_dict[self._env.state.turn_number]
-        roll = random.randint(1,6)
-        self.counter += roll
-        if self.counter > max:
-            self.active = False
-            self.bust = True
+        if self.bust == False:
+            max = self._max_dict[self._env.state.turn_number]
+            roll = random.randint(1,6)
+            self.counter += roll
+            if self.counter > max:
+                self.bust = True
+                print('U busted')
+        else:
+            print('no more rolls')
 
         return
     
