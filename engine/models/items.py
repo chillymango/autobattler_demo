@@ -888,13 +888,12 @@ class CommonStone(Stone):
 
         #if eevee, evolve 
         if self.holder.name == PokemonId.eevee:
-            print('holder name is eevee')
-            if "water" in self._target_type:
-                self.eve_volve(evo = PokemonId.vaporeon, pokemon = self.holder)
-            elif "fire" in self._target_type:
-                self.eve_volve(evo = PokemonId.flareon, pokemon = self.holder)
-            elif "electric" in self._target_type:
-                self.eve_volve(evo = PokemonId.jolteon, pokemon = self.holder)
+            if PokemonType.water in self._target_type:
+                self.eve_volve(evo = "vaporeon", pokemon = self.holder, evo_name = PokemonId.vaporeon)
+            elif PokemonType.fire in self._target_type:
+                self.eve_volve(evo = "flareon", pokemon = self.holder, evo_name = PokemonId.flareon)
+            elif PokemonType.electric in self._target_type:
+                self.eve_volve(evo = "jolteon", pokemon = self.holder, evo_name = PokemonId.jolteon)
             return
         print('holder is not eevee')
         # try and evolve
@@ -917,21 +916,23 @@ class CommonStone(Stone):
                 shop_manager.check_shiny(self.player, self.holder.name.name)
                 self.consumed = True
     
-    def eve_volve(self, evo, pokemon):
+    def eve_volve(self, evo, pokemon, evo_name):
+        print("evolving eevee with stone")
         pokemon_factory: PokemonFactory = self._env.pokemon_factory
-        pokemon.xp == 0
+        pokemon.xp = 0
         evolved_form = evo
         evolved_card = pokemon_factory.get_evolved_battle_card(
         evolved_form, pokemon.battle_card
             )
         print(evolved_card)
-        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name) == pokemon.nickname:
+        if pokemon_factory.get_nickname_by_pokemon_name(pokemon.name.name) == pokemon.nickname:
             pokemon.nickname = pokemon_factory.get_nickname_by_pokemon_name(evolved_form)
 
         # update name and battle card
-        pokemon.name = evolved_form
+        pokemon.name = evo_name
         pokemon.battle_card = evolved_card
-        pokemon_factory.shiny_checker(self.player, evo)
+        shop_manager: "ShopManager" = self._env.shop_manager
+        shop_manager.check_shiny(self.player, pokemon.name.name)
         self.consumed = True
 
 
