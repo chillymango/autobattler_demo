@@ -259,8 +259,9 @@ class EvolutionManager(Component):
             # TODO: implement
             return
 
-        # reset xp
-        pokemon.xp = 0
+        # deduct XP threshold
+        threshold = self.get_threshold(pokemon.name.name)
+        pokemon.xp -= threshold
 
         # get battle card
         pokemon_factory: PokemonFactory = self.env.pokemon_factory

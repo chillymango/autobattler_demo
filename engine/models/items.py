@@ -120,10 +120,11 @@ class PlayerItem(Item):
     Base class for items which operate on players
     """
 
+    holder: "Player" = None
     tt: TargetType = TargetType.PLAYER  # target type
 
     def set_player_target(self, player: "Player"):
-        self.player = player
+        self.holder = player
 
 
 class PokemonItem(Item):
@@ -131,10 +132,11 @@ class PokemonItem(Item):
     Base class for items which get assigned to Pokemon
     """
 
+    holder: "Pokemon" = None
     tt: TargetType = TargetType.POKEMON
 
     def set_pokemon_target(self, pokemon: "Pokemon"):
-        self.pokemon = pokemon
+        self.holder = pokemon
 
 
 class CombatItem(PokemonItem):
@@ -742,10 +744,10 @@ class ChoiceSpecs(CombinedItem):
 class TechnicalMachine(InstantPokemonItem):
 
     def use(self):
-        card: "BattleCard" = self.pokemon.battle_card
+        print('Using TM')
+        card: "BattleCard" = self.holder.battle_card
         if card.tm_flag != True:
-            self.consumed = True
-            self.pokemon.battle_card.tm_flag = True
+            self.holder.battle_card.tm_flag = True
 
 
 #HERO POWER ITEMS
@@ -875,42 +877,44 @@ class CommonStone(Stone):
     """
 
     def stone_evo(self):
+        print('running stone evo')
         evo_manager: EvolutionManager = self._env.evolution_manager
         # handle eevee specially
         # TODO: make choice evolution types more generic
         im: "ItemManager" = self._env.item_manager
-        holder = im.get_pokemon_item_holder(self)
-        if holder is None:
+        if self.holder is None:
+            print('oioioioioi')
             raise Exception("No Pokemon found as a valid target")
 
         #if eevee, evolve 
-        if holder.name == PokemonId.eevee:
+        if self.holder.name == PokemonId.eevee:
+            print('holder name is eevee')
             if "water" in self._target_type:
-                self.eve_volve(evo = PokemonId.vaporeon, pokemon = holder)
+                self.eve_volve(evo = PokemonId.vaporeon, pokemon = self.holder)
             elif "fire" in self._target_type:
-                self.eve_volve(evo = PokemonId.flareon, pokemon = holder)
+                self.eve_volve(evo = PokemonId.flareon, pokemon = self.holder)
             elif "electric" in self._target_type:
-                self.eve_volve(evo = PokemonId.jolteon, pokemon = holder)
+                self.eve_volve(evo = PokemonId.jolteon, pokemon = self.holder)
             return
         print('holder is not eevee')
         # try and evolve
-        if not evo_manager.get_evolution(holder.name.name):
+        if not evo_manager.get_evolution(self.holder.name.name):
             return
-        if (holder.is_type(PokemonType.dragon)) or (holder.name == PokemonId.magikarp):
+        if (self.holder.is_type(PokemonType.dragon)) or (self.holder.name == PokemonId.magikarp):
             print('not compatable with stones')
             return
-        if ((holder.battle_card.poke_type1 in self._target_type) or (holder.battle_card.poke_type2 in self._target_type)):
+        if ((self.holder.battle_card.poke_type1 in self._target_type) or (self.holder.battle_card.poke_type2 in self._target_type)):
             print('holder qualifies for stone')
-            holder.add_xp(150)
-            threshold = evo_manager.get_threshold(holder.name.name)
-            if holder.xp >= threshold:
+            self.holder.add_xp(150)
+            threshold = evo_manager.get_threshold(self.holder.name.name)
+            if self.holder.xp >= threshold:
                 print(
                     'Party member {} XP exceeds threshold ({} >= {})'
-                    .format(holder.name.name, holder.xp, threshold)
+                    .format(self.holder.name.name, self.holder.xp, threshold)
                 )
-                evo_manager.evolve(holder)
+                evo_manager.evolve(self.holder)
                 shop_manager: "ShopManager" = self._env.shop_manager
-                shop_manager.check_shiny(self.player, holder.name.name)
+                shop_manager.check_shiny(self.player, self.holder.name.name)
                 self.consumed = True
     
     def eve_volve(self, evo, pokemon):

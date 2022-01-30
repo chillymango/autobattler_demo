@@ -2,6 +2,7 @@
 Item Manager
 """
 from collections import defaultdict
+from sre_parse import State
 import typing as T
 from uuid import UUID
 
@@ -209,10 +210,11 @@ class ItemManager(Component):
         item_holder = PlayerInventory.get_item_holder(item)
         if item_holder is not None:
             dissociate(PlayerInventory, item_holder, item)
-            return
-        item_holder = PokemonHeldItem.get_item_holder(item)
-        if item_holder is not None:
-            dissociate(PokemonHeldItem, item_holder, item)
+        else:
+            item_holder = PokemonHeldItem.get_item_holder(item)
+            if item_holder is not None:
+                dissociate(PokemonHeldItem, item_holder, item)
+        item.delete()
 
     def remove_orphaned_items(self):
         """
@@ -224,7 +226,9 @@ class ItemManager(Component):
 
     def remove_consumed_items(self):
         """
-        Check all item lists
+        Items that are not in a player inventory or given to a Pokemon are orphaned.
+
+        NOTE: this should just print warnings because it's a sign of sloppy programming
         """
         pass
 

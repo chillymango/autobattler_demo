@@ -6,7 +6,7 @@ import typing as T
 
 from engine.base import Component
 from engine.models.association import PlayerInventory, PlayerRoster, PlayerShop, PokemonHeldItem, associate, dissociate
-from engine.models.items import CombinedItem, InstantPlayerItem, Item, PlayerItem, Shard
+from engine.models.items import CombinedItem, InstantPlayerItem, InstantPokemonItem, Item, PlayerItem, Shard
 from engine.models.party import PartyConfig
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
@@ -127,10 +127,21 @@ class PlayerManager(Component):
 
         TODO: implement phase checks to ensure that these ops don't happen during combat
         """
+        print(f'Trying to give {item} to {pokemon}')
         player = PlayerRoster.all(entity2=pokemon)[0].entity1
 
         if not isinstance(player, Player):
             raise Exception(f"Tried to give item to {pokemon} that wasn't ready to give")
+
+        # if the item is an instant item, attempt to use immediately
+        if isinstance(item, InstantPokemonItem):
+            print(f'Using {item} as instant')
+            try:
+                item.holder = pokemon
+                item.immediate_action()
+            except Exception:
+                item.holder = None
+            return
 
         # do not allow assignment if Pokemon already has item
         if PokemonHeldItem.get_held_item(pokemon) is not None:

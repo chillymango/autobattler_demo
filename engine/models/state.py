@@ -4,7 +4,6 @@
 
 # maybe we just do a `mutate` function or something
 import codecs
-from multiprocessing.sharedctypes import Value
 import typing as T
 from pydantic import BaseModel, PrivateAttr, StrBytes
 from engine.models.association import Association, PlayerRoster, PlayerShop, PokemonHeldItem

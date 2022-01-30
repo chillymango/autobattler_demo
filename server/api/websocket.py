@@ -393,7 +393,7 @@ class RemoveItemFromPokemon(WebSocketCallback):
     REQUEST_TYPE = RemoveItemFromPokemonRequest
 
     @staticmethod
-    def callback(hydrated: GiveItemToPokemonRequest):
+    def callback(hydrated: RemoveItemFromPokemonRequest):
         game, _ = get_request_context(hydrated)
         pokemon_id = hydrated.pokemon_id
         pokemon = Pokemon.get_by_id(pokemon_id)

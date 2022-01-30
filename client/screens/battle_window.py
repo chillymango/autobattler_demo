@@ -162,6 +162,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         # re-populate inventory
         inventory: T.List[Item] = []
         for inv_raw in self.state.player_inventory[self.player]:
+            if inv_raw.consumed:
+                continue
             item_name = ItemName(inv_raw.name).name
             item_class = get_item_class_by_name(item_name)
             inventory.append(item_class(self.env, id=inv_raw.id))
