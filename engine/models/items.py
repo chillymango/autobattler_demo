@@ -16,6 +16,7 @@ from engine.models.base import Entity
 from engine.models.stats import Stats
 import random
 from engine.weather import WeatherManager
+from engine.models.battle import Event
 from engine.models.combat_hooks import CombatHook
 from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.shop import ShopOffer
@@ -162,6 +163,22 @@ class CombatItem(PokemonItem):
     def is_global(self):
         return self._is_global
 
+    def get_item_holder_from_context(self, context: T.Dict) -> BattleCard:
+        """
+        Get the Battle Card holding the item from context.
+        """
+        team1_items = context['team1_items']
+        team2_items = context['team2_items']
+
+        for battle_card, item in team1_items.items():
+            if item == self:
+                return battle_card
+        for battle_card, item in team2_items.items():
+            if item == self:
+                return battle_card
+
+        raise Exception(f"{self} is not being referenced by context {context}")
+
     def get_method(self, combat_hook: CombatHook) -> T.Callable:
         if combat_hook == CombatHook.PRE_BATTLE:
             return self.pre_battle_action
@@ -182,7 +199,7 @@ class CombatItem(PokemonItem):
         if combat_hook == CombatHook.POST_BATTLE:
             return self.post_battle_action
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this before any fighting happens
         """
@@ -194,43 +211,43 @@ class CombatItem(PokemonItem):
         """
         pass
 
-    def on_tick_action(self, **context: T.Dict):
+    def on_tick_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this action on all ticks
         """
         pass
 
-    def on_fast_move_action(self, **context: T.Dict):
+    def on_fast_move_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this action on all fast hits
         """
         pass
 
-    def on_enemy_fast_move_action(self, **context: T.Dict):
+    def on_enemy_fast_move_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this action on all enemy fast hits
         """
         pass
 
-    def on_enemy_charged_move_action(self, **context: T.Dict):
+    def on_enemy_charged_move_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this action on all enemy charged hits
         """
         pass
 
-    def on_charged_move_action(self, **context: T.Dict):
+    def on_charged_move_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this action on all charged moves
         """
         pass
 
-    def post_combat_action(self, **context: T.Dict):
+    def post_combat_action(self, **context: T.Dict) -> T.List[Event]:
         """
         During battle sequencing, run this after each individual combat
         """
         pass
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Dict) -> T.List[Event]:
         """
         Run this after all fighting happens
         """
@@ -766,7 +783,6 @@ class AssaultVest(CombinedItem):
         # TODO(albert/will): balance this because it's pretty sloppy
         before = attacker.a_iv
         after = attacker.a_iv - self._POWER_REDUCTION * self.level
-        print(f'Reduced {attacker.name.name} ATK from {before} to {after}')
         attacker.a_iv = after
 
 

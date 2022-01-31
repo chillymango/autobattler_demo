@@ -41,3 +41,10 @@ class BattleSummary(BaseModel):
     team1: T.List[str]  # a list of pokemon IDs that participated in combat
     team2: T.List[str]
     battle_stats: T.Dict[str, BattleStat]  # maps pokemon IDs to their battle statistics
+
+
+class Event:
+    def __init__(self, sequence_number, category, value):
+        self.id: int = sequence_number
+        self.type: str = category
+        self.value: str = value

@@ -59,6 +59,7 @@ from random import randint
 
 import os.path
 from engine.models.enums import PokemonId
+from engine.models.battle import Event
 from engine.models.combat_hooks import CombatHook
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 
@@ -87,13 +88,6 @@ cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456
 # current_team2_hp = current_team2.hp_iv*pokedex[current_team2.name.name]["baseStats"]["hp"]
 
 # I assume pokemon health doesn't initialize to 0, but if it does, need to create base stats for the pokemon
-
-class Event:
-    def __init__(self, sequence_number, category, value):
-        self.id: int = sequence_number
-        self.type: str = category
-        self.value: str = value
-
 
 class Battler:
     def __init__(self, battle_card: BattleCard, index):
@@ -139,11 +133,44 @@ class HookExecutor:
         self.team1 = team1
         self.team2 = team2
 
+        self.team1_items = self.get_all_team_items(self.team1)
+        self.team2_items = self.get_all_team_items(self.team2)
+
+    def get_all_team_items(self, team: T.List[BattleCard]):
+        """
+        Get all items
+        """
+        return [poke.item for poke in team]
+
+    def get_active_team_items(self, team: T.List[BattleCard], active: Battler, hook: "CombatHook"):
+        """
+        Get active team items for a combat hook
+        """
+        # determine the active items
+        # for pre / post-battle hooks, all item effects should always trigger by default
+        if hook in (CombatHook.PRE_BATTLE, CombatHook.POST_BATTLE):
+            return self.get_all_team_items(team)
+
+        # all global items are active (including *beyond the grave*)
+        # remote items are active if the holding pokemon is not fainted
+        # other items are only active if the pokemon is currently in combat
+        team_items = [None] * 3
+        for idx, teammate in enumerate(team):
+            if active is not None and active.battlecard == teammate:
+                team_items[idx] = teammate.item
+            elif teammate.item:
+                if teammate.item.is_global:
+                    team_items[idx] = teammate.item
+                elif teammate.item.is_remote and teammate.status:
+                    team_items[idx] = teammate.item
+
+        return team_items
+
     def __call__(
         self,
         hook: "CombatHook",
-        current_team1: BattleCard,
-        current_team2: BattleCard,
+        current_team1: Battler,
+        current_team2: Battler,
         **context: T.Dict
     ) -> None:
         """
@@ -153,25 +180,13 @@ class HookExecutor:
 
         # determine the active items
         # for pre / post-battle hooks, all item effects should always trigger by default
-        if hook in (CombatHook.PRE_BATTLE, CombatHook.POST_BATTLE):
-            active_items = [card.item for card in self.team1 + self.team2 if card.item is not None]
-        else:
-            # all global items are active (including *beyond the grave*)
-            # remote items are active if the holding pokemon is not fainted
-            # other items are only active if the pokemon is currently in combat
-            active_items: T.List[CombatItem] = []
-            for teammate in self.team1 + self.team2:
-                if current_team1 is not None and teammate == current_team1.battlecard:
-                    active_items.append(teammate.item)
-                elif current_team2 is not None and teammate == current_team2.battlecard:
-                    active_items.append(teammate.item)
-                elif teammate.item:
-                    if teammate.item.is_global:
-                        active_items.append(teammate.item)
-                    elif teammate.item.is_remote and teammate.status:
-                        active_items.append(teammate.item)
+        team1_items_list = self.get_active_team_items(self.team1, current_team1, hook)
+        team1_items = {self.team1[idx]: team1_items_list[idx] for idx in range(len(self.team1))}
+        team2_items_list = self.get_active_team_items(self.team2, current_team2, hook)
+        team2_items = {self.team2[idx]: team2_items_list[idx] for idx in range(len(self.team2))}
 
         # run item callbacks
+        active_items: T.List[T.Optional[CombatItem]] = team1_items_list + team2_items_list
         for item in active_items:
             if item is None:
                 continue
@@ -188,6 +203,10 @@ class HookExecutor:
             method(
                 current_team1=battlecard1,
                 current_team2=battlecard2,
+                team1=self.team1,
+                team2=self.team2,
+                team1_items=team1_items,
+                team2_items=team2_items,
                 **context
             )
 
