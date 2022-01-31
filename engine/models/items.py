@@ -562,17 +562,26 @@ class LifeOrb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,0])
 
-    def on_battle_start(self, **context: T.Dict):
-        """
-        even more damage 
-        """
-        pass
+    _HEALTH_LOSS = 2
+    _DAMAGE_BUFF = 2
 
+    def pre_battle_action(self, **context: T.Dict):
+        """
+        more damage
+        """
+        attacker: BattleCard = context['current_team1']
+        attacker.a_iv += self._DAMAGE_BUFF
+        
     def on_tick_action(self, **context: T.Dict):
         """
-        deal damage to self 
+        health per tick 
         """
-        pass
+        attacker: BattleCard = context['current_team1']
+        before = attacker.health
+        after = attacker.health - self._HEALTH_LOSS
+        print(f'LifeOrb {attacker.name.name}: {before} -> {after}')
+        attacker.health = after
+
 
 
 class LightClay(CombinedItem):
@@ -623,8 +632,13 @@ class Leftovers(CombinedItem):
 
     def on_tick_action(self, **context: T.Dict):
         """
-        HP per tick 
+        health per tick 
         """
+        attacker: BattleCard = context['current_team1']
+        before = attacker.health
+        after = attacker.health + self._HEALTH_PER_TICK
+        print(f'Leftovers {attacker.name.name}: {before} -> {after}')
+        attacker.health = after
 
 
 class Metronome(CombinedItem):
@@ -700,6 +714,7 @@ class FocusBand(CombinedItem):
         """
         revive
         """
+        
         pass
 
 
@@ -804,9 +819,9 @@ class QuickPowder(CombinedItem):
 class ChoiceSpecs(CombinedItem):
     """
     Choice Specs
-    Your fast move becomes lock on
+    Your fast move becomes lock on, you get energy on hit
     """
-
+    _LIFESTEAL = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
     def pre_battle_action(self, **context: T.Dict):
@@ -817,6 +832,16 @@ class ChoiceSpecs(CombinedItem):
         attacker: BattleCard = context['current_team1']
         attacker.move_f = lock_on
         print(f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}')
+
+    def on_fast_move_action(self, **context: T.Dict):
+        """
+        energy onhit
+        """
+        attacker: BattleCard = context['current_team1']
+        before = attacker.energy
+        after = attacker.energy + self._LIFESTEAL * self.level
+        attacker.energy = after
+        print(f'ChoiceSpecs on-hit {attacker.name.name}: {before} -> {after}')
 
 
 class TechnicalMachine(InstantPokemonItem):
@@ -1141,6 +1166,8 @@ class BlaineButton(ChargedHeroPower):
     
     counter: int = 0
     bust: bool = False
+    jackpot: bool = True
+    _PRIZE: int = 5
     _max_dict: dict = PrivateAttr(default={
         0: 9,
         1: 9,
@@ -1172,6 +1199,7 @@ class BlaineButton(ChargedHeroPower):
         """
         self.counter = 0
         self.bust = False
+        self.jackpot = False
 
     def use(self, player: "Player" = None):
         if self.bust == False:
@@ -1181,6 +1209,10 @@ class BlaineButton(ChargedHeroPower):
             if self.counter > max:
                 self.bust = True
                 print('U busted')
+            elif self.counter == max: 
+                self.jackpot = True
+                player.balls += self._PRIZE
+                print('u hit the jackpot poggers')
         else:
             print('no more rolls')
 
