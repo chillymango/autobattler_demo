@@ -5,6 +5,7 @@ import json
 from munch import DefaultMunch
 
 from engine.base import Component
+from engine.models.enums import Move
 from engine.models.items import Stats
 
 
@@ -45,6 +46,14 @@ class GameMaster(Component):
 
         print(f"Could not find {stats.name} for {pokemon_name}")
 
+    def get_move_speed(self, move: Move):
+        """
+        Get the ticks required for the move to execute.
+        """
+        for move_spec in self.gamemaster_dict['moves']:
+            if move_spec['moveId'] == move.name:
+                return move_spec['cooldown']
+        raise Exception(f"Could not find move spec for {move.name}")
 
     def __getattr__(self, attr: str):
         return getattr(self.gamemaster, attr)

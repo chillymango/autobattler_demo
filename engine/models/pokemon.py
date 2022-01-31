@@ -8,6 +8,7 @@ from engine.models.base import Entity
 from engine.models.enums import Move
 from engine.models.enums import PokemonId
 from engine.models.enums import PokemonType
+from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
     pass
@@ -18,30 +19,14 @@ SHINY_STAT_MULT = 1.25
 DEFAULT_XP_GAIN = 50.0
 
 
-class PokemonEnum(Enum):
-    """
-    Pokemon enumeration
-    """
-
-
-class FastMoveEnum(Enum):
-    """
-    Fast move enumeration
-    """
-
-
-class TypeEnum(Enum):
-    """
-    Move and Pokemon Type enumeration
-    """
-
-
 class BattleCard(BaseModel):
     """
     Pokemon Combat Representation
 
     Each Pokemon should have this instantiated
     """
+
+    _id: str = PrivateAttr(default_factory=uuid_as_str)
 
     name: PokemonId
     move_f: Move
@@ -51,6 +36,7 @@ class BattleCard(BaseModel):
     a_iv: int
     d_iv: int
     hp_iv: int
+    speed: T.Optional[float] = None  # fast move ticks before casting (lower is faster)
     poke_type1: PokemonType = None
     poke_type2: PokemonType = None
     f_move_type: PokemonType = None
@@ -65,6 +51,9 @@ class BattleCard(BaseModel):
     choiced: bool = False
     team_position: int = None
     _item: "CombatItem" = PrivateAttr()
+
+    def __hash__(self):
+        return hash(self._id)
 
     @property
     def item(self):

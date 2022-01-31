@@ -260,11 +260,11 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     bench2_permanent = bench2
 
     try:
-        current_team1 = bench1[0]
+        current_team1: Battler = bench1[0]
     except IndexError:
         current_team1 = None
     try:
-        current_team2 = bench2[0]
+        current_team2: Battler = bench2[0]
     except IndexError:
         current_team2 = None
 
@@ -303,6 +303,15 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
 
         # COMBAT ITEM HOOK: on_tick
         execute_hook(CombatHook.ON_TICK, current_team1, current_team2)
+
+        # increment time
+        current_team1.timer += 10
+        current_team2.timer += 10
+
+        move1 = calculate_optimal_move(current_team1, current_team2)
+        move2 = calculate_optimal_move(current_team2, current_team1)
+        if not move1 and not move2:
+            continue
 
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
@@ -409,10 +418,6 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
         if can_attack_2:
             pokemon1_dead = launch_attack(current_team2, current_team1, sequence)[0]
 
-        # increment time
-        current_team1.timer += 500
-        current_team2.timer += 500
-
         combat_over = False
         if pokemon1_dead:
             combat_over = True
@@ -488,7 +493,7 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
 
     return output
 
-def launch_attack(attacker, defender, sequence): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
+def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
     # THIS WILL CHANGE THE SEQUENCE BECAUSE OF POINTERS
 
     fatal = False # if the attack will be fatal
@@ -632,8 +637,8 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
             defender.hp -= damage
             attacker.dmg_dealt += damage
             defender.dmg_taken += damage
-            attacker.timer = 0
-            
+            attacker.timer -= attacker.battlecard.speed
+
             # print(defender.name.name+' took '+str(damage)+' damage')
             how_was_it = ""
             if effectiveness > 1.6:
@@ -650,7 +655,7 @@ def launch_attack(attacker, defender, sequence): # this is the bulk of battle lo
                 fatal = True
         else:
             sequence.append(Event(-1, '', attacker.battlecard.name.name+" is not ready to attack yet"))
-            
+
     # flavor text
     '''
     # max_health = pokedex[defender.name.name]["health"] # this line would be for flavor text of how the pokemon is doing
@@ -769,7 +774,7 @@ def analyze_type(attacker, defender, disabled=True): # >0 is good, <0 is bad
             balance += 2
     return balance
     
-def calculate_optimal_move(attacker, defender): # returns string, the name of best move
+def calculate_optimal_move(attacker: Battler, defender: Battler): # returns string, the name of best move
     # can consider passing back a flag for if the move was effective or not, to print. or change in calculate_damage
     fast_damage = calculate_damage(attacker, attacker.battlecard.move_f.name, defender)[0]
     charged_damage = -1 # assume it's not available
@@ -812,10 +817,11 @@ def calculate_optimal_move(attacker, defender): # returns string, the name of be
     # could add logic about using the cheaper attack or whatever
         return attacker.battlecard.move_ch.name
     elif tm_damage > 0:
-        return attacker.battlecard.move_tm.name    
-    elif attacker.timer >= moves[attacker.battlecard.move_f.name]["cooldown"]:
+        return attacker.battlecard.move_tm.name
+    elif attacker.timer >= attacker.battlecard.speed:
         return attacker.battlecard.move_f.name
     return ''
+
 
 def turnstodie(me, them):
     myhp = me.hp

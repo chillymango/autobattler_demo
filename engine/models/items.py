@@ -51,6 +51,17 @@ RARE_STONE_COST = 6
 TM_COST = 1
 
 
+def per_second(stat: float):
+    """
+    Converts a tick-rate value to a per-second value.
+
+    There are 100 ticks in a second.
+
+    A helper function for visual clarity.
+    """
+    return stat / 100.0
+
+
 class TargetType(Enum):
     """
     Intended use target
@@ -177,7 +188,43 @@ class CombatItem(PokemonItem):
             if item == self:
                 return battle_card
 
-        raise Exception(f"{self} is not being referenced by context {context}")
+        raise Exception(f"{self} is not being referenced by context {context}???")
+
+    def get_team_cards_of_holder(self, context: T.Dict) -> T.List[BattleCard]:
+        """
+        Get a list of team cards for a holder
+        """
+        team = self.get_team_of_holder(context)
+        if team == 1:
+            return context['team1']
+        elif team == 2:
+            return context['team2']
+        raise Exception('Cannot find team???')
+
+    def get_team_of_holder(self, context: T.Dict) -> BattleCard:
+        """
+        Get the team that the item holder is on.
+
+        Returns 1 if on team 1 and 2 if on team 2.
+        """
+        item_holder = self.get_item_holder_from_context(context)
+        if item_holder in context['team1']:
+            return 1
+        if item_holder in context['team2']:
+            return 2
+        raise Exception(f"{self} is not attached to a team on this fight????")
+
+    def get_active_enemy_from_context(self, context: T.Dict) -> BattleCard:
+        """
+        Determine the team the item holder is on. Return the battle card representing the
+        active battler on the other team.
+        """
+        team = self.get_team_of_holder(context)
+        if team == 1:
+            return context['current_team2']
+        if team == 2:
+            return context['current_team1']
+        raise Exception("No enemies found? What's going on")
 
     def get_method(self, combat_hook: CombatHook) -> T.Callable:
         if combat_hook == CombatHook.PRE_BATTLE:
@@ -562,26 +609,34 @@ class LifeOrb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,0])
 
-    _HEALTH_LOSS = 2
-    _DAMAGE_BUFF = 2
+    _HEALTH_LOSS = 2  # 2 HP per second
+    _DAMAGE_BUFF = 4
 
     def pre_battle_action(self, **context: T.Dict):
         """
         more damage
         """
         attacker: BattleCard = context['current_team1']
-        attacker.a_iv += self._DAMAGE_BUFF
-        
-    def on_tick_action(self, **context: T.Dict):
-        """
-        health per tick 
-        """
-        attacker: BattleCard = context['current_team1']
-        before = attacker.health
-        after = attacker.health - self._HEALTH_LOSS
-        print(f'LifeOrb {attacker.name.name}: {before} -> {after}')
-        attacker.health = after
+        before = attacker.a_iv
+        after = attacker.a_iv + self._DAMAGE_BUFF * self.level
+        attacker.a_iv = after
+        event = Event(
+            -1,
+            "LifeOrb pre_battle",
+            f'{attacker.name.name} ATK {before} -> {after}'
+        )
+        return [event]
 
+    def on_tick_action(self, **context: T.Dict) -> T.List[Event]:
+        """
+        lose health per tick
+        """
+        holder: BattleCard = self.get_item_holder_from_context(context)
+        before = holder.health
+        after = holder.health - per_second(self._HEALTH_LOSS) * self.level
+        holder.health = after
+        event = Event(-1, "LifeOrb on_tick", f'{holder.name.name} HP: {before} -> {after}')
+        return [event]
 
 
 class LightClay(CombinedItem):
@@ -592,11 +647,23 @@ class LightClay(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
         """
         give shields to teammates 
         """
-        pass
+        holder = self.get_item_holder_from_context(context)
+        team_cards = self.get_team_cards_of_holder(context)
+        events: T.List[Event] = []
+        for card in team_cards:
+            card.bonus_shield += 1
+            events.append(
+                Event(
+                    -1,
+                    "LightClay pre_battle",
+                    f"{holder.name.name} gives shield to {card.name.name}"
+                )
+            )
+        return events
 
 
 class CellBattery(CombinedItem):
@@ -613,11 +680,16 @@ class CellBattery(CombinedItem):
         """
         energy per tick 
         """
-        attacker: BattleCard = context['current_team1']
-        before = attacker.energy
-        after = attacker.energy + self._ENERGY_PER_TICK * self.level
-        print(f'CellBattery {attacker.name.name}: {before} -> {after}')
-        attacker.energy = after
+        holder = self.get_item_holder_from_context(context)
+        before = holder.energy
+        after = holder.energy + self._ENERGY_PER_TICK * self.level
+        holder.energy = after
+        event = Event(
+            -1,
+            "CellBattery on_tick",
+            f"{holder.name.name} energy: {before} -> {after}"
+        )
+        return [event]
 
 
 class Leftovers(CombinedItem):
@@ -630,7 +702,7 @@ class Leftovers(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
-    def on_tick_action(self, **context: T.Dict):
+    def on_tick_action(self, **context: T.Dict) -> T.List[Event]:
         """
         health per tick 
         """
@@ -647,13 +719,23 @@ class Metronome(CombinedItem):
     Provide attack speed on hit
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,0,0,1])
+    _SPEED_BONUS = 10.0
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,0,1])
 
     def on_fast_move_action(self, **context: T.Dict):
         """
         atk spd per tick 
         """
-        pass
+        holder = self.get_item_holder_from_context(context)
+        before = holder.speed
+        after = holder.speed = self._SPEED_BONUS * self.level
+        holder.speed = after
+        event = Event(
+            -1,
+            "Metronome on_fast_move",
+            f"{holder.name.name} SPEED {before} -> {after}"
+        )
+        return [event]
 
 
 class ExpShare(CombinedItem):
@@ -662,13 +744,13 @@ class ExpShare(CombinedItem):
     Provide bonus XP at end of battle
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,0,0,1])
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
 
     def post_battle_action(self, **context: T.Dict):
         """
         xp post battle 
         """
-        pass
+        print('THIS ITEM DOESN\'T DO SHIT YET')
 
 
 class IntimidatingIdol(CombinedItem):
@@ -678,13 +760,23 @@ class IntimidatingIdol(CombinedItem):
     """
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,1,0,0,0])
+    ATK_DEBUFF = 2.0
 
-
-    def pre_combat_action(self, **context: T.Dict):
+    def pre_combat_action(self, **context: T.Dict) -> T.List[Event]:
         """
         debuff enemy attack 
         """
-        pass
+        enemy = self.get_active_enemy_from_context(context)
+        before = enemy.a_iv
+        # TODO: this is probably not good...
+        after = enemy.a_iv - self.level * self.ATK_DEBUFF
+        enemy.a_iv = after
+        event = Event(
+            -1,
+            "IntimidatingIdol pre_combat",
+            f"{enemy.name.name} ATK {before} -> {after}"
+        )
+        return [event]
 
 
 class IronBarb(CombinedItem):
@@ -693,7 +785,7 @@ class IronBarb(CombinedItem):
     Deals damage on hit
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,1,1,0,0])
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,1,0,0])
     
     def on_enemy_fast_move_action(self, **context: T.Dict):
         """
@@ -775,6 +867,7 @@ class ExpertBelt(CombinedItem):
         check damage type, then boost power
         """
         pass
+
     def on_charged_move_action(self, **context: T.Dict):
         """
         check damage type, then boost power
@@ -790,15 +883,22 @@ class AssaultVest(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _POWER_REDUCTION: int = 2
 
-    def on_enemy_charged_move_action(self, **context: T.Dict):
+    def on_enemy_charged_move_action(self, **context: T.Dict) -> T.List[Event]:
         """
         reduce power
         """
-        attacker: BattleCard = context['current_team1']
+        holder = self.get_item_holder_from_context(context)
+        enemy = self.get_active_enemy_from_context(context)
         # TODO(albert/will): balance this because it's pretty sloppy
-        before = attacker.a_iv
-        after = attacker.a_iv - self._POWER_REDUCTION * self.level
-        attacker.a_iv = after
+        before = enemy.a_iv
+        after = enemy.a_iv - self._POWER_REDUCTION * self.level
+        enemy.a_iv = after
+        event = Event(
+            -1,
+            "assault_vest",
+            f"{holder.name.name} caused {enemy.name.name} ATK to drop from {before} -> {after}"
+        )
+        return [event]
 
 
 class QuickPowder(CombinedItem):
@@ -813,6 +913,7 @@ class QuickPowder(CombinedItem):
         """
         boost speed of team
         """
+        # TODO: not sure how to implement
         pass
 
 
@@ -824,14 +925,19 @@ class ChoiceSpecs(CombinedItem):
     _LIFESTEAL = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
         """
         change your fast move
         """
         lock_on = Move.LOCK_ON
         attacker: BattleCard = context['current_team1']
         attacker.move_f = lock_on
-        print(f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}')
+        event = Event(
+            -1,
+            "ChoiceSpecs pre_battle_action",
+            f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}'
+        )
+        return [event]
 
     def on_fast_move_action(self, **context: T.Dict):
         """
@@ -841,7 +947,12 @@ class ChoiceSpecs(CombinedItem):
         before = attacker.energy
         after = attacker.energy + self._LIFESTEAL * self.level
         attacker.energy = after
-        print(f'ChoiceSpecs on-hit {attacker.name.name}: {before} -> {after}')
+        event = Event(
+            -1,
+            "ChoiceSpecs on_fast_move_action",
+            f'ChoiceSpecs on-hit {attacker.name.name}: {before} -> {after}'
+        )
+        return [event]
 
 
 class TechnicalMachine(InstantPokemonItem):

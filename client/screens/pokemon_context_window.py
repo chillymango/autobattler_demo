@@ -9,6 +9,7 @@ from PyQt5 import uic
 from engine.models.pokemon import SHINY_STAT_MULT
 from engine.models.enums import PokemonType
 from engine.models.stats import Stats
+from engine.utils.battle_utils import atk_per_sec
 
 from utils.buttons import clear_button_image
 from utils.buttons import set_button_image
@@ -40,6 +41,7 @@ class Ui(QtWidgets.QMainWindow):
         self.atkStat = self.findChild(QtWidgets.QLineEdit, "atkStat")
         self.defStat = self.findChild(QtWidgets.QLineEdit, "defStat")
         self.hpStat = self.findChild(QtWidgets.QLineEdit, "hpStat")
+        self.spdStat = self.findChild(QtWidgets.QLineEdit, "spdStat")
 
         # type icons
         self.primaryTypeIcon = self.findChild(QtWidgets.QPushButton, "primaryTypeIcon")
@@ -93,15 +95,20 @@ class Ui(QtWidgets.QMainWindow):
         sprite_manager: "SpriteManager" = self.env.sprite_manager
         pokemon_factory: "PokemonFactory" = self.env.pokemon_factory
 
-        # TODO: implement full stat calc formula
         cpm = gm.get_lvl_cpm(pokemon.battle_card.level)
         _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm * SHINY_STAT_MULT
         _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm * SHINY_STAT_MULT
         _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm * SHINY_STAT_MULT
 
+        move_spd_base = gm.get_move_speed(self.pokemon.battle_card.move_f)
+        spd_modifier = pokemon.modifiers[Stats.SPD.value]
+        base_aspd = atk_per_sec(move_spd_base, 0)
+        _aspd = atk_per_sec(move_spd_base, spd_modifier)
+
         self.atkStat.setText(str(int(_atk)))
         self.defStat.setText(str(int(_def)))
         self.hpStat.setText(str(int(_hp)))
+        self.spdStat.setText(str("{:.2f}".format(_aspd)))
 
         # TODO: set modified colors if there are any
         if _atk > (pokemon.battle_card.a_iv + atk_base) * cpm:
@@ -124,6 +131,13 @@ class Ui(QtWidgets.QMainWindow):
             self.hpStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.hpStat.setStyleSheet("color: black;")
+
+        if _aspd > base_aspd:
+            self.spdStat.setStyleSheet("color: green; font-weight: bold;")
+        elif _aspd < base_aspd:
+            self.spdStat.setStyleSheet("color: red; font-weight: bold;")
+        else:
+            self.spdStat.setStyleSheet("color: black;")
 
         pokemon_name = pokemon.name.name
         primary_type, secondary_type = pokemon_factory.get_pokemon_type_reference(pokemon_name)
