@@ -654,15 +654,18 @@ class LightClay(CombinedItem):
         holder = self.get_item_holder_from_context(context)
         team_cards = self.get_team_cards_of_holder(context)
         events: T.List[Event] = []
-        for card in team_cards:
-            card.bonus_shield += 1
-            events.append(
-                Event(
-                    -1,
-                    "LightClay pre_battle",
-                    f"{holder.name.name} gives shield to {card.name.name}"
+        shields_to_give = self.level
+        while shields_to_give > 0:
+            for card in team_cards:
+                card.bonus_shield += 1
+                shields_to_give -= 1
+                events.append(
+                    Event(
+                        -1,
+                        "LightClay pre_battle",
+                        f"{holder.name.name} gives shield to {card.name.name}"
+                    )
                 )
-            )
         return events
 
 
