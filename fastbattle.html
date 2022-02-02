@@ -40,7 +40,7 @@ html,body {font-family:Verdana, sans-serif;font-size:10pt;margin:0;padding:0;}bo
 |
 |
 |t:|1643756240
-|-weather|Rain Dance|
+|-weather|RainDance|
 |move|p2a: Bulbasaur|Tackle|p1a: Pikachu
 |-damage|p1a: Pikachu|62\/65
 |-damage|p2a: Bulbasaur|72\/73|[from] item: Iron Barb|[of] p1a: Pikachu
@@ -67,10 +67,11 @@ html,body {font-family:Verdana, sans-serif;font-size:10pt;margin:0;padding:0;}bo
 |-damage|p2a: Bulbasaur|63\/73|[from] item: Iron Barb|[of] p1a: Pikachu
 |
 |t:|1643756245
+|-prepare|p1a: Pikachu|Geomancy
+|-singleturn|p2a: Bulbasaur|Protect
 |move|p1a: Pikachu| Wild Charge|p2a: Bulbasaur
 |-unboost|p1a: Pikachu|def|-2
-|-singleturn|p2a: Bulbasaur|Protect
-|-damage|p1a: Bulbasaur|68\/73
+|-damage|p2a: Bulbasaur|68\/73
 |upkeep
 |t:|1643756243
 |move|p2a: Bulbasaur|Tackle|p1a: Pikachu
@@ -91,5 +92,5 @@ html,body {font-family:Verdana, sans-serif;font-size:10pt;margin:0;padding:0;}bo
 </div>
 
 <script>
-let daily = Math.floor(Date.now()/1000/60/60/24);document.write('<script src="https://play.pokemonshowdown.com/js/replay-embed.js?version'+daily+'"></'+'script>');
+let daily = Math.floor(Date.now()/1000/60/60/24);document.write('<script src="./replay-embed-fast.js"></'+'script>');
 </script>
