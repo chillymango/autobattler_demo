@@ -8,6 +8,8 @@ from engine.models.base import Entity
 from engine.models.enums import Move
 from engine.models.enums import PokemonId
 from engine.models.enums import PokemonType
+from engine.models.stats import Stats
+from engine.utils.gamemaster import gamemaster
 from utils.strings import uuid_as_str
 
 if T.TYPE_CHECKING:
@@ -32,11 +34,18 @@ class BattleCard(BaseModel):
     move_f: Move
     move_ch: Move
     move_tm: Move
+    _move_f_damage: T.Optional[float] = PrivateAttr(default=None)
+    _move_ch_damage: T.Optional[float] = PrivateAttr(default=None)
+    _move_tm_damage: T.Optional[float] = PrivateAttr(default=None)
+    _move_f_energy: T.Optional[float] = PrivateAttr(default=None)
+    _move_ch_energy: T.Optional[float] = PrivateAttr(default=None)
+    _move_tm_energy: T.Optional[float] = PrivateAttr(default=None)
     level: float
-    a_iv: int
-    d_iv: int
-    hp_iv: int
-    speed: T.Optional[float] = None  # fast move ticks before casting (lower is faster)
+    atk_: T.Optional[float] = None
+    def_: T.Optional[float] = None
+    health: T.Optional[float] = None
+    f_move_spd: T.Optional[float] = None
+    spd_: T.Optional[float] = 0
     poke_type1: PokemonType = None
     poke_type2: PokemonType = None
     f_move_type: PokemonType = None
@@ -44,16 +53,80 @@ class BattleCard(BaseModel):
     tm_move_type: PokemonType = None
     tm_flag: bool = False
     shiny: bool = False
-    health: int = 0
-    energy: int = 0
+    energy: float = 0
     bonus_shield: int = 0
     status: int = 1
     choiced: bool = False
     team_position: int = None
     _item: "CombatItem" = PrivateAttr()
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # stats
+        poke_stats = gamemaster.get_default_pokemon_stats(self.name)
+        cpms = gamemaster.get_lvl_cpm(self.level)
+        self.health = kwargs.get('health') or cpms * poke_stats["baseStats"]["hp"]
+        self.atk_ = kwargs.get('atk_') or cpms * poke_stats["baseStats"]["atk"]
+        self.def_ = kwargs.get('def_') or cpms * poke_stats["baseStats"]["def"]
+
+        # types
+        if not self.poke_type1:
+            self.poke_type1 = PokemonType[poke_stats["types"][0].lower()]
+        self.poke_type2 = kwargs.get('poke_type2') or PokemonType[poke_stats["types"][1].lower()]
+        if not self.poke_type2 or self.poke_type2 == PokemonType.none:
+            self.poke_type2 = self.poke_type1
+
+        # moves
+        move_f_stats = gamemaster.get_default_move_stats(self.move_f)
+        self._move_f_damage = kwargs.get('_move_f_damage') or move_f_stats["power"]
+        self.f_move_spd = kwargs.get('speed') or move_f_stats["cooldown"]
+        self._move_f_energy = kwargs.get('_move_f_energy') or move_f_stats['energyGain']
+        move_ch_stats = gamemaster.get_default_move_stats(self.move_ch)
+        self._move_ch_damage = kwargs.get('_move_ch_damage') or move_ch_stats["power"]
+        move_tm_stats = gamemaster.get_default_move_stats(self.move_tm)
+        self._move_ch_energy = kwargs.get('_move_ch_energy') or move_ch_stats['energy']
+        if move_tm_stats is not None:
+            self._move_tm_damage = kwargs.get('_move_tm_damage') or move_tm_stats["power"]
+            self.tm_move_type = kwargs.get('tm_move_type') or move_tm_stats["type"]
+            self._move_tm_energy = kwargs.get("_move_tm_energy") or move_tm_stats["energy"]
+        else:
+            self._move_tm_damage = 0
+            self.tm_move_type = PokemonType.none
+            self._move_tm_energy = 0
+
+        # move types
+        self.f_move_type = kwargs.get('f_move_type') or move_f_stats["type"]
+        self.ch_move_type = kwargs.get('ch_move_type') or move_ch_stats["type"]
+
     def __hash__(self):
         return hash(self._id)
+
+    @property
+    def atk_spd_timer_cts(self) -> float:
+        """
+        Returns the number of timer counts required before a fast attack can be initiated.
+
+        This depends on the base speed and the spd_ modifier.
+
+        Since the game engine ticks at 100 timer counts a tick, the soft cap on effective attack
+        speed is 10 attacks per second. That limit is enforced here.
+        """
+        return max(self.f_move_spd - self.spd_ * 50, 100.0)
+
+    def atk_per_sec_for_spd_stat(self, spd: int):
+        """
+        Given some speed stat, calculate atk / sec
+        """
+        return 1000.0 / max(self.f_move_spd - spd * 50.0, 100.0)
+
+    @property
+    def atk_per_sec(self) -> float:
+        """
+        Returns the number of fast attacks this Pokemon will perform in one second.
+
+        One second is 1000 timer counts.
+        """
+        return 1000.0 / self.atk_spd_timer_cts
 
     @property
     def item(self):
@@ -71,6 +144,9 @@ class BattleCard(BaseModel):
         if self.shiny:
             return False
         self.shiny = True
+        self.atk_ *= SHINY_STAT_MULT
+        self.def_ *= SHINY_STAT_MULT
+        self.health *= SHINY_STAT_MULT
 
         return True
 
@@ -110,21 +186,6 @@ class BattleCard(BaseModel):
             tm_flag = 0,
             shiny = 0
         )
-
-    def to_string(self):
-        """
-        Return a PvPoke string representation of the Pokemon
-        """
-        return ",".join(str(x) for x in [
-            self.name,
-            self.move_f,
-            self.move_ch,
-            self.move_tm,
-            self.level,
-            self.a_iv,
-            self.d_iv,
-            self.hp_iv,
-        ])
 
     def __repr__(self):
         return "BattleCard({}): {}".format(self.name, self.to_string())

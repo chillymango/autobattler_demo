@@ -28,6 +28,7 @@ from utils.strings import camel_case_to_snake_case, crunch_spaces
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
+    from engine.batterulogico import EventLogger
     from engine.env import Environment
     from engine.items import ItemManager
     from engine.pokemon import EvolutionManager, PokemonFactory
@@ -55,11 +56,11 @@ def per_second(stat: float):
     """
     Converts a tick-rate value to a per-second value.
 
-    There are 100 ticks in a second.
+    There are 10 ticks in a second.
 
     A helper function for visual clarity.
     """
-    return stat / 100.0
+    return stat / 10.0
 
 
 class TargetType(Enum):
@@ -675,24 +676,21 @@ class CellBattery(CombinedItem):
     Provide energy per tick
     """
 
-    _ENERGY_PER_TICK = 1.0
+    _ENERGY = 1.0
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,1,0])
 
-    def on_tick_action(self, **context: T.Dict):
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         energy per tick 
         """
         holder = self.get_item_holder_from_context(context)
         before = holder.energy
-        after = holder.energy + self._ENERGY_PER_TICK * self.level
+        #after = holder.energy + self._ENERGY_PER_TICK * self.level
+        after = holder.energy + per_second(self._ENERGY) * self.level
         holder.energy = after
-        event = Event(
-            -1,
-            "CellBattery on_tick",
-            f"{holder.name.name} energy: {before} -> {after}"
-        )
-        return [event]
+        if logger:
+            logger('CellBattery on_tick', f"{holder.name.name} energy: {before:.2f} -> {after:.2f}")
 
 
 class Leftovers(CombinedItem):
@@ -731,7 +729,7 @@ class Metronome(CombinedItem):
         """
         holder = self.get_item_holder_from_context(context)
         before = holder.speed
-        after = holder.speed = self._SPEED_BONUS * self.level
+        after = holder.speed - self._SPEED_BONUS * self.level
         holder.speed = after
         event = Event(
             -1,
@@ -1168,6 +1166,7 @@ class WaterStone(CommonStone):
     """
     _target_type = [PokemonType.water, PokemonType.ice]
     cost = COMMON_STONE_COST
+
 
 class ThunderStone(CommonStone):
     """

@@ -44,7 +44,15 @@ class BattleSummary(BaseModel):
 
 
 class Event:
-    def __init__(self, sequence_number, category, value):
+    def __init__(self, sequence_number, category, value, time = None):
         self.id: int = sequence_number
         self.type: str = category
         self.value: str = value
+
+
+class BattleEvent(BaseModel):
+    
+    seq: int  # sequence number
+    timestamp: float  # timestamp of the battle event
+    category: str  # type of event (loosely typed for now)
+    value: str  # message

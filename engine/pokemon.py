@@ -127,21 +127,13 @@ class PokemonFactory(Component):
         """
         Load the default battle card for a Pokemon
         """
-        battle_card = BattleCard.from_string(self.PVE_movesets[pokemon_name])
-        gm: GameMaster = self.env.gm
-        speed = gm.get_move_speed(battle_card.move_f)
-        battle_card.speed = speed
-        return battle_card
+        return BattleCard.from_string(self.PVE_movesets[pokemon_name])
 
     def get_default_battle_card(self, pokemon_name):
         """
         Load the default battle card for a Pokemon
         """
-        battle_card = BattleCard.from_string(self.default_movesets[pokemon_name])
-        gm: GameMaster = self.env.gm
-        speed = gm.get_move_speed(battle_card.move_f)
-        battle_card.speed = speed
-        return battle_card
+        return BattleCard.from_string(self.default_movesets[pokemon_name])
 
     def get_evolved_battle_card(self, evolved_form: BattleCard, battle_card: BattleCard):
         """
@@ -156,7 +148,6 @@ class PokemonFactory(Component):
         if battle_card.tm_flag:
             tm_move = self.env.tm_manager.get_tm_move(evolved_form)
             evolved_card.set_tm_move(tm_move)
-        evolved_card.speed = battle_card.speed
         return evolved_card
 
     def get_nickname_by_pokemon_name(self, pokemon_name):
