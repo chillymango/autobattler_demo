@@ -85,13 +85,25 @@ class BattleCard(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         # stats
         poke_stats = gamemaster.get_default_pokemon_stats(self.name)
+
         cpms = gamemaster.get_lvl_cpm(self.level)
+
         self.health = kwargs.get('health') or cpms * poke_stats["baseStats"]["hp"]
+        if kwargs.get('hp_iv'):
+            self.health += cpms * int(kwargs.get('hp_iv'))
         self._max_health = self.health
+
         self.atk_ = kwargs.get('atk_') or cpms * poke_stats["baseStats"]["atk"]
+        if kwargs.get('a_iv'):
+            self.atk_ += cpms * int(kwargs.get('a_iv'))
+
         self.def_ = kwargs.get('def_') or cpms * poke_stats["baseStats"]["def"]
+        if kwargs.get('d_iv'):
+            self.def_ += cpms * int(kwargs.get('d_iv'))
+
 
         # types
         if not self.poke_type1:
@@ -100,15 +112,18 @@ class BattleCard(BaseModel):
         if not self.poke_type2 or self.poke_type2 == PokemonType.none:
             self.poke_type2 = self.poke_type1
 
+
         # moves
         move_f_stats = gamemaster.get_default_move_stats(self.move_f)
         self._move_f_damage = kwargs.get('_move_f_damage') or move_f_stats["power"]
         self.f_move_spd = kwargs.get('speed') or move_f_stats["cooldown"]
         self._move_f_energy = kwargs.get('_move_f_energy') or move_f_stats['energyGain']
+
         move_ch_stats = gamemaster.get_default_move_stats(self.move_ch)
         self._move_ch_damage = kwargs.get('_move_ch_damage') or move_ch_stats["power"]
-        move_tm_stats = gamemaster.get_default_move_stats(self.move_tm)
         self._move_ch_energy = kwargs.get('_move_ch_energy') or move_ch_stats['energy']
+
+        move_tm_stats = gamemaster.get_default_move_stats(self.move_tm)
         if move_tm_stats is not None:
             self._move_tm_damage = kwargs.get('_move_tm_damage') or move_tm_stats["power"]
             self.tm_move_type = kwargs.get('tm_move_type') or move_tm_stats["type"]

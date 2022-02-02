@@ -6,6 +6,8 @@ from enum import Enum
 from pydantic import BaseModel
 
 from engine.models.base import Entity
+from engine.models.enums import Move
+from engine.utils.gamemaster import gamemaster
 
 
 class BattleStatus(Enum):

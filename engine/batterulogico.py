@@ -118,6 +118,12 @@ class Battler:
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
 
 
+class Effectiveness:
+
+    def __init__(self):
+        self.eff: float = 1.0
+
+
 class EventLogger:
     """
     Keeps track of the global tick and all events that occur.
@@ -576,9 +582,9 @@ def launch_attack(
             # ON CHARGED MOVE COMBAT HOOKS: should run before damage calculations
 
             # COMBAT ITEM HOOK: on_charged_move
-            execute_hook(CombatHook.ON_CHARGED_MOVE, attacker, defender)
+            execute_hook(CombatHook.ON_CHARGED_MOVE, attacker, defender, move=move)
             # COMBAT ITEM HOOK: on_enemy_charged_move
-            execute_hook(CombatHook.ON_ENEMY_CHARGED_MOVE, attacker, defender)
+            execute_hook(CombatHook.ON_ENEMY_CHARGED_MOVE, attacker, defender, move=move)
             # print(attacker.name.name+' used '+move)
             logger(
                 "Attack",
@@ -736,8 +742,8 @@ def launch_attack(
         elif move == attacker.battlecard.move_f.name: # if the optimal move was a fast move
             # COMBAT ITEM HOOK: on_fast_move_action
             # COMBAT ITEM HOOK: on_enemy_fast_move_action
-            execute_hook(CombatHook.ON_FAST_MOVE, attacker, defender)
-            execute_hook(CombatHook.ON_ENEMY_FAST_MOVE, attacker, defender)
+            execute_hook(CombatHook.ON_FAST_MOVE, attacker, defender, move=move)
+            execute_hook(CombatHook.ON_ENEMY_FAST_MOVE, attacker, defender, move=move)
             # print(attacker.name.name+' used '+attacker.move_f.name)
             logger(
                 "Fast Attack",
@@ -1007,7 +1013,8 @@ def calculate_damage(attacker: Battler, move: Move, defender: Battler): # battle
         defender_weaknesses += types[x.name]["weaknesses"]
         defender_immunities += types[x.name]["immunities"]
     
-    multiplier = 1 # how much the damage is influenced
+    #multiplier = 1 # how much the damage is influenced
+    multiplier = 1
     for x in attacker_type:
         if move_type == x:
             multiplier *= 1.2

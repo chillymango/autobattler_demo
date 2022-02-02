@@ -722,7 +722,6 @@ class Leftovers(CombinedItem):
         attacker: BattleCard = context['current_team1']
         before = attacker.health
         after = attacker.health + per_second(self._HEALTH_PER_TICK)
-        print(f'Leftovers {attacker.name.name}: {before} -> {after}')
         attacker.health = after
         if logger:
             logger(
@@ -838,6 +837,10 @@ class FocusBand(CombinedItem):
         self.consumed = True
         holder = self.get_item_holder_from_context(context)
         team = self.get_team_of_holder(context)
+        # do not trigger if holder did not faint
+        if holder.status == 1:
+            return
+
         holder.status = 1
         holder.energy = 100
         if self.level == 1:
@@ -861,21 +864,42 @@ class ShellBell(CombinedItem):
     Lifesteal
     """
 
-    # TODO: this would be more interesting if it was percent damage dealt
-    # ... but for now it's a flat scaling amount
-    _LIFESTEAL: float = 3.0
+    _LIFESTEAL_PCT: float = 5.0  # percent of move damage
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
+    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None, **context: T.Dict):
+        """
+        Heal after dealing move damage
+
+        NOTE(albert/will): this does pre-mitigation damage, which may be imbalanced...
+        """
+        holder = self.get_item_holder_from_context(context)
+        team = self.get_team_of_holder(context)
+        move: Move = context['move']
+        if move == holder.move_f:
+            damage = holder._move_f_damage
+        elif move == holder.move_ch:
+            damage = holder._move_ch_damage
+        elif move == holder.move_tm:
+            damage = holder._move_tm_damage
+        else:
+            raise Exception(f"Received unknown move {move.name}")
+
+        before = holder.health
+        after = holder.health + self._LIFESTEAL_PCT / 100.0 * self.level * damage
+        holder.health = after
+        if logger is not None:
+            logger(
+                f"ShellBell {name}",
+                f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
+            )
+
     def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
-        """
-        heal
-        """
-        attacker: BattleCard = context['current_team1']
-        before = attacker.health
-        after = attacker.health + self._LIFESTEAL * self.level
-        attacker.health = after
-        print(f'ShellBell lifesteal {attacker.name.name}: {before} -> {after}')
+        self._on_damage_move_action("on_fast_move", logger=logger, **context)
+
+    def on_charged_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+        self._on_damage_move_action("on_charged_move", logger=logger, **context)
 
 
 class EjectButton(CombinedItem):
@@ -892,7 +916,13 @@ class EjectButton(CombinedItem):
         """
         if self.consumed:
             return
+        hp_factor = self.level * 0.25
+        holder = self.get_item_holder_from_context(context)
+        if holder.health > hp_factor * holder.max_health:
+            # do not trigger until health falls below certain amount
+            return
         self.consumed = True
+        # TODO: initiate swap...
 
 
 class ExpertBelt(CombinedItem):
@@ -901,7 +931,7 @@ class ExpertBelt(CombinedItem):
     boosts power of super effective hits
     """
 
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,0,0,1])
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,1])
 
     def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
@@ -925,22 +955,21 @@ class AssaultVest(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _POWER_REDUCTION: int = 2
 
-    def on_enemy_charged_move_action(self, logger: "EventLogger" = None, **context: T.Dict) -> T.List[Event]:
+    def on_enemy_charged_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         reduce power
         """
         holder = self.get_item_holder_from_context(context)
         enemy = self.get_active_enemy_from_context(context)
-        # TODO(albert/will): balance this because it's pretty sloppy
-        before = enemy.a_iv
-        after = enemy.a_iv - self._POWER_REDUCTION * self.level
-        enemy.a_iv = after
-        event = Event(
-            -1,
-            "assault_vest",
-            f"{holder.name.name} caused {enemy.name.name} ATK to drop from {before} -> {after}"
-        )
-        return [event]
+        enemy_team = self.get_enemy_team_from_context(context)
+        before = enemy.attack
+        enemy.modifiers[Stats.ATK] -= self._POWER_REDUCTION * self.level
+        after = enemy.attack
+        if logger is not None:
+            logger(
+                "AssaultVest on_enemy_charged_move",
+                f"team{enemy_team} {holder.name.name} ATK {before:.1f} -> {after:.1f}"
+            )
 
 
 class QuickPowder(CombinedItem):
@@ -950,7 +979,7 @@ class QuickPowder(CombinedItem):
     """
 
     _SPEED_STAT = 50.0
-    stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
+    stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,1,0,1])
 
     def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
@@ -974,37 +1003,37 @@ class ChoiceSpecs(CombinedItem):
     Choice Specs
     Your fast move becomes lock on, you get energy on hit
     """
-    _LIFESTEAL = 0.5
+    _ENG_GAIN = 1.0
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         change your fast move
         """
         lock_on = Move.LOCK_ON
-        attacker: BattleCard = context['current_team1']
-        attacker.move_f = lock_on
-        event = Event(
-            -1,
-            "ChoiceSpecs pre_battle_action",
-            f'ChoiceSpecs {attacker.name.name}: move -> {lock_on.name}'
-        )
-        return [event]
+        holder = self.get_item_holder_from_context(context)
+        team = self.get_team_of_holder(context)
+        holder.move_f = lock_on
+        if logger is not None:
+            logger(
+                "ChoiceSpecs pre_battle",
+                f"team{team} move became {lock_on.name}"
+            )
 
-    def on_fast_move_action(self, **context: T.Dict):
+    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         energy onhit
         """
-        attacker: BattleCard = context['current_team1']
-        before = attacker.energy
-        after = attacker.energy + self._LIFESTEAL * self.level
-        attacker.energy = after
-        event = Event(
-            -1,
-            "ChoiceSpecs on_fast_move_action",
-            f'ChoiceSpecs on-hit {attacker.name.name}: {before} -> {after}'
-        )
-        return [event]
+        holder = self.get_item_holder_from_context(context)
+        team = self.get_team_of_holder(context)
+        before = holder.energy
+        after = holder.energy + self._ENG_GAIN * self.level
+        holder.energy = after
+        if logger is not None:
+            logger(
+                "ChoiceSpecs on_fast_move",
+                f"team{team} {holder.name.name} ENG {before:.1f} -> {after:.1f}"
+            )
 
 
 class TechnicalMachine(InstantPokemonItem):
