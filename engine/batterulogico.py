@@ -91,15 +91,15 @@ cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456
 # I assume pokemon health doesn't initialize to 0, but if it does, need to create base stats for the pokemon
 
 class Battler:
-    def __init__(self, battle_card: BattleCard, index):
+    def __init__(self, battle_card: BattleCard, index: int, team: str):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
         self.battlecard.bonus_shield = 1
+        self.team = team
 
-        cpm = cpms[int((battle_card.level-1) * 2)]
         # initialize stats. ignoring iv for now
-        self.a = battle_card.atk_
-        self.d = battle_card.def_
-        self.hp = self.battlecard.health
+        self.a = battle_card.attack
+        self.d = battle_card.defense
+        self.hp = self.battlecard.hitpoints
         if self.hp < 10:
             self.hp = 10
 
@@ -297,10 +297,10 @@ def battle(
     bench2 = []
 
     for index, x in enumerate(team1_live):
-        bench1.append(Battler(x, index))
+        bench1.append(Battler(x, index, 'team 1'))
         logger("join_party", f"{x} joined team 1")
     for index, x in enumerate(team2_live):
-        bench2.append(Battler(x, index))
+        bench2.append(Battler(x, index, 'team 2'))
         logger("join_party", f"{x} joined team 2")
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
@@ -473,31 +473,33 @@ def battle(
         combat_over = False
         if pokemon1_dead:
             combat_over = True
+            current_team1.battlecard.status = 0
             logger(
                 "Team1 Faint",
                 f"team 2 {current_team2.battlecard.name.name} KOs team 1 {current_team1.battlecard.name.name}"
             )
         if pokemon2_dead:
             combat_over = True
+            current_team2.battlecard.status = 0
             logger(
                 "Team2 Faint",
-                f"team 1 {current_team2.battlecard.name.name} KOs team 2{current_team1.battlecard.name.name}"
+                f"team 1 {current_team1.battlecard.name.name} KOs team 2 {current_team2.battlecard.name.name}"
             )
-
-        if pokemon2_dead:
-            current_team2 = next_pokemon(bench2) # handles the death of current pokemon
-            if current_team2 == None:
-                stop_this = True
-            team2_live.pop(0) # doesn't matter which pokemon is popped. once all three are gone it's over
-        if pokemon1_dead:
-            current_team1 = next_pokemon(bench1)
-            if current_team1 == None:
-                stop_this = True
-            team1_live.pop(0)
 
         if combat_over:
             combat_rising_edge = False
             execute_hook(CombatHook.POST_COMBAT, current_team1, current_team2)
+
+        if pokemon2_dead and current_team2.battlecard.status == 0:
+            current_team2 = next_pokemon(bench2) # handles the death of current pokemon
+            if current_team2 == None:
+                stop_this = True
+            team2_live.pop(0) # doesn't matter which pokemon is popped. once all three are gone it's over
+        if pokemon1_dead and current_team1.battlecard.status == 0:
+            current_team1 = next_pokemon(bench1)
+            if current_team1 == None:
+                stop_this = True
+            team1_live.pop(0)
 
     # COMBAT ITEM HOOK: post_battle_action
     execute_hook(CombatHook.POST_BATTLE, current_team1, current_team2)
@@ -580,7 +582,8 @@ def launch_attack(
             # print(attacker.name.name+' used '+move)
             logger(
                 "Attack",
-                attacker.battlecard.name.name+" used "+move+" on "+defender.battlecard.name.name
+                f"{attacker.team} {attacker.battlecard.name.name} used {move} "
+                f"on {defender.team} {defender.battlecard.name.name}"
             )
             #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
             if move == attacker.battlecard.move_tm.name:
@@ -592,7 +595,8 @@ def launch_attack(
 
             logger(
                 "Energy Use",
-                f"attacker.battlecard.name.name  has {attacker.battlecard.energy:.0f} energy left"
+                f"{attacker.team} {attacker.battlecard.name.name} "
+                f"has {attacker.battlecard.energy:.0f} energy left"
             )
 
             # idk about this, to simulate charged attack taking a while based on how it
@@ -621,7 +625,7 @@ def launch_attack(
                 if block:
                     defender.battlecard.bonus_shield -= 1 # if shield, decrement
                     # print(defender.name.name+' used a shield')
-                    logger("Shield", f"{defender.battlecard.name.name} used a shield")
+                    logger("Shield", f"{defender.team} {defender.battlecard.name.name} used a shield")
             if not block:
                 damage = proposed_damage
                 effectiveness = p_effectiveness
@@ -651,24 +655,24 @@ def launch_attack(
                             if a_modifier <0:
                                 logger(
                                     "Attack Debuff",
-                                    f"{attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
                                 )
                             else:
                                 logger(
                                     "Attack Buff",
-                                    f"{attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
                                 )
                             defender.am += a_modifier
                         if d_modifier != 0:
                             if d_modifier < 0:
                                 logger(
                                     "Defense Debuff",
-                                    f"{attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
                                 )
                             else:
                                 logger(
                                     "Defense Buff",
-                                    f"{attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
                                 )
                             defender.dm += d_modifier
                     elif buff_target == "self":
@@ -676,24 +680,24 @@ def launch_attack(
                             if a_modifier > 0:
                                 logger(
                                     "Attack Buff",
-                                    f"{attacker.battlecard.name.name} buffed its own attack"
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed its own attack"
                                 )
                             else:
                                 logger(
                                     "Attack Debuff",
-                                    f"{attacker.battlecard.name.name} debuffed its own attack"
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed its own attack"
                                 )
                             attacker.am += a_modifier
                         if d_modifier != 0:
                             if d_modifier >0:
                                 logger(
                                     "Defense Buff",
-                                    f"{defender.battlecard.name.name} buffed its own defense"
+                                    f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
                                 )
                             else:
                                 logger(
                                     "Defense Debuff",
-                                    f"{defender.battlecard.name.name} buffed its own defense"
+                                    f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
                                 )
                             attacker.dm += d_modifier
             
@@ -718,12 +722,12 @@ def launch_attack(
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
             logger(
-                "Damage",
-                f"{defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+                "Charged Move Damage",
+                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
             )
             logger(
                 "Health",
-                f"{defender.battlecard.name.name} has {defender.hp:.0f} hp left"
+                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
             )
 
             if defender.hp <= 0: # check if dead
@@ -737,13 +741,15 @@ def launch_attack(
             # print(attacker.name.name+' used '+attacker.move_f.name)
             logger(
                 "Fast Attack",
-                f"{attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} on {defender.battlecard.name.name}"
+                f"{attacker.team} {attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} "
+                f"on {defender.team} {defender.battlecard.name.name}"
             )
             #sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy += attacker.battlecard._move_f_energy
             logger(
                 "Attack Charge Up",
-                f"{attacker.battlecard.name.name} now has {attacker.battlecard.energy:.0f} energy"
+                f"{attacker.team} {attacker.battlecard.name.name} now "
+                f"has {attacker.battlecard.energy:.0f} energy"
             )
             #sequence.append(Event(-1, '', attacker.battlecard.name.name+" needs "+str(moves[attacker.battlecard.move_ch.name]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
             damage, effectiveness = calculate_damage(attacker, move, defender)
@@ -763,18 +769,17 @@ def launch_attack(
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
             logger(
-                "Damage",
-                f"{defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+                "Fast Attack Damage",
+                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
             )
             logger(
                 "Health",
-                f"{defender.battlecard.name.name} has {defender.hp:.0f} HP left"
+                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} HP left"
             )
             if defender.hp <= 0: # check if dead
                 fatal = True
         else:
             pass
-            #sequence.append(Event(-1, '', attacker.battlecard.name.name+" is not ready to attack yet"))
 
     # flavor text
     '''

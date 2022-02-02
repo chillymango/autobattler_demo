@@ -44,8 +44,8 @@ class BattleCard(BaseModel):
     atk_: T.Optional[float] = None
     def_: T.Optional[float] = None
     health: T.Optional[float] = None
+    _max_health: T.Optional[float] = PrivateAttr(default=0)
     f_move_spd: T.Optional[float] = None
-    spd_: T.Optional[float] = 0
     poke_type1: PokemonType = None
     poke_type2: PokemonType = None
     f_move_type: PokemonType = None
@@ -60,12 +60,36 @@ class BattleCard(BaseModel):
     team_position: int = None
     _item: "CombatItem" = PrivateAttr()
 
+    # this tracks a current battle card modifier array
+    # effective stats should be calcualated with these modifiers included
+    modifiers: T.List[float] = Field(default_factory=lambda: [0] * 5)
+
+    def reset_modifiers(self):
+        self.modifiers = [0] * len(Stats)
+
+    @property
+    def attack(self):
+        return self.atk_ + self.modifiers[Stats.ATK.value]
+
+    @property
+    def defense(self):
+        return self.def_ + self.modifiers[Stats.DEF.value]
+
+    @property
+    def hitpoints(self):
+        return self.health + self.modifiers[Stats.HP.value]
+
+    @property
+    def speed(self):
+        return self.modifiers[Stats.SPD.value]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # stats
         poke_stats = gamemaster.get_default_pokemon_stats(self.name)
         cpms = gamemaster.get_lvl_cpm(self.level)
         self.health = kwargs.get('health') or cpms * poke_stats["baseStats"]["hp"]
+        self._max_health = self.health
         self.atk_ = kwargs.get('atk_') or cpms * poke_stats["baseStats"]["atk"]
         self.def_ = kwargs.get('def_') or cpms * poke_stats["baseStats"]["def"]
 
@@ -102,6 +126,10 @@ class BattleCard(BaseModel):
         return hash(self._id)
 
     @property
+    def max_health(self) -> float:
+        return self._max_health
+
+    @property
     def atk_spd_timer_cts(self) -> float:
         """
         Returns the number of timer counts required before a fast attack can be initiated.
@@ -111,7 +139,7 @@ class BattleCard(BaseModel):
         Since the game engine ticks at 100 timer counts a tick, the soft cap on effective attack
         speed is 10 attacks per second. That limit is enforced here.
         """
-        return max(self.f_move_spd - self.spd_ * 50, 100.0)
+        return max(self.f_move_spd - self.speed * 50, 100.0)
 
     def atk_per_sec_for_spd_stat(self, spd: int):
         """
@@ -200,7 +228,6 @@ class Pokemon(Entity):
     battle_card: BattleCard
     nickname: str
     xp: float = 0.0
-    modifiers: T.List[float] = Field(default_factory=lambda: [0] * 5)
 
     def __str__(self):
         return ("Shiny" * self.battle_card.shiny + " {}".format(self.nickname)).strip()

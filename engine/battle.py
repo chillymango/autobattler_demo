@@ -60,11 +60,6 @@ class BattleManager(Component):
                 continue
             battle_card = copy.copy(poke.battle_card)
 
-            # adjust stats by just incrementing IVs
-            # we may want a dedicated field for this in the future but this should suffice...
-            battle_card.atk_ += poke.modifiers[Stats.ATK.value]
-            battle_card.def_ += poke.modifiers[Stats.DEF.value]
-            battle_card.health += poke.modifiers[Stats.HP.value]
             cards.append(battle_card)
 
             # give any held items
