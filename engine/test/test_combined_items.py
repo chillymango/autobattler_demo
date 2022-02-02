@@ -41,3 +41,13 @@ class TestCombatItems(unittest.TestCase):
             component.turn_setup()
         for component in self.env.components:
             component.turn_execute()
+
+    def test_focus_band(self):
+        eevee = self.pm.create_and_give_pokemon_to_player(self.p1, 'magikarp')
+        focus_band = self.pm.create_and_give_item_to_player(self.p1, 'FocusBand')
+        focus_band.level = 3  # need to manually set if not combining
+        self.pm.give_item_to_pokemon(eevee, focus_band)
+        for component in self.env.components:
+            component.turn_setup()
+        for component in self.env.components:
+            component.turn_execute()

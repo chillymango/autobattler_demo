@@ -88,54 +88,43 @@ class Ui(QtWidgets.QMainWindow):
             return
 
         self.pokemonName.setText(self.pokemon.nickname)
-        gm: "GameMaster" = self.env.game_master
-        atk_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.ATK)
-        def_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.DEF)
-        hp_base = gm.get_pokemon_stats(self.pokemon.name.name, Stats.HP)
         sprite_manager: "SpriteManager" = self.env.sprite_manager
         pokemon_factory: "PokemonFactory" = self.env.pokemon_factory
 
-        cpm = gm.get_lvl_cpm(pokemon.battle_card.level)
-        _atk = (pokemon.battle_card.a_iv + pokemon.modifiers[Stats.ATK.value] + atk_base) * cpm * SHINY_STAT_MULT
-        _def = (pokemon.battle_card.d_iv + pokemon.modifiers[Stats.DEF.value] + def_base) * cpm * SHINY_STAT_MULT
-        _hp = (pokemon.battle_card.hp_iv + pokemon.modifiers[Stats.HP.value] + hp_base) * cpm * SHINY_STAT_MULT
+        battle_card = pokemon.battle_card
+        atk_base = battle_card.atk_
+        def_base = battle_card.def_
+        hp_base = battle_card.health
 
-        move_spd_base = gm.get_move_speed(self.pokemon.battle_card.move_f)
-        spd_modifier = pokemon.modifiers[Stats.SPD.value]
-        base_aspd = atk_per_sec(move_spd_base, 0)
-        _aspd = atk_per_sec(move_spd_base, spd_modifier)
+        atk_ = atk_base + pokemon.modifiers[Stats.ATK]
+        def_ = def_base + pokemon.modifiers[Stats.DEF]
+        hp_ = hp_base + pokemon.modifiers[Stats.HP]
+        spd_ = battle_card.spd_ + pokemon.modifiers[Stats.SPD]
+        atk_per_sec_ = battle_card.atk_per_sec_for_spd_stat(spd_)
 
-        self.atkStat.setText(str(int(_atk)))
-        self.defStat.setText(str(int(_def)))
-        self.hpStat.setText(str(int(_hp)))
-        self.spdStat.setText(str("{:.2f}".format(_aspd)))
+        self.atkStat.setText(str(int(atk_)))
+        self.defStat.setText(str(int(def_)))
+        self.hpStat.setText(str(int(hp_)))
+        self.spdStat.setText(str("{:.2f}".format(atk_per_sec)))
 
         # TODO: set modified colors if there are any
-        if _atk > (pokemon.battle_card.a_iv + atk_base) * cpm:
+        if pokemon.modifiers[Stats.ATK] or pokemon.battle_card.shiny:
             self.atkStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _atk < (pokemon.battle_card.a_iv + atk_base) * cpm:
-            self.atkStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.atkStat.setStyleSheet("color: black;")
 
-        if _def > (pokemon.battle_card.d_iv + def_base) * cpm:
+        if pokemon.modifiers[Stats.DEF] or pokemon.battle_card.shiny:
             self.defStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _def < (pokemon.battle_card.d_iv + def_base) * cpm:
-            self.defStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.defStat.setStyleSheet("color: black;")
 
-        if _hp > (pokemon.battle_card.hp_iv + hp_base) * cpm:
+        if pokemon.modifiers[Stats.HP] or pokemon.battle_card.shiny:
             self.hpStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _hp < (pokemon.battle_card.hp_iv + hp_base) * cpm:
-            self.hpStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.hpStat.setStyleSheet("color: black;")
 
-        if _aspd > base_aspd:
+        if atk_per_sec_ > battle_card.atk_per_secL
             self.spdStat.setStyleSheet("color: green; font-weight: bold;")
-        elif _aspd < base_aspd:
-            self.spdStat.setStyleSheet("color: red; font-weight: bold;")
         else:
             self.spdStat.setStyleSheet("color: black;")
 

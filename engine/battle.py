@@ -60,11 +60,6 @@ class BattleManager(Component):
                 continue
             battle_card = copy.copy(poke.battle_card)
 
-            # adjust stats by just incrementing IVs
-            # we may want a dedicated field for this in the future but this should suffice...
-            battle_card.a_iv += poke.modifiers[Stats.ATK.value]
-            battle_card.d_iv += poke.modifiers[Stats.DEF.value]
-            battle_card.hp_iv += poke.modifiers[Stats.HP.value]
             cards.append(battle_card)
 
             # give any held items
@@ -80,7 +75,7 @@ class BattleManager(Component):
         p2_cards = self.assemble_team_cards(player2)
         return battle(p1_cards, p2_cards)
 
-    def turn_execute(self):
+    def turn_execute(self, debug: bool = True):
         """
         For all matches, run battles.
         """
@@ -89,16 +84,10 @@ class BattleManager(Component):
             p1 = self.state.get_player_by_id(match.player1)
             p2 = self.state.get_player_by_id(match.player2)
             res = self.battle(p1, p2)
+            if debug:
+                print('\n'.join([repr(x) for x in res['events']]))
 
-            events: T.List[Event] = res.get('events', [])
             recipients = (p1, p2)
-            for event in events:
-                if event.type == "faint":
-                    msg = (event.value.replace("team1", f"{p1.name}'s")
-                                      .replace("team2", f"{p2.name}'s"))
-                    self.log(msg=msg, recipient=recipients)
-                if event.type:
-                    print(f"[{event.id}]: {event.type} - {event.value}")
 
             if res['winner'] == 'team1':
                 self.log(msg=f"{p1} beats {p2}", recipient=recipients)
@@ -118,6 +107,7 @@ class BattleManager(Component):
                         player.hitpoints -= 4
                     else:
                         player.hitpoints -= 6
+
             stats = dict()
             team1 = self.get_team(p1)
             team2 = self.get_team(p2)

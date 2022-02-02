@@ -58,10 +58,11 @@ import typing as T
 from random import randint
 
 import os.path
-from engine.models.enums import PokemonId
-from engine.models.battle import Event
+from engine.models.enums import Move, PokemonId
+from engine.models.battle import BattleEvent, Event
 from engine.models.combat_hooks import CombatHook
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
+from engine.models.weather import WeatherType
 
 if T.TYPE_CHECKING:
     from engine.models.items import CombatItem
@@ -73,7 +74,7 @@ file_path = os.path.join(parent_directory,'autobattler_demo/battle_engine/src/da
 # with open('../../battle_engine/src/data/gamemaster.json', 'r') as origin:
 with open(file_path, 'r') as origin:
     dataset = json.load(origin)
-    pokedex = {x["speciesId"] : x for x in dataset["pokemon"]} # creates a list of all pokemon
+    #pokedex = {x["speciesId"] : x for x in dataset["pokemon"]} # creates a list of all pokemon
 
 #    moves = {x["moveId"] : x for x in dataset["moves"]} # creates a list of all moves
 # issue where SUPERPOWER is a move, but super_power is the id, basically
@@ -90,23 +91,17 @@ cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456
 # I assume pokemon health doesn't initialize to 0, but if it does, need to create base stats for the pokemon
 
 class Battler:
-    def __init__(self, battle_card: BattleCard, index):
+    def __init__(self, battle_card: BattleCard, index: int, team: str):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
         self.battlecard.bonus_shield = 1
+        self.team = team
 
-        cpm = cpms[int((battle_card.level-1) * 2)]
         # initialize stats. ignoring iv for now
-        self.a = cpm * (pokedex[battle_card.name.name]["baseStats"]["atk"] + self.battlecard.a_iv)
-        # in the pokemon.js file, search for "ivs.atk" to find the real assignment variables. 
-        self.d = cpm * (pokedex[battle_card.name.name]["baseStats"]["def"] + self.battlecard.d_iv)
-        self.hp = math.floor(cpm * (pokedex[battle_card.name.name]["baseStats"]["hp"] + self.battlecard.hp_iv))
+        self.a = battle_card.attack
+        self.d = battle_card.defense
+        self.hp = self.battlecard.hitpoints
         if self.hp < 10:
             self.hp = 10
-        # TODO(albert/tone): maybe something unified for buffing with shiny
-        if battle_card.shiny:
-            self.a *= SHINY_STAT_MULT
-            self.d *= SHINY_STAT_MULT
-            self.hp *= SHINY_STAT_MULT
 
         self.id = index # keep track of where on the bench it is. for keeping track of how much damage it does
         self.dmg_dealt = 0
@@ -117,10 +112,45 @@ class Battler:
         # buff modifiers
         self.am = 0
         self.dm = 0
-        
+
         # can look at pokemon.js line 595 "self.activechargedmoves = []" to see sorting charged move array by cost, selecting an optimal move
 
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
+
+
+class EventLogger:
+    """
+    Keeps track of the global tick and all events that occur.
+
+    Sorts them automatically.
+
+    Eventually can use something similar to implement some sort of action queue.
+    """
+
+    def __init__(self):
+        self.global_timer = 0
+        self.sequence_idx = 0
+        self.events: T.List[Event] = []
+
+    def increment_timer(self, incr: float):
+        """
+        Increment the global timer by some amount.
+        """
+        self.global_timer += incr
+
+    def __call__(self, category: str, msg: str):
+        """
+        Log a message. Append a message to the list of events.
+        """
+        self.events.append(
+            BattleEvent(
+                seq=self.sequence_idx,
+                timestamp=self.global_timer,
+                category=category,
+                value=msg
+            )
+        )
+        self.sequence_idx += 1
 
 
 class HookExecutor:
@@ -129,9 +159,11 @@ class HookExecutor:
         self,
         team1: T.List[BattleCard],
         team2: T.List[BattleCard],
+        logger: EventLogger = None,
     ):
         self.team1 = team1
         self.team2 = team2
+        self.logger = logger
 
         self.team1_items = self.get_all_team_items(self.team1)
         self.team2_items = self.get_all_team_items(self.team2)
@@ -201,6 +233,7 @@ class HookExecutor:
                 battlecard2 = None
 
             method(
+                logger=self.logger,
                 current_team1=battlecard1,
                 current_team2=battlecard2,
                 team1=self.team1,
@@ -210,22 +243,35 @@ class HookExecutor:
                 **context
             )
 
+INCREMENT = 100
 
 # TODO(albert): this global is gross
 execute_hook = None
 
 
-def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
+def battle(
+    team1_cards: T.List[BattleCard],
+    team2_cards: T.List[BattleCard],
+    weather: WeatherType = None
+):
     """
     Takes two arrays of battle cards and simulates combat between them.
 
     The original battle cards are shallow-copied and modified during the battle.
     """
+    # start a new logger for each battle
+    logger = EventLogger()
+    # TODO(albert): should this be cards or live?
+    global execute_hook
+    execute_hook = HookExecutor(team1_cards, team2_cards, logger=logger)
+
     #team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
     #team2_items = {poke.item: team2_cards[poke] for poke in team2_cards}
-
+    global_timer = 0
     #print(f'{team1_items=}')
     #print(f'{team2_items=}')
+
+    # TODO(albert/tone): calculate weather advantage
 
     stop_this = False
 
@@ -251,9 +297,11 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     bench2 = []
 
     for index, x in enumerate(team1_live):
-        bench1.append(Battler(x, index))
+        bench1.append(Battler(x, index, 'team 1'))
+        logger("join_party", f"{x} joined team 1")
     for index, x in enumerate(team2_live):
-        bench2.append(Battler(x, index))
+        bench2.append(Battler(x, index, 'team 2'))
+        logger("join_party", f"{x} joined team 2")
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
     bench1_permanent = bench1
@@ -285,28 +333,32 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
     
     team1_switches = 5 # max number of switches the team can make
     team2_switches = 5
-    turnnumber = 1
-
-    # TODO(albert): should this be cards or live?
-    global execute_hook
-    execute_hook = HookExecutor(team1_cards, team2_cards)
+    turnnumber = 0
 
     # COMBAT ITEM HOOK: pre_battle_action
     execute_hook(CombatHook.PRE_BATTLE, current_team1, current_team2)
 
     combat_rising_edge = False
+
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
+        turnnumber += 1
+        logger("Turn", str(turnnumber))
 
         if not combat_rising_edge:
             # COMBAT ITEM HOOK: pre_combat_action
             execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
+            # announce current team members
+            logger("team1_active", f"{current_team1.battlecard.name} is fighting for team 1")
+            logger("team2_active", f"{current_team2.battlecard.name} is fighting for team2")
+            combat_rising_edge = True
 
         # COMBAT ITEM HOOK: on_tick
         execute_hook(CombatHook.ON_TICK, current_team1, current_team2)
 
         # increment time
-        current_team1.timer += 10
-        current_team2.timer += 10
+        logger.increment_timer(INCREMENT)
+        current_team1.timer += INCREMENT
+        current_team2.timer += INCREMENT
 
         move1 = calculate_optimal_move(current_team1, current_team2)
         move2 = calculate_optimal_move(current_team2, current_team1)
@@ -315,10 +367,8 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
 
         can_attack_1 = True # if a team switches out a pokemon, they won't get an attack this turn
         can_attack_2 = True
-        sequence.append(Event(-1, '',"turn number: "+str(turnnumber)))
-        turnnumber += 1
         # if bad matchup, switch
-# THIS NEEDS WORK, IF WANT TO TRY 1V1        
+# THIS NEEDS WORK, IF WANT TO TRY 1V1
         index1 = check_advantage(current_team1, current_team2, bench1) # the index on bench for best pokemon
         index2 = check_advantage(current_team2, current_team1, bench2)
 #        index1 = matchup(current_team1, current_team2, bench1)
@@ -327,13 +377,15 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
         if index1 >= 0 and team1_switches > 0: # if the current pokemon is not best
             current_team1, bench1 = swap_pokemon(current_team1, bench1, index1)
             # print('team 1 has swapped '+bench1[index1].name.name+' with '+current_team1.name.name)
-            sequence.append(Event(-1, "switch", "team 1"))
+            logger("Switch", "team1")
+            #sequence.append(Event(-1, "switch", "team 1"))
             can_attack_1 = False # can no longer attack this round
             team1_switches -= 1
         if index2 >= 0 and team2_switches > 0:
             current_team2, bench2 = swap_pokemon(current_team2, bench2, index2)
             # print('team 2 has swapped '+bench2[index2].name.name+' with '+current_team2.name.name)
-            sequence.append(Event(-1, "switch", "team 2"))
+            logger("Switch", "team2")
+            #sequence.append(Event(-1, "switch", "team 2"))
             can_attack_2 = False
             team2_switches -= 1
 
@@ -366,8 +418,8 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
                 if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
                     runtheblock = True
             if runtheblock:
-                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq)
-                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq)
+                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq, logger)
+                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq, logger)
                 wascharged1 = False
                 wascharged2 = False
                 if dummy1.battlecard.move_ch.name == firstattack or dummy1.battlecard.move_tm.name == firstattack:
@@ -414,37 +466,40 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
                         can_attack_1 = False
 
         if can_attack_1: # pokemon 1 attacks
-            pokemon2_dead = launch_attack(current_team1, current_team2, sequence)[0]
+            pokemon2_dead = launch_attack(current_team1, current_team2, sequence, logger)[0]
         if can_attack_2:
-            pokemon1_dead = launch_attack(current_team2, current_team1, sequence)[0]
+            pokemon1_dead = launch_attack(current_team2, current_team1, sequence, logger)[0]
 
         combat_over = False
         if pokemon1_dead:
             combat_over = True
-            # print(current_team1.name.name+" fainted")
-            sequence.append(
-                Event(-1, "faint", f"team2 {current_team2.battlecard.name.name} KOs {current_team1.battlecard.name.name}")
+            current_team1.battlecard.status = 0
+            logger(
+                "Team1 Faint",
+                f"team 2 {current_team2.battlecard.name.name} KOs team 1 {current_team1.battlecard.name.name}"
             )
         if pokemon2_dead:
             combat_over = True
-            sequence.append(
-                Event(-1, "faint", f"team1 {current_team1.battlecard.name.name} KO's {current_team2.battlecard.name.name}")
+            current_team2.battlecard.status = 0
+            logger(
+                "Team2 Faint",
+                f"team 1 {current_team1.battlecard.name.name} KOs team 2 {current_team2.battlecard.name.name}"
             )
-
-        if pokemon2_dead:
-            current_team2 = next_pokemon(bench2) # handles the death of current pokemon
-            if current_team2 == None:
-                stop_this = True
-            team2_live.pop(0) # doesn't matter which pokemon is popped. once all three are gone it's over
-        if pokemon1_dead:
-            current_team1 = next_pokemon(bench1)
-            if current_team1 == None:
-                stop_this = True
-            team1_live.pop(0)
 
         if combat_over:
             combat_rising_edge = False
             execute_hook(CombatHook.POST_COMBAT, current_team1, current_team2)
+
+        if pokemon2_dead and current_team2.battlecard.status == 0:
+            current_team2 = next_pokemon(bench2) # handles the death of current pokemon
+            if current_team2 == None:
+                stop_this = True
+            team2_live.pop(0) # doesn't matter which pokemon is popped. once all three are gone it's over
+        if pokemon1_dead and current_team1.battlecard.status == 0:
+            current_team1 = next_pokemon(bench1)
+            if current_team1 == None:
+                stop_this = True
+            team1_live.pop(0)
 
     # COMBAT ITEM HOOK: post_battle_action
     execute_hook(CombatHook.POST_BATTLE, current_team1, current_team2)
@@ -489,11 +544,18 @@ def battle(team1_cards: T.List[BattleCard], team2_cards: T.List[BattleCard]):
 
     for index, x in enumerate(sequence):
         x.id = index
-    output["events"] = sequence
+
+    output['events'] = logger.events
 
     return output
 
-def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
+
+def launch_attack(
+    attacker: Battler,
+    defender: Battler,
+    sequence: T.List[BattleEvent],
+    logger: EventLogger
+): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
     # THIS WILL CHANGE THE SEQUENCE BECAUSE OF POINTERS
 
     fatal = False # if the attack will be fatal
@@ -511,15 +573,34 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
         move = attacker.battlecard.move_f.name
     else:
         if move == attacker.battlecard.move_tm.name or move == attacker.battlecard.move_ch.name: # if the optimal move needs energy
+            # ON CHARGED MOVE COMBAT HOOKS: should run before damage calculations
+
             # COMBAT ITEM HOOK: on_charged_move
             execute_hook(CombatHook.ON_CHARGED_MOVE, attacker, defender)
             # COMBAT ITEM HOOK: on_enemy_charged_move
             execute_hook(CombatHook.ON_ENEMY_CHARGED_MOVE, attacker, defender)
             # print(attacker.name.name+' used '+move)
-            sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+move+" on "+defender.battlecard.name.name))
-            attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
-            sequence.append(Event(-1, "", attacker.battlecard.name.name+" has "+str(attacker.battlecard.energy)+" energy left"))
-# idk about this, to simulate charged attack taking a while based on how it looks when pvpoke renders a quick fast attack after opponent charged          
+            logger(
+                "Attack",
+                f"{attacker.team} {attacker.battlecard.name.name} used {move} "
+                f"on {defender.team} {defender.battlecard.name.name}"
+            )
+            #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
+            if move == attacker.battlecard.move_tm.name:
+                attacker.battlecard.energy -= attacker.battlecard._move_tm_energy
+            elif move == attacker.battlecard.move_ch.name:
+                attacker.battlecard.energy -= attacker.battlecard._move_ch_energy
+            else:
+                raise Exception('what fuckin happened')
+
+            logger(
+                "Energy Use",
+                f"{attacker.team} {attacker.battlecard.name.name} "
+                f"has {attacker.battlecard.energy:.0f} energy left"
+            )
+
+            # idk about this, to simulate charged attack taking a while based on how it
+            # looks when pvpoke renders a quick fast attack after opponent charged          
             attacker.timer = -500 # -= moves[move]["cooldown"] + 500 # an extra -500 to timer
             damage = 1 # set to 1 because if you shield a charged attack its useless
             effectiveness = -1 # how effective an attack was
@@ -544,7 +625,7 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
                 if block:
                     defender.battlecard.bonus_shield -= 1 # if shield, decrement
                     # print(defender.name.name+' used a shield')
-                    sequence.append(Event(-1, "shield", defender.battlecard.name.name+" used a shield"))
+                    logger("Shield", f"{defender.team} {defender.battlecard.name.name} used a shield")
             if not block:
                 damage = proposed_damage
                 effectiveness = p_effectiveness
@@ -572,28 +653,52 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
                     if buff_target == "opponent":
                         if a_modifier != 0:
                             if a_modifier <0:
-                                sequence.append(Event(-1, "debuff", attacker.battlecard.name.name+" debuffed "+defender.battlecard.name.name+'\'s attack'))
+                                logger(
+                                    "Attack Debuff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
+                                )
                             else:
-                                sequence.append(Event(-1, "debuff", attacker.battlecard.name.name+" buffed "+defender.battlecard.name.name+'\'s attack'))
+                                logger(
+                                    "Attack Buff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                                )
                             defender.am += a_modifier
                         if d_modifier != 0:
                             if d_modifier < 0:
-                                sequence.append(Event(-1, "debuff", attacker.battlecard.name.name+" debuffed "+defender.battlecard.name.name+'\'s defense'))
+                                logger(
+                                    "Defense Debuff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
+                                )
                             else:
-                                sequence.append(Event(-1, "debuff", attacker.battlecard.name.name+" buffed "+defender.battlecard.name.name+'\'s defense'))
+                                logger(
+                                    "Defense Buff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                                )
                             defender.dm += d_modifier
                     elif buff_target == "self":
                         if a_modifier != 0:
                             if a_modifier > 0:
-                                sequence.append(Event(-1, "buff", attacker.battlecard.name.name+' buffed its own attack'))
+                                logger(
+                                    "Attack Buff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} buffed its own attack"
+                                )
                             else:
-                                sequence.append(Event(-1, "buff", attacker.battlecard.name.name+' debuffed its own attack'))
+                                logger(
+                                    "Attack Debuff",
+                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed its own attack"
+                                )
                             attacker.am += a_modifier
                         if d_modifier != 0:
                             if d_modifier >0:
-                                sequence.append(Event(-1, "buff", attacker.battlecard.name.name+' buffed its own defense'))
+                                logger(
+                                    "Defense Buff",
+                                    f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
+                                )
                             else:
-                                sequence.append(Event(-1, "buff", attacker.battlecard.name.name+' debuffed its own defense'))
+                                logger(
+                                    "Defense Debuff",
+                                    f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
+                                )
                             attacker.dm += d_modifier
             
             # print(defender.name.name+' took '+str(damage)+' damage')
@@ -616,8 +721,14 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
                 how_was_it = 'it was barely effective'
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
-            sequence.append(Event(-1, "damage", defender.battlecard.name.name+" took "+str(damage)+" damage. "+how_was_it))
-            sequence.append(Event(-1, '', defender.battlecard.name.name+" now has "+str(defender.hp)+" hp left"))
+            logger(
+                "Charged Move Damage",
+                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+            )
+            logger(
+                "Health",
+                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
+            )
 
             if defender.hp <= 0: # check if dead
                 fatal = True
@@ -628,16 +739,24 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
             execute_hook(CombatHook.ON_FAST_MOVE, attacker, defender)
             execute_hook(CombatHook.ON_ENEMY_FAST_MOVE, attacker, defender)
             # print(attacker.name.name+' used '+attacker.move_f.name)
-            sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
-            attacker.battlecard.energy += moves[attacker.battlecard.move_f.name]["energyGain"] # gain energy
-            # print(attacker.name.name+' is charging up')
-            sequence.append(Event(-1, '', attacker.battlecard.name.name+" now has "+str(attacker.battlecard.energy)+" energy"))
-            sequence.append(Event(-1, '', attacker.battlecard.name.name+" needs "+str(moves[attacker.battlecard.move_ch.name]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
+            logger(
+                "Fast Attack",
+                f"{attacker.team} {attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} "
+                f"on {defender.team} {defender.battlecard.name.name}"
+            )
+            #sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
+            attacker.battlecard.energy += attacker.battlecard._move_f_energy
+            logger(
+                "Attack Charge Up",
+                f"{attacker.team} {attacker.battlecard.name.name} now "
+                f"has {attacker.battlecard.energy:.0f} energy"
+            )
+            #sequence.append(Event(-1, '', attacker.battlecard.name.name+" needs "+str(moves[attacker.battlecard.move_ch.name]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
             damage, effectiveness = calculate_damage(attacker, move, defender)
             defender.hp -= damage
             attacker.dmg_dealt += damage
             defender.dmg_taken += damage
-            attacker.timer -= attacker.battlecard.speed
+            attacker.timer -= attacker.battlecard.atk_spd_timer_cts
 
             # print(defender.name.name+' took '+str(damage)+' damage')
             how_was_it = ""
@@ -649,12 +768,18 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
                 how_was_it = 'it was barely effective'
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
-            sequence.append(Event(-1, "damage", defender.battlecard.name.name+" took "+str(damage)+" damage. "+how_was_it))
-            sequence.append(Event(-1, '', defender.battlecard.name.name+" now has "+str(defender.hp)+" hp left"))
+            logger(
+                "Fast Attack Damage",
+                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+            )
+            logger(
+                "Health",
+                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} HP left"
+            )
             if defender.hp <= 0: # check if dead
                 fatal = True
         else:
-            sequence.append(Event(-1, '', attacker.battlecard.name.name+" is not ready to attack yet"))
+            pass
 
     # flavor text
     '''
@@ -668,7 +793,7 @@ def launch_attack(attacker: Battler, defender: Battler, sequence): # this is the
     elif defender.health > 0 and defender.health <= 1:
         print('call an ambulance!') # consider returning a flag, and if this pokemon almost died, add "but not for me"
     '''
-    
+
     return fatal, move
 
 def next_pokemon(bench): # takes in bench of team, returns new pokemon and modifies bench
@@ -708,23 +833,20 @@ def matchup(attacker, defender, bench):
 def simulate1v1(attacker, defender):
     return battle([attacker.battlecard], [defender.battlecard])["winner"]
 
-def analyze_type(attacker, defender, disabled=True): # >0 is good, <0 is bad
+def analyze_type(attacker: Battler, defender: Battler, disabled=True): # >0 is good, <0 is bad
     # these lines pull the types of the moves
-    # TODO(albert/tone): undisable
-    if disabled:
-        return 0
-    attacker_fast = moves[attacker.battlecard.move_f.name]["type"]
-    attacker_charged = moves[attacker.battlecard.move_ch.name]["type"]
-    attacker_tm = moves[attacker.battlecard.move_tm.name]["type"]
-    defender_fast = moves[defender.battlecard.move_f.name]["type"]
-    defender_charged = moves[defender.battlecard.move_ch.name]["type"]
-    defender_tm = moves[defender.battlecard.move_tm.name]["type"]
+    attacker_fast = attacker.battlecard.f_move_type
+    attacker_charged = attacker.battlecard.ch_move_type
+    attacker_tm = attacker.battlecard.tm_move_type
+    defender_fast = defender.battlecard.f_move_type
+    defender_charged = defender.battlecard.ch_move_type
+    defender_tm = defender.battlecard.tm_move_type
     
     attacker_type = [] # initialize the array of move types
     defender_type = []
 
-    attacker_self = pokedex[attacker.battlecard.name.name]["types"] # the pokemon's types
-    defender_self = pokedex[defender.battlecard.name.name]["types"]
+    attacker_self = set([attacker.battlecard.poke_type1, attacker.battlecard.poke_type2])
+    defender_self = set([defender.battlecard.poke_type1, defender.battlecard.poke_type2])
 
     # if-else that creates array of available attack types. to avoid dodging a tem attack when they don't have it available. can change this to simulate uncertainty of enemy team
     if attacker.battlecard.tm_flag == 1: # if the tm is available
@@ -747,13 +869,13 @@ def analyze_type(attacker, defender, disabled=True): # >0 is good, <0 is bad
     # this doesn't account for duplicate resistances/weaknesses
     # this pulls resistances
     for x in attacker_self:
-        attacker_resistances += types[x]["resistances"]
-        attacker_weaknesses += types[x]["weaknesses"]
-        attacker_immunities += types[x]["immunities"]
+        attacker_resistances += types[x.name]["resistances"]
+        attacker_weaknesses += types[x.name]["weaknesses"]
+        attacker_immunities += types[x.name]["immunities"]
     for x in defender_self:
-        defender_resistances += types[x]["resistances"]
-        defender_weaknesses += types[x]["weaknesses"]
-        defender_immunities += types[x]["immunities"]
+        defender_resistances += types[x.name]["resistances"]
+        defender_weaknesses += types[x.name]["weaknesses"]
+        defender_immunities += types[x.name]["immunities"]
 
     # could make the multiplier stuff in calculate_damage its own function, instead of these discrete integers
     
@@ -773,7 +895,8 @@ def analyze_type(attacker, defender, disabled=True): # >0 is good, <0 is bad
         if x in attacker_immunities:
             balance += 2
     return balance
-    
+
+
 def calculate_optimal_move(attacker: Battler, defender: Battler): # returns string, the name of best move
     # can consider passing back a flag for if the move was effective or not, to print. or change in calculate_damage
     fast_damage = calculate_damage(attacker, attacker.battlecard.move_f.name, defender)[0]
@@ -818,12 +941,12 @@ def calculate_optimal_move(attacker: Battler, defender: Battler): # returns stri
         return attacker.battlecard.move_ch.name
     elif tm_damage > 0:
         return attacker.battlecard.move_tm.name
-    elif attacker.timer >= attacker.battlecard.speed:
+    elif attacker.timer >= attacker.battlecard.atk_spd_timer_cts:
         return attacker.battlecard.move_f.name
     return ''
 
 
-def turnstodie(me, them):
+def turnstodie(me: Battler, them: Battler):
     myhp = me.hp
     theirenergy = them.battlecard.energy
     theirmovef = them.battlecard.move_f.name
@@ -854,30 +977,35 @@ def turnstodie(me, them):
     return turnstodie
 
 
-def calculate_damage(attacker, move, defender): # battlecard, string, battlecard. returns damage
+def calculate_damage(attacker: Battler, move: Move, defender: Battler): # battlecard, string, battlecard. returns damage
     # this is theoretical damage
 
-    attacker_type = pokedex[attacker.battlecard.name.name]["types"] # gives an array of strings that are the types
+    #attacker_type = pokedex[attacker.battlecard.name.name]["types"] # gives an array of strings that are the types
+    attacker_type = set((attacker.battlecard.poke_type1, attacker.battlecard.poke_type2))  # use set to dedupe
     # attacker_attack = attacker.a_iv*pokedex[attacker.name.name]["baseStats"]["atk"] # defines which attack
     #attacker_attack = attacker.a
-    try:
-        move_type = moves[move]["type"] # gets the type of the move from the dictionary "moves"
-        power = moves[move]["power"] # base power of move
-    except:  # TODO(albert/tone): fix
-        return 0, 0
+    if move == attacker.battlecard.move_f.name:
+        move_type = attacker.battlecard.f_move_type
+        power = attacker.battlecard._move_f_damage
+    elif move == attacker.battlecard.move_ch.name:
+        move_type = attacker.battlecard.ch_move_type
+        power = attacker.battlecard._move_ch_damage
+    elif move == attacker.battlecard.move_tm.name:
+        move_type = attacker.battlecard.tm_move_type
+        power = attacker.battlecard._move_tm_damage
 
-    defender_type = pokedex[defender.battlecard.name.name]["types"] # gives an array of strings that are the types
+    #defender_type = pokedex[defender.battlecard.name.name]["types"] # gives an array of strings that are the types
     # defender_defense = defender.d_iv*pokedex[defender.name.name]["baseStats"]["def"]
     #defender_defense = defender.d
-    
+    defender_type = set((defender.battlecard.poke_type1, defender.battlecard.poke_type2))
     defender_resistances = []
     defender_weaknesses = []
     defender_immunities = []
     # need to make resistances into it's own function. see "analyze_type"
     for x in defender_type:
-        defender_resistances += types[x]["resistances"]
-        defender_weaknesses += types[x]["weaknesses"]
-        defender_immunities += types[x]["immunities"]
+        defender_resistances += types[x.name]["resistances"]
+        defender_weaknesses += types[x.name]["weaknesses"]
+        defender_immunities += types[x.name]["immunities"]
     
     multiplier = 1 # how much the damage is influenced
     for x in attacker_type:
@@ -891,7 +1019,7 @@ def calculate_damage(attacker, move, defender): # battlecard, string, battlecard
             multiplier *= 1.6
     for x in defender_immunities:
         if move_type == x:
-            multiplier *= 0.390625 # make this 0 if you're real
+            multiplier *= 0.390625  # make this 0 if you're real
 
     atkstat = effective_stat(attacker, "a")
     defstat = effective_stat(defender, "d")
@@ -901,7 +1029,8 @@ def calculate_damage(attacker, move, defender): # battlecard, string, battlecard
     damage = math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3) + 1 # 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
     return damage, multiplier
 
-def effective_stat(poke, which):
+
+def effective_stat(poke: Battler, which: str):
     # gamemaster.json has ""buffdivisor": 4"
     buffdivisor = 4
     if which == "a":
@@ -921,9 +1050,16 @@ def effective_stat(poke, which):
     else:
         print("help")
 
-def is_lethal(attacker, move, defender, defender_hp, sequence): # checks if damage would be lethal
+
+def is_lethal(
+    attacker: Battler,
+    move: Move,
+    defender: Battler,
+    defender_hp: float,
+    sequence: T.List[Event]
+): # checks if damage would be lethal
     (damage, effectiveness) = calculate_damage(attacker, move, defender)
-    if damage >= defender_hp and attacker.timer >= moves[move]["cooldown"]:
+    if damage >= defender_hp and attacker.timer >= attacker.battlecard.atk_spd_timer_cts:
         sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+move+" on "+defender.battlecard.name.name))
         attacker.dmg_dealt += damage
         defender.hp -= damage

@@ -11,3 +11,4 @@ fastapi_websocket_pubsub
 nest_asyncio
 aenum
 munch
+PyQtWebEngine

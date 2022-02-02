@@ -153,7 +153,9 @@ class PlayerManager(Component):
 
         # if item has stat modifiers, apply them to Pokemon object
         if isinstance(item, Shard) or isinstance(item, CombinedItem):
-            pokemon.modifiers = [x + y for x, y in zip(pokemon.modifiers, item.stat_contribution)]
+            pokemon.battle_card.modifiers = [
+                x + y for x, y in zip(pokemon.battle_card.modifiers, item.stat_contribution)
+            ]
 
     def remove_item_from_pokemon(self, pokemon: Pokemon) -> Item:
         """
@@ -167,8 +169,8 @@ class PlayerManager(Component):
         item = PokemonHeldItem.get_held_item(pokemon)
         if item is not None:
             if isinstance(item, Shard) or isinstance(item, CombinedItem):
-                pokemon.modifiers = [
-                    x - y for x, y in zip(pokemon.modifiers, item.stat_contribution)
+                pokemon.battle_card.modifiers = [
+                    x - y for x, y in zip(pokemon.battle_card.modifiers, item.stat_contribution)
                 ]
             dissociate(PokemonHeldItem, pokemon, item)
             associate(PlayerInventory, player, item)
