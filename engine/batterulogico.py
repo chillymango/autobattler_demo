@@ -51,6 +51,7 @@
 # import pydantic import BaseModel
 
 
+from bdb import effective
 import json
 import copy
 import math
@@ -63,6 +64,7 @@ from engine.models.battle import BattleEvent, Event
 from engine.models.combat_hooks import CombatHook
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 from engine.models.weather import WeatherType
+from engine.utils.gamemaster import gamemaster
 
 if T.TYPE_CHECKING:
     from engine.models.items import CombatItem
@@ -91,10 +93,17 @@ cpms = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456
 # I assume pokemon health doesn't initialize to 0, but if it does, need to create base stats for the pokemon
 
 class Battler:
-    def __init__(self, battle_card: BattleCard, index: int, team: str):
+    def __init__(
+        self,
+        battle_card: BattleCard,
+        index: int,
+        team: str,
+        nickname: T.Optional[str]
+    ):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
         self.battlecard.bonus_shield = 1
         self.team = team
+        self.nickname = nickname or battle_card.name
 
         # initialize stats. ignoring iv for now
         self.a = battle_card.attack
@@ -123,14 +132,6 @@ class Effectiveness:
     def __init__(self):
         self.eff: float = 1.0
 
-class render:
-    def move_name_cleaner(move):
-        move = move.replace(" ", "")
-        move = move.replace("_", " ")
-        return(move.title())
-    
-    def __call__(self):
-        return
 
 class EventLogger:
     """
@@ -165,6 +166,26 @@ class EventLogger:
             )
         )
         self.sequence_idx += 1
+
+
+class RenderLogger:
+    """
+    Callable that records all the render strings
+    """
+
+    def __init__(self):
+        self.statements = []
+
+    def __call__(self, msg: str):
+        self.statements.append(msg)
+
+    @property
+    def output(self):
+        return '\n'.join(self.statements)
+
+    @staticmethod
+    def move_name_cleaner(name: str):
+        return name.replace('_', '').replace(' ', '').title()
 
 
 class HookExecutor:
@@ -275,10 +296,12 @@ def battle(
     """
     # start a new logger for each battle
     logger = EventLogger()
+    render = RenderLogger()
     # TODO(albert): should this be cards or live?
     global execute_hook
     execute_hook = HookExecutor(team1_cards, team2_cards, logger=logger)
 
+    # TODO(will): render header
     #team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
     #team2_items = {poke.item: team2_cards[poke] for poke in team2_cards}
     global_timer = 0
@@ -311,10 +334,10 @@ def battle(
     bench2 = []
 
     for index, x in enumerate(team1_live):
-        bench1.append(Battler(x, index, 'team 1'))
+        bench1.append(Battler(x, index, 'team 1', nickname=gamemaster.get_nickname(x.name)))
         logger("join_party", f"{x} joined team 1")
     for index, x in enumerate(team2_live):
-        bench2.append(Battler(x, index, 'team 2'))
+        bench2.append(Battler(x, index, 'team 2', nickname=gamemaster.get_nickname(x.name)))
         logger("join_party", f"{x} joined team 2")
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
@@ -361,9 +384,9 @@ def battle(
         if not combat_rising_edge:            
             # announce current team members
             logger("team1_active", f"{current_team1.battlecard.name} is fighting for team 1")
-            ### render("|switch|p1a: " + current_team1.battlecard.nickname +  "|" + current_team1.battlecard.nickname + "|" + str(int(current_team1.battlecard.max_health)) + r"\/" + str(int(current_team1.battlecard.max_health))" )
+            render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.battlecard.max_health)) + r"\/" + str(int(current_team1.battlecard.max_health)))
             logger("team2_active", f"{current_team2.battlecard.name} is fighting for team2")
-            ### render("|switch|p2a: " + current_team2.battlecard.nickname +  "|" + current_team2.battlecard.nickname + "|" + str(int(current_team2.battlecard.max_health)) + r"\/" + str(int(current_team2.battlecard.max_health))" )
+            render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.battlecard.max_health)) + r"\/" + str(int(current_team2.battlecard.max_health)))
 
             # COMBAT ITEM HOOK: pre_combat_action
             execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
@@ -395,8 +418,7 @@ def battle(
             current_team1, bench1 = swap_pokemon(current_team1, bench1, index1)
             # print('team 1 has swapped '+bench1[index1].name.name+' with '+current_team1.name.name)
             logger("Switch", "team1")
-            #render("|switch|p1a: "+current_team1.battlecard.nickname+"|"+current_team1.battlecard.nickname+"|"+ str(int(current_team1.battlecard.health)) + r"\/" + str(int(current_team1.battlecard.max_health)))
-            
+            render("|switch|p1a: "+current_team1.nickname+"|"+current_team1.nickname+"|"+ str(int(current_team1.battlecard.health)) + r"\/" + str(int(current_team1.battlecard.max_health)))
 
             #sequence.append(Event(-1, "switch", "team 1"))
             can_attack_1 = False # can no longer attack this round
@@ -405,7 +427,7 @@ def battle(
             current_team2, bench2 = swap_pokemon(current_team2, bench2, index2)
             # print('team 2 has swapped '+bench2[index2].name.name+' with '+current_team2.name.name)
             logger("Switch", "team2")
-            #render("|switch|p1a: "+current_team2.battlecard.nickname+"|"+current_team2.battlecard.nickname+"|"+ str(int(current_team2.battlecard.health)) + r"\/" + str(int(current_team2.battlecard.max_health)))
+            render("|switch|p1a: "+current_team2.nickname+"|"+current_team2.nickname+"|"+ str(int(current_team2.battlecard.health)) + r"\/" + str(int(current_team2.battlecard.max_health)))
 
             #sequence.append(Event(-1, "switch", "team 2"))
             can_attack_2 = False
@@ -440,8 +462,8 @@ def battle(
                 if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
                     runtheblock = True
             if runtheblock:
-                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq, logger)
-                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq, logger)
+                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq, logger, render)
+                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq, logger, render)
                 wascharged1 = False
                 wascharged2 = False
                 if dummy1.battlecard.move_ch.name == firstattack or dummy1.battlecard.move_tm.name == firstattack:
@@ -488,9 +510,9 @@ def battle(
                         can_attack_1 = False
 
         if can_attack_1: # pokemon 1 attacks
-            pokemon2_dead = launch_attack(current_team1, current_team2, sequence, logger)[0]
+            pokemon2_dead = launch_attack(current_team1, current_team2, sequence, logger, render)[0]
         if can_attack_2:
-            pokemon1_dead = launch_attack(current_team2, current_team1, sequence, logger)[0]
+            pokemon1_dead = launch_attack(current_team2, current_team1, sequence, logger, render)[0]
 
         combat_over = False
         if pokemon1_dead:
@@ -500,7 +522,7 @@ def battle(
                 "Team1 Faint",
                 f"team 2 {current_team2.battlecard.name.name} KOs team 1 {current_team1.battlecard.name.name}"
             )
-            #render("|faint|p1a: " + current_team1.battlecard.nickname)
+            render("|faint|p1a: " + current_team1.nickname)
         if pokemon2_dead:
             combat_over = True
             current_team2.battlecard.status = 0
@@ -508,7 +530,7 @@ def battle(
                 "Team2 Faint",
                 f"team 1 {current_team1.battlecard.name.name} KOs team 2 {current_team2.battlecard.name.name}"
             )
-            #render("|faint|p2a: " + current_team2.battlecard.nickname)
+            render("|faint|p2a: " + current_team2.nickname)
 
         if combat_over:
             combat_rising_edge = False
@@ -578,7 +600,8 @@ def launch_attack(
     attacker: Battler,
     defender: Battler,
     sequence: T.List[BattleEvent],
-    logger: EventLogger
+    logger: EventLogger,
+    render: RenderLogger,
 ): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
     # THIS WILL CHANGE THE SEQUENCE BECAUSE OF POINTERS
 
@@ -609,8 +632,8 @@ def launch_attack(
                 f"{attacker.team} {attacker.battlecard.name.name} used {move} "
                 f"on {defender.team} {defender.battlecard.name.name}"
             )
-            #render("|-prepare|p" + str(attacker.team) + "a: " + attacker.battlecard.nickname + "|Geomancy")
-            #render("|move|p" + str(attacker.team) + "a: " + attacker.battlecard.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.battlecard.nickname)
+            render("|-prepare|p" + str(attacker.team) + "a: " + attacker.nickname + "|Geomancy")
+            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
 
 
 
@@ -656,7 +679,7 @@ def launch_attack(
                     defender.battlecard.bonus_shield -= 1 # if shield, decrement
                     # print(defender.name.name+' used a shield')
                     logger("Shield", f"{defender.team} {defender.battlecard.name.name} used a shield")
-                    #render("|-singleturn|p"+defender.team+"a: "+defender.battlecard.nickname +"|Protect")
+                    render("|-singleturn|p"+defender.team+"a: "+defender.nickname +"|Protect")
             if not block:
                 damage = proposed_damage
                 effectiveness = p_effectiveness
@@ -689,13 +712,13 @@ def launch_attack(
                                     f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
                                     
                                 )
-                                #render("|-unboost|p"+defender.team+"a: "+defender.battlecard.nickname+"|atk|"+str(a_modifier))
+                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
                             else:
                                 logger(
                                     "Attack Buff",
                                     f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
                                 )
-                                #render("|-boost|p"+defender.team+"a: "+defender.battlecard.nickname+"|atk|"+str(a_modifier))
+                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
                                 
                             defender.am += a_modifier
                         if d_modifier != 0:
@@ -704,14 +727,14 @@ def launch_attack(
                                     "Defense Debuff",
                                     f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
                                 )
-                                #render("|-unboost|p"+defender.team+"a: "+defender.battlecard.nickname+"|def|"+str(d_modifier))
+                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
                             else:
                                 logger(
                                     "Defense Buff",
                                     f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
                                 )
-                                #render("|-boost|p"+defender.team+"a: "+defender.battlecard.nickname+"|def|"+str(d_modifier))
+                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
                             defender.dm += d_modifier
                     elif buff_target == "self":
@@ -721,14 +744,14 @@ def launch_attack(
                                     "Attack Buff",
                                     f"{attacker.team} {attacker.battlecard.name.name} buffed its own attack"
                                 )
-                                #render("|-boost|p"+attacker.team+"a: "+attacker.battlecard.nickname+"|atk|"+str(a_modifier))
+                                render("|-boost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
 
                             else:
                                 logger(
                                     "Attack Debuff",
                                     f"{attacker.team} {attacker.battlecard.name.name} debuffed its own attack"
                                 )
-                                #render("|-unboost|p"+attacker.team+"a: "+attacker.battlecard.nickname+"|atk|"+str(a_modifier))
+                                render("|-unboost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
 
                             attacker.am += a_modifier
                         if d_modifier != 0:
@@ -737,14 +760,14 @@ def launch_attack(
                                     "Defense Buff",
                                     f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
                                 )
-                                #render("|-boost|p"+defender.team+"a: "+defender.battlecard.nickname+"|def|"+str(d_modifier))
+                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
                             else:
                                 logger(
                                     "Defense Debuff",
                                     f"{defender.team} {defender.battlecard.name.name} debuffed its own defense"
                                 )
-                                #render("|-unboost|p"+defender.team+"a: "+defender.battlecard.nickname+"|def|"+str(d_modifier))
+                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
                             attacker.dm += d_modifier
             
@@ -772,13 +795,15 @@ def launch_attack(
                 "Charged Move Damage",
                 f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
             )
-            #render("|-supereffective|p" + defender.team + "a: " + defender.battlecard.nickname) if effectiveness > 1
-            #render("|-resisted|p" + defender.team + "a: " + defender.battlecard.nickname) if effectiveness < 1
+            if effectiveness > 1:
+                render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
+            elif effectiveness < 1:
+                render("|-resisted|p" + defender.team + "a: " + defender.nickname)
             logger(
                 "Health",
                 f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
             )
-            #render("|-damage|p"+defender.team+"a: "+defender.battlecard.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_hp))")
+            render("|-damage|p"+defender.team+"a: "+defender.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_health)))
 
 
             if defender.hp <= 0: # check if dead
@@ -795,7 +820,7 @@ def launch_attack(
                 f"{attacker.team} {attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} "
                 f"on {defender.team} {defender.battlecard.name.name}"
             )
-            #render("|move|p" + str(attacker.team) + "a: " + attacker.battlecard.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.battlecard.nickname)
+            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
 
             #sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
             attacker.battlecard.energy += attacker.battlecard._move_f_energy
@@ -821,15 +846,17 @@ def launch_attack(
                 how_was_it = 'it was barely effective'
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
-            #render("|-supereffective|p" + defender.team + "a: " + defender.battlecard.nickname) if effectiveness > 1
-            #render("|-resisted|p" + defender.team + "a: " + defender.battlecard.nickname) if effectiveness < 1
+            if effectiveness > 1:
+                render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
+            elif effectiveness < 1:
+                render("|-resisted|p" + defender.team + "a: " + defender.nickname)
 
             logger(
                 "Fast Attack Damage",
                 f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
             )
-            #render("|-damage|p"+defender.team+"a: "+defender.battlecard.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_hp))")
-            
+            render("|-damage|p"+defender.team+"a: "+defender.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_health)))
+
             logger(
                 "Health",
                 f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} HP left"

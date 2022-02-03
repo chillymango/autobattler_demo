@@ -23,6 +23,11 @@ class GameMaster:
             self.gamemaster_dict = json.load(gamemaster_json)
         self.gamemaster = DefaultMunch.fromDict(self.gamemaster_dict)
 
+        # build a mapping of pokemon ID to spec
+        self.pokemon_spec = {}
+        for spec in self.gamemaster_dict['pokemon']:
+            self.pokemon_spec[PokemonId[spec['speciesId']]] = spec
+
     def get_lvl_cpm(self, lvl: float) -> float:
         """
         Get the CP multiplier for a level
@@ -48,6 +53,12 @@ class GameMaster:
 
     def __getattr__(self, attr: str):
         return getattr(self.gamemaster, attr)
+
+    def get_nickname(self, pokemon: PokemonId):
+        """
+        Get the default nickname for a Pokemon
+        """
+        return self.pokemon_spec[pokemon]['speciesName']
 
 
 gamemaster = GameMaster()
