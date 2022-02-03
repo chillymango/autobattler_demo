@@ -192,8 +192,8 @@ class HookExecutor:
 
     def __init__(
         self,
-        team1: T.List[BattleCard],
-        team2: T.List[BattleCard],
+        team1: T.List[Battler],
+        team2: T.List[Battler],
         logger: EventLogger = None,
     ):
         self.team1 = team1
@@ -203,13 +203,13 @@ class HookExecutor:
         self.team1_items = self.get_all_team_items(self.team1)
         self.team2_items = self.get_all_team_items(self.team2)
 
-    def get_all_team_items(self, team: T.List[BattleCard]):
+    def get_all_team_items(self, team: T.List[Battler]):
         """
         Get all items
         """
-        return [poke.item for poke in team]
+        return [poke.battlecard.item for poke in team]
 
-    def get_active_team_items(self, team: T.List[BattleCard], active: Battler, hook: "CombatHook"):
+    def get_active_team_items(self, team: T.List[Battler], active: Battler, hook: "CombatHook"):
         """
         Get active team items for a combat hook
         """
@@ -224,12 +224,12 @@ class HookExecutor:
         team_items = [None] * 3
         for idx, teammate in enumerate(team):
             if active is not None and active.battlecard == teammate:
-                team_items[idx] = teammate.item
-            elif teammate.item:
-                if teammate.item.is_global:
-                    team_items[idx] = teammate.item
-                elif teammate.item.is_remote and teammate.status:
-                    team_items[idx] = teammate.item
+                team_items[idx] = teammate.battlecard.item
+            elif teammate.battlecard.item:
+                if teammate.battlecard.item.is_global:
+                    team_items[idx] = teammate.battlecard.item
+                elif teammate.battlecard.item.is_remote and teammate.battlecard.status:
+                    team_items[idx] = teammate.battlecard.item
 
         return team_items
 
@@ -258,19 +258,10 @@ class HookExecutor:
             if item is None:
                 continue
             method = item.get_method(hook)
-            if current_team1:
-                battlecard1 = current_team1.battlecard
-            else:
-                battlecard1 = None
-            if current_team2:
-                battlecard2 = current_team2.battlecard
-            else:
-                battlecard2 = None
-
             method(
                 logger=self.logger,
-                current_team1=battlecard1,
-                current_team2=battlecard2,
+                current_team1=current_team1,
+                current_team2=current_team2,
                 team1=self.team1,
                 team2=self.team2,
                 team1_items=team1_items,
@@ -299,9 +290,6 @@ def battle(
     null_logger = EventLogger()  # do not log...
     render = RenderLogger()
     null_render = RenderLogger()  # ...
-    # TODO(albert): should this be cards or live?
-    global execute_hook
-    execute_hook = HookExecutor(team1_cards, team2_cards, logger=logger)
 
     # TODO(will): render header
     #team1_items = {poke.item: team1_cards[poke] for poke in team1_cards}
@@ -342,6 +330,10 @@ def battle(
     for index, x in enumerate(team2_live):
         bench2.append(Battler(x, index, 2, nickname=gamemaster.get_nickname(x.name)))
         logger("join_party", f"{x} joined team 2")
+
+    # TODO(albert): should this be cards or live?
+    global execute_hook
+    execute_hook = HookExecutor(bench1, bench2, logger=logger)
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
     bench1_permanent = bench1
@@ -910,6 +902,7 @@ def launch_attack(
     '''
 
     return fatal, move
+
 
 def next_pokemon(bench): # takes in bench of team, returns new pokemon and modifies bench
     for x in bench:

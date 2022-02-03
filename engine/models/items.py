@@ -28,6 +28,7 @@ from utils.strings import camel_case_to_snake_case, crunch_spaces
 if T.TYPE_CHECKING:
     # TODO: i think it's a bad design if all of the Item objects need a reference to `env`, so
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
+    from engine.batterulogico import Battler
     from engine.batterulogico import EventLogger
     from engine.env import Environment
     from engine.items import ItemManager
@@ -175,23 +176,23 @@ class CombatItem(PokemonItem):
     def is_global(self):
         return self._is_global
 
-    def get_item_holder_from_context(self, context: T.Dict) -> BattleCard:
+    def get_item_holder_from_context(self, context: T.Dict) -> "Battler":
         """
         Get the Battle Card holding the item from context.
         """
         team1_items = context['team1_items']
         team2_items = context['team2_items']
 
-        for battle_card, item in team1_items.items():
+        for battler, item in team1_items.items():
             if item == self:
-                return battle_card
-        for battle_card, item in team2_items.items():
+                return battler
+        for battler, item in team2_items.items():
             if item == self:
-                return battle_card
+                return battler
 
         raise Exception(f"{self} is not being referenced by context {context}???")
 
-    def get_team_cards_of_holder(self, context: T.Dict) -> T.List[BattleCard]:
+    def get_team_cards_of_holder(self, context: T.Dict) -> T.List["Battler"]:
         """
         Get a list of team cards for a holder
         """
@@ -202,7 +203,7 @@ class CombatItem(PokemonItem):
             return context['team2']
         raise Exception('Cannot find team???')
 
-    def get_team_of_holder(self, context: T.Dict) -> BattleCard:
+    def get_team_of_holder(self, context: T.Dict) -> "Battler":
         """
         Get the team that the item holder is on.
 
@@ -222,7 +223,7 @@ class CombatItem(PokemonItem):
             return 1
         raise Exception("fall thru wyd")
 
-    def get_active_enemy_from_context(self, context: T.Dict) -> BattleCard:
+    def get_active_enemy_from_context(self, context: T.Dict) -> "Battler":
         """
         Determine the team the item holder is on. Return the battle card representing the
         active battler on the other team.
@@ -254,55 +255,55 @@ class CombatItem(PokemonItem):
         if combat_hook == CombatHook.POST_BATTLE:
             return self.post_battle_action
 
-    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
+    def pre_battle_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this before any fighting happens
         """
         pass
 
-    def pre_combat_action(self, **context: T.Dict):
+    def pre_combat_action(self, **context: T.Any):
         """
         During battle sequencing, run this before each individual combat
         """
         pass
 
-    def on_tick_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_tick_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this action on all ticks
         """
         pass
 
-    def on_fast_move_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_fast_move_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this action on all fast hits
         """
         pass
 
-    def on_enemy_fast_move_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_enemy_fast_move_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this action on all enemy fast hits
         """
         pass
 
-    def on_enemy_charged_move_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_enemy_charged_move_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this action on all enemy charged hits
         """
         pass
 
-    def on_charged_move_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_charged_move_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this action on all charged moves
         """
         pass
 
-    def post_combat_action(self, **context: T.Dict) -> T.List[Event]:
+    def post_combat_action(self, **context: T.Any) -> T.List[Event]:
         """
         During battle sequencing, run this after each individual combat
         """
         pass
 
-    def post_battle_action(self, **context: T.Dict) -> T.List[Event]:
+    def post_battle_action(self, **context: T.Any) -> T.List[Event]:
         """
         Run this after all fighting happens
         """
@@ -363,13 +364,13 @@ class PassiveHeroPowerMixin:
     """
     Hero powers that accept no player input
     """
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         Run this before any fighting happens
         """
         pass
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         Run this after all fighting happens
         """
@@ -620,11 +621,11 @@ class LifeOrb(CombinedItem):
     _HEALTH_LOSS = 2.0  # 2 HP per second
     _DAMAGE_BUFF = 0.10  # 10% damage increase per level
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         more damage
         """
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battlecard
         before = holder.attack
         holder.modifiers[Stats.ATK.value] += self._DAMAGE_BUFF * self.level * before
         after = holder.attack
@@ -634,18 +635,18 @@ class LifeOrb(CombinedItem):
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict) -> T.List[Event]:
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any) -> T.List[Event]:
         """
         lose health per tick
         """
-        holder: BattleCard = self.get_item_holder_from_context(context)
-        before = holder.health
-        after = holder.health - per_second(self._HEALTH_LOSS) * self.level
-        holder.health = after
+        holder = self.get_item_holder_from_context(context)
+        before = holder.hp
+        after = holder.hp - per_second(self._HEALTH_LOSS) * self.level
+        holder.hp = after
         if logger is not None:
             logger(
                 "LifeOrb on_tick",
-                f"{holder.name.name} HP: {before:.1f} -> {after:.1f}"
+                f"{holder.battlecard.name.name} HP: {before:.1f} -> {after:.1f}"
             )
 
 
@@ -657,21 +658,21 @@ class LightClay(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         give shields to teammates 
         """
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battlecard
         team_cards = self.get_team_cards_of_holder(context)
         shields_to_give = self.level
         while shields_to_give > 0:
             for card in team_cards:
-                card.bonus_shield += 1
+                card.battlecard.bonus_shield += 1
                 shields_to_give -= 1
                 if logger is not None:
                     logger(
                         "LightClay pre_battle",
-                        f"{holder.name.name} gives shield to {card.name.name}"
+                        f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
 
 
@@ -685,11 +686,11 @@ class CellBattery(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,1,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         energy per tick 
         """
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
         before = holder.energy
         after = holder.energy + per_second(self._ENERGY) * self.level
@@ -711,20 +712,19 @@ class Leftovers(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         health per tick 
         """
         holder = self.get_item_holder_from_context(context)
         team = f"team{self.get_team_of_holder(context)}"
-        attacker: BattleCard = context['current_team1']
-        before = attacker.health
-        after = attacker.health + per_second(self._HEALTH_PER_TICK)
-        attacker.health = after
+        before = holder.hp
+        after = holder.hp + per_second(self._HEALTH_PER_TICK)
+        holder.hp = after
         if logger:
             logger(
                 "LeftOvers on_tick",
-                f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
+                f"team{team} {holder.battlecard.name.name} HP {before:.1f} -> {after:.1f}"
             )
 
 
@@ -737,12 +737,12 @@ class Metronome(CombinedItem):
     _SPEED_BONUS = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,0,1])
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         atk spd per tick 
         """
-        holder = self.get_item_holder_from_context(context)
-        attacker = context['attacker']
+        holder = self.get_item_holder_from_context(context).battlecard
+        attacker: BattleCard = context['attacker'].battlecard
         if holder != attacker:
             return
         team = self.get_team_of_holder(context)
@@ -764,7 +764,7 @@ class ExpShare(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         xp post battle 
         """
@@ -780,11 +780,11 @@ class IntimidatingIdol(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,1,0,0,0])
     ATK_DEBUFF = 3.0
 
-    def pre_combat_action(self, logger: "EventLogger" = None, **context: T.Dict) -> T.List[Event]:
+    def pre_combat_action(self, logger: "EventLogger" = None, **context: T.Any) -> T.List[Event]:
         """
         debuff enemy attack 
         """
-        enemy = self.get_active_enemy_from_context(context)
+        enemy = self.get_active_enemy_from_context(context).battlecard
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.modifiers[Stats.ATK]
         after = enemy.modifiers[Stats.ATK] - self.level * self.ATK_DEBUFF
@@ -805,7 +805,7 @@ class IronBarb(CombinedItem):
     _DAMAGE = 2.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,1,0,0])
 
-    def on_enemy_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_enemy_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         deal damage
         """
@@ -815,9 +815,9 @@ class IronBarb(CombinedItem):
             return
         enemy = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
-        before = enemy.health
-        after = enemy.health - self._DAMAGE * self.level
-        enemy.health = after
+        before = enemy.hp
+        after = enemy.hp - self._DAMAGE * self.level
+        enemy.hp = after
         if logger:
             logger(
                 "IronBarb on_enemy_fast_move",
@@ -833,14 +833,15 @@ class FocusBand(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,1,0,0])
 
-    def post_combat_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def post_combat_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         revive
         """
         if self.consumed:
             return
         self.consumed = True
-        holder = self.get_item_holder_from_context(context)
+        battler = self.get_item_holder_from_context(context)
+        holder = battler.battlecard
         team = self.get_team_of_holder(context)
         # do not trigger if holder did not faint
         if holder.status == 1:
@@ -849,17 +850,17 @@ class FocusBand(CombinedItem):
         holder.status = 1
         holder.energy = 100
         if self.level == 1:
-            holder.health = 1
+            battler.hp = 1
         elif self.level == 2:
-            holder.health = holder.max_health * 0.15
+            battler.hp = holder.max_health * 0.15
         elif self.level == 3:
-            holder.health = holder.max_health * 0.25
+            battler.hp = holder.max_health * 0.25
         else:
             raise Exception(f"what kind of bonkers level is {self.level}")
         if logger is not None:
             logger(
                 "FocusBand post_combat",
-                f"team{team} {holder.name.name} revived with {holder.health} HP and {holder.energy} ENG"
+                f"team{team} {holder.name.name} revived with {battler.hp} HP and {holder.energy} ENG"
             )
 
 
@@ -873,13 +874,13 @@ class ShellBell(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
-    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None, **context: T.Dict):
+    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None, **context: T.Any):
         """
         Heal after dealing move damage
 
         NOTE(albert/will): this does pre-mitigation damage, which may be imbalanced...
         """
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
         move: Move = context['move']
         if move == holder.move_f:
@@ -900,10 +901,10 @@ class ShellBell(CombinedItem):
                 f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
             )
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_fast_move", logger=logger, **context)
 
-    def on_charged_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_charged_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_charged_move", logger=logger, **context)
 
 
@@ -915,15 +916,16 @@ class EjectButton(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,1,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         check HP, then terminate the combat
         """
         if self.consumed:
             return
         hp_factor = self.level * 0.25
-        holder = self.get_item_holder_from_context(context)
-        if holder.health > hp_factor * holder.max_health:
+        battler = self.get_item_holder_from_context(context)
+        holder = battler.battlecard
+        if battler.health > hp_factor * holder.max_health:
             # do not trigger until health falls below certain amount
             return
         self.consumed = True
@@ -938,13 +940,13 @@ class ExpertBelt(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,1])
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         check damage type, then boost power
         """
         pass
 
-    def on_charged_move_action(self, **context: T.Dict):
+    def on_charged_move_action(self, **context: T.Any):
         """
         check damage type, then boost power
         """
@@ -960,15 +962,16 @@ class AssaultVest(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _POWER_REDUCTION: int = 2
 
-    def on_enemy_charged_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_enemy_charged_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         reduce power
         """
-        attacker = context['attacker']
-        holder = self.get_item_holder_from_context(context)
+        attacker: BattleCard = context['attacker'].battlecard
+        holder = self.get_item_holder_from_context(context).battlecard
         if attacker == holder:
             return
-        enemy = self.get_active_enemy_from_context(context)
+
+        enemy = self.get_active_enemy_from_context(context).battlecard
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.attack
         enemy.modifiers[Stats.ATK.value] -= self._POWER_REDUCTION * self.level
@@ -989,13 +992,14 @@ class QuickPowder(CombinedItem):
     _SPEED_STAT = 50.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,1,0,1])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         boost speed of team
         """
         # TODO: not sure how to implement
-        team_cards = self.get_team_cards_of_holder(context)
-        for card in team_cards:
+        team_battlers = self.get_team_cards_of_holder(context)
+        for battler in team_battlers:
+            card = battler.battlecard
             before = card.speed
             after = card.speed - self.level * self._SPEED_STAT
             if logger is not None:
@@ -1014,12 +1018,12 @@ class ChoiceSpecs(CombinedItem):
     _ENG_GAIN = 1.0
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         change your fast move
         """
         lock_on = Move.LOCK_ON
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
         holder.move_f = lock_on
         if logger is not None:
@@ -1028,11 +1032,11 @@ class ChoiceSpecs(CombinedItem):
                 f"team{team} move became {lock_on.name}"
             )
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Dict):
+    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         energy onhit
         """
-        holder = self.get_item_holder_from_context(context)
+        holder = self.get_item_holder_from_context(context).battler
         team = self.get_team_of_holder(context)
         before = holder.energy
         after = holder.energy + self._ENG_GAIN * self.level
@@ -1059,13 +1063,13 @@ class BrockSolid(CombatItem):
 
     slotless = True
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         give shields to teammates 
         """
         pass
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         remove shields 
         """
@@ -1074,19 +1078,19 @@ class BrockSolid(CombatItem):
 
 class JanineEject(CombatItem):
 
-    def on_tick_action(self, **context: T.Dict):
+    def on_tick_action(self, **context: T.Any):
         """
         check HP, then terminate the combat
         """
         pass
 
-    def post_combat_action(self, **context: T.Dict):
+    def post_combat_action(self, **context: T.Any):
         """
         exhaust the button
         """
         pass
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         remove button 
         """
@@ -1356,7 +1360,7 @@ class SabrinaFuture(PassiveHeroPower):
         display these somehow
         """
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         amplify weather buff
         """
@@ -1419,7 +1423,7 @@ class BlaineButton(ChargedHeroPower):
 
         return
     
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         buff team based on button 
         """
@@ -1499,7 +1503,7 @@ class BlastOff(PlayerHeroPower):
             player.balls -= self.current_cost
             self.current_cost += 2
             self.immune = True
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         if lose and immune, don't take damage.
         """
@@ -1607,7 +1611,7 @@ class LanceFetish(ComplexHeroPower):
             player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
             self.success = True
         
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         if dragon, buff 
         """
@@ -1640,7 +1644,7 @@ class KogaNinja(ComplexHeroPower):
     hp_cost: int = 2
     unseal_cost = 4
 
-    def post_battle_action(self, **context: T.Dict):
+    def post_battle_action(self, **context: T.Any):
         """
         if win, lower unseal cost
         """
@@ -1657,7 +1661,7 @@ class KogaNinja(ComplexHeroPower):
         
 class SurgeGorilla(PassiveHeroPower):
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, **context: T.Any):
         """
         check largest number of matching types, apply buff
         """
