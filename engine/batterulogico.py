@@ -387,9 +387,9 @@ def battle(
         if not combat_rising_edge:            
             # announce current team members
             logger("team1_active", f"{current_team1.battlecard.name} is fighting for team 1")
-            render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.battlecard.max_health)) + r"\/" + str(int(current_team1.battlecard.max_health)))
+            render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.hp)) + r"\/" + str(int(current_team1.battlecard.max_health)))
             logger("team2_active", f"{current_team2.battlecard.name} is fighting for team2")
-            render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.battlecard.max_health)) + r"\/" + str(int(current_team2.battlecard.max_health)))
+            render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.hp)) + r"\/" + str(int(current_team2.battlecard.max_health)))
 
             # COMBAT ITEM HOOK: pre_combat_action
             execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
@@ -634,7 +634,6 @@ def launch_attack(
                 f"on {defender.team} {defender.battlecard.name.name}"
             )
             render("|-prepare|p" + str(attacker.team) + "a: " + attacker.nickname + "|Geomancy")
-            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
 
             #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
             if move == attacker.battlecard.move_tm.name:
@@ -793,9 +792,12 @@ def launch_attack(
                 "Charged Move Damage",
                 f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
             )
-            if effectiveness > 1:
+            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
+            render("|upkeep")
+
+            if effectiveness > 1.3:
                 render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
-            elif effectiveness < 1:
+            elif effectiveness < 0.6:
                 render("|-resisted|p" + defender.team + "a: " + defender.nickname)
             logger(
                 "Health",
@@ -803,7 +805,7 @@ def launch_attack(
             )
             render(
                 f"|-damage|p{defender.team}a: {defender.nickname}|{int(defender.hp)}"
-                f" \/ + {int(defender.battlecard.max_health)}"
+                f"\/{int(defender.battlecard.max_health)}"
             )
 
 
@@ -847,9 +849,9 @@ def launch_attack(
                 how_was_it = 'it was barely effective'
             elif effectiveness < 0.6:
                 how_was_it = 'it was not very effective'
-            if effectiveness > 1:
+            if effectiveness > 1.3:
                 render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
-            elif effectiveness < 1:
+            elif effectiveness < 0.6:
                 render("|-resisted|p" + defender.team + "a: " + defender.nickname)
 
             logger(
