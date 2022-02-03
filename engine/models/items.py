@@ -963,12 +963,12 @@ class AssaultVest(CombinedItem):
         enemy = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.attack
-        enemy.modifiers[Stats.ATK] -= self._POWER_REDUCTION * self.level
+        enemy.modifiers[Stats.ATK.value] -= self._POWER_REDUCTION * self.level
         after = enemy.attack
         if logger is not None:
             logger(
                 "AssaultVest on_enemy_charged_move",
-                f"team{enemy_team} {holder.name.name} ATK {before:.1f} -> {after:.1f}"
+                f"team{enemy_team} {enemy.name.name} ATK {before:.1f} -> {after:.1f}"
             )
 
 

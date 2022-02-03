@@ -40,6 +40,7 @@ class TestCombatItems(unittest.TestCase):
         #return
         pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         assault_vest = self.pm.create_and_give_item_to_player(self.p1, 'AssaultVest')
+        assault_vest.level = 3
         self.pm.give_item_to_pokemon(pika, assault_vest)
         for component in self.env.components:
             component.turn_setup()
