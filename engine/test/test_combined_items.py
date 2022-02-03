@@ -19,9 +19,9 @@ class TestCombatItems(unittest.TestCase):
     def setUp(self):
         self.env = Environment.create_webless_game(4)
         self.p1 = Player(name='Fat Ass')
-        self.p2 = Player(name='Fuck Ass')
+        #self.p2 = Player(name='Fuck Ass')
         self.env.add_player(self.p1)
-        self.env.add_player(self.p2)
+        #self.env.add_player(self.p2)
         self.env.initialize()
         self.pm: PlayerManager = self.env.player_manager
 
@@ -45,10 +45,11 @@ class TestCombatItems(unittest.TestCase):
         for component in self.env.components:
             component.turn_setup()
         for component in self.env.components:
+            print(f'Running {component} execute')
             component.turn_execute()
 
     def test_cell_battery(self):
-        return
+        #return
         pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         cell_battery = self.pm.create_and_give_item_to_player(self.p1, 'CellBattery')
         cell_battery.level = 3  # need to manually set if not combining

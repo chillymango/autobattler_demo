@@ -105,7 +105,6 @@ class Environment:
             BattleManager,
             EvolutionManager,
             ItemEventManager,
-            BattleManager,
         ]
         return cls(max_players, component_classes=component_classes)
 

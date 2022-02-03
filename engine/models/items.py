@@ -808,6 +808,10 @@ class IronBarb(CombinedItem):
         """
         deal damage
         """
+        holder = self.get_item_holder_from_context(context)
+        attacker = context['attacker']
+        if holder == attacker:
+            return
         enemy = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.health
@@ -959,7 +963,10 @@ class AssaultVest(CombinedItem):
         """
         reduce power
         """
+        attacker = context['attacker']
         holder = self.get_item_holder_from_context(context)
+        if attacker == holder:
+            return
         enemy = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.attack
