@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtWidgets, QtWebEngineWidgets
 import sys
 import os
 
+path = "Bruno_Preschooler_1.html"
 # Create application
 app = QtWidgets.QApplication(sys.argv)
 
@@ -17,7 +18,7 @@ win.setLayout(layout)
 view = QtWebEngineWidgets.QWebEngineView()
 
 # load .html file
-view.load(QtCore.QUrl.fromLocalFile(os.path.abspath('fastbattle.html')))
+view.load(QtCore.QUrl.fromLocalFile(os.path.abspath(path)))
 layout.addWidget(view)
 
 win.show()
