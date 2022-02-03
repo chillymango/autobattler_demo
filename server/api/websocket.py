@@ -495,6 +495,19 @@ class RenderBattle(WebSocketCallback):
         return BattleRenderLog(render=game.state.render_battle_for_player(player))
 
 
+class FinishedRenderingBattle(WebSocketCallback):
+    """
+    Note that the client has finished rendering the battle
+    """
+
+    @staticmethod
+    def callback(hydrated: WebSocketPlayerRequest):
+        game, user = get_request_context(hydrated)
+        player: Player = game.state.get_player_by_id(user.id)
+        game.state.set_battle_ack(player)
+        return ReportingResponse(success=True)
+
+
 # NOTE: this should be at the bottom to do dynamic evaluation
 API_REQUEST_CLASSES = [
     x for x in globals().values() if isinstance(x, type) and issubclass(x, WebSocketCallback)

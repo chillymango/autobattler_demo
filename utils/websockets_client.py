@@ -14,7 +14,7 @@ from engine.models.items import CombinedItem
 from engine.models.battle import BattleRenderLog
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, RenderBattle, UpdatePartyConfig, UseHeroPower, UseItem, UseItemRequest
+from server.api.websocket import AddToTeam, CombineItems, FinishedRenderingBattle, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, RenderBattle, UpdatePartyConfig, UseHeroPower, UseItem, UseItemRequest
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -189,3 +189,6 @@ class WebSocketClient:
             ctx,
             response_type=BattleRenderLog,
         )
+
+    async def finish_rendering_battle(self, ctx: GameContext):
+        return await self.implement_api_client(FinishedRenderingBattle, ctx)

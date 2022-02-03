@@ -255,6 +255,9 @@ class State(BaseModel):
         for p in self.players:
             self._battle_render_ack[p] = False
 
+    def set_battle_ack(self, player: Player):
+        self._battle_render_ack[player] = True
+
     @property
     def battle_ack(self):
         """

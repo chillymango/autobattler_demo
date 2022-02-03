@@ -203,7 +203,7 @@ var Replays = {
 window.onload = function () {
 	Replays.init();
 	Replays.battle.messageDelay = 1;
-  Replays.battle.messageFadeTime = 50;
+  Replays.battle.messageFadeTime = 40;
   Replays.battle.messageShownTime = 0.5;
   Replays.battle.scene.updateAcceleration();
   Replays.battle.play();

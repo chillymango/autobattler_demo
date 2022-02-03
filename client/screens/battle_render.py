@@ -56,7 +56,7 @@ class RenderWindow(QtWidgets.QWidget):
             return
 
         if self.view.findText("won"):
-            asyncio.ensure_future(self.websocket.render_battle(self.parent.context))
+            asyncio.ensure_future(self.websocket.finish_rendering_battle(self.parent.context))
             timer = QtCore.QTimer(self)
             timer.timeout.connect(self.close_wrapper)
             timer.setSingleShot(True)
@@ -66,7 +66,3 @@ class RenderWindow(QtWidgets.QWidget):
     def close_wrapper(self):
         self.parent.render_window = None
         self.close()
-
-    def closeEvent(self):
-        if os.path.exists(self.path):
-            os.remove(self.path)
