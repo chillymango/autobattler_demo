@@ -628,7 +628,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
                 print(f'RENDERING FILE AT {output_path}')
                 with open(output_path, 'w+') as out:
                     out.write(render_html)
-                self.render_window = RenderWindow(self, output_path)
+                self.render_window = RenderWindow(self, output_path, websocket=self.websocket)
 
         if not self._state_callback_rising_edge:
             self.render_player_stats(update_player=True)

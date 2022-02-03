@@ -196,9 +196,9 @@ class PokemonFactory(Component):
         else:
             battle_card.poke_type2 = None
 
-        battle_card.f_move_type = fast_move_type
-        battle_card.ch_move_type = charged_move_type
-        battle_card.tm_move_type = tm_move_type
+        battle_card._f_move_type = fast_move_type
+        battle_card._ch_move_type = charged_move_type
+        battle_card._tm_move_type = tm_move_type
         nickname = self.get_nickname_by_pokemon_name(pokemon_name)
 
         return Pokemon(name=PokemonId[pokemon_name], battle_card=battle_card, nickname=nickname)

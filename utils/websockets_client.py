@@ -183,7 +183,6 @@ class WebSocketClient:
         await self.implement_api_client(UseHeroPower, ctx)
 
     async def render_battle(self, ctx: GameContext):
-        print('RENDERING BATTLE')
         return await self.implement_api_client(
             RenderBattle,
             ctx,

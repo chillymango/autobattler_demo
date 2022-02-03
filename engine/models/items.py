@@ -821,9 +821,9 @@ class IntimidatingIdol(CombinedItem):
         """
         enemy = self.get_active_enemy_from_context(context).battlecard
         enemy_team = self.get_enemy_team_from_context(context)
-        before = enemy.modifiers[Stats.ATK]
-        after = enemy.modifiers[Stats.ATK] - self.level * self.ATK_DEBUFF
-        enemy.modifiers[Stats.ATK] = after
+        before = enemy.attack
+        enemy.modifiers[Stats.ATK.value] -= self.level * self.ATK_DEBUFF
+        after = enemy.attack
         if logger:
             logger(
                 "IntimidatingIdol pre_combat",
