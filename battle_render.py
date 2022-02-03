@@ -6,7 +6,7 @@ import asyncio
 import sys
 import os
 
-path = "Bruno_Preschooler_1.html"
+path = "Blue_Preschooler_1.html"
 # Create application
 app = QtWidgets.QApplication(sys.argv)
 loop = QEventLoop(app)

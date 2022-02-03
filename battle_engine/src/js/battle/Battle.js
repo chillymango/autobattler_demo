@@ -601,7 +601,13 @@ function Battle(){
 		}
 
 		// Sort actions by priority
-		turnActions.sort((a,b) => (a.settings.priority > b.settings.priority) ? -1 : ((b.settings.priority > a.settings.priority) ? 1 : 0));
+		turnActions.sort(
+			function(a,b) {
+				return (a.settings.priority > b.settings.priority) ? -1 : ((b.settings.priority > a.settings.priority) ? 1 : 0);
+			} 
+		
+		
+		);
 
 		// Process actions on this turn
 
@@ -1982,8 +1988,8 @@ function Battle(){
 
 		var index = Math.floor(Math.random() * optionBucket.length);
 		var optionName = optionBucket[index];
-		var option = options.filter(obj => {
-			return obj.name === optionName
+		var option = options.filter(function(obj) {
+			return obj.name === optionName;
 		})[0];
 
 		return option;

@@ -9,3 +9,10 @@ battle_engine/src/js/battle/pvpoke_Battle.py
 battle_engine/src/js/battle/Battle.js
 battle_engine/src/js/battle/Battle.js
 *.html
+.ipynb_checkpoints/render_converter-checkpoint.ipynb
+battle_engine/src/js/battle/Battle.js
+battle_engine/src/js/battle/Battle.js
+render_converter.ipynb
+render_converter.ipynb
+*.html
+*.html
