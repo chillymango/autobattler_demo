@@ -127,12 +127,6 @@ class Battler:
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
 
 
-class Effectiveness:
-
-    def __init__(self):
-        self.eff: float = 1.0
-
-
 class EventLogger:
     """
     Keeps track of the global tick and all events that occur.
