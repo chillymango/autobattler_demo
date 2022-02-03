@@ -635,7 +635,7 @@ class LifeOrb(CombinedItem):
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any) -> T.List[Event]:
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         lose health per tick
         """
@@ -925,7 +925,7 @@ class EjectButton(CombinedItem):
         hp_factor = self.level * 0.25
         battler = self.get_item_holder_from_context(context)
         holder = battler.battlecard
-        if battler.health > hp_factor * holder.max_health:
+        if battler.hp > hp_factor * holder.max_health:
             # do not trigger until health falls below certain amount
             return
         self.consumed = True
@@ -938,19 +938,41 @@ class ExpertBelt(CombinedItem):
     boosts power of super effective hits
     """
 
+    _MULTIPLIER = 0.1  # 10% extra damage per level
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,1])
+
+    def _on_damage(self, logger: "EventLogger" = None, **context: T.Any):
+        attacker: Battler = context['attacker']
+        holder = self.get_item_holder_from_context(context)
+        if attacker.battlecard != holder.battlecard:
+            return
+        before = holder.battlecard.multiplier
+        after = self._MULTIPLIER * self.level
+        holder.battlecard.multiplier = after
+        if logger is not None:
+            logger(
+                "ExpertBelt on_attack",
+                f"{holder.nickname} Super Effective Additive Multiplier {before:.1f} -> {after:.1f}"
+            )
 
     def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         check damage type, then boost power
         """
-        pass
+        self._on_damage(logger=logger, **context)
 
-    def on_charged_move_action(self, **context: T.Any):
+    def on_charged_move_action(self, logger: "EventLogger", **context: T.Any):
         """
         check damage type, then boost power
         """
-        pass
+        self._on_damage(logger=logger, **context)
+
+    def post_combat_action(self, **context: T.Any):
+        """
+        Reset multipliers by undoing the addition
+        """
+        holder = self.get_item_holder_from_context(context)
+        holder.battlecard.multiplier -= self._MULTIPLIER * self.level
 
 
 class AssaultVest(CombinedItem):
@@ -989,25 +1011,24 @@ class QuickPowder(CombinedItem):
     boosts attack speed of teammates
     """
 
-    _SPEED_STAT = 50.0
+    _SPEED_STAT = 1.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,1,0,1])
 
     def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
         boost speed of team
         """
-        # TODO: not sure how to implement
         team_battlers = self.get_team_cards_of_holder(context)
         for battler in team_battlers:
             card = battler.battlecard
             before = card.speed
-            after = card.speed - self.level * self._SPEED_STAT
+            card.modifiers[Stats.SPD.value] -= self.level * self._SPEED_STAT
+            after = card.speed
             if logger is not None:
                 logger(
                     'QuickPowder pre_battle',
                     f"{card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
-            card.speed -= self.level * self._SPEED_STAT
 
 
 class ChoiceSpecs(CombinedItem):
@@ -1036,7 +1057,7 @@ class ChoiceSpecs(CombinedItem):
         """
         energy onhit
         """
-        holder = self.get_item_holder_from_context(context).battler
+        holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
         before = holder.energy
         after = holder.energy + self._ENG_GAIN * self.level
@@ -1063,7 +1084,7 @@ class BrockSolid(CombatItem):
 
     slotless = True
 
-    def pre_battle_action(self, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger", **context: T.Any):
         """
         give shields to teammates 
         """

@@ -223,7 +223,7 @@ class HookExecutor:
         # other items are only active if the pokemon is currently in combat
         team_items = [None] * 3
         for idx, teammate in enumerate(team):
-            if active is not None and active.battlecard == teammate:
+            if active is not None and active.battlecard == teammate.battlecard:
                 team_items[idx] = teammate.battlecard.item
             elif teammate.battlecard.item:
                 if teammate.battlecard.item.is_global:
@@ -1052,7 +1052,7 @@ def calculate_optimal_move(attacker: Battler, defender: Battler): # returns stri
     charged_damage = holder[0]
     tm_damage = holder[1]
 
-    if fast_damage >= charged_damage and fast_damage >= tm_damage and attacker.timer >= moves[attacker.battlecard.move_f.name]["cooldown"]:
+    if fast_damage >= charged_damage and fast_damage >= tm_damage and attacker.timer >= attacker.battlecard.atk_spd_timer_cts:
         return attacker.battlecard.move_f.name
     elif charged_damage >= tm_damage and charged_damage > 0:
     # could add logic about using the cheaper attack or whatever
@@ -1143,9 +1143,11 @@ def calculate_damage(attacker: Battler, move: Move, defender: Battler): # battle
     atkstat = effective_stat(attacker, "a")
     defstat = effective_stat(defender, "d")
     # currently cannot implement buffs that help the opponent. maybe use function geteffectivestat() that pvpoke uses
-    
+
+    # add any attack multiplier from battle card
+    multiplier += attacker.battlecard.multiplier
     #return multiplier*power*attacker_attack/defender_defense, multiplier
-    damage = math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3) + 1 # 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
+    damage = math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3)# 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
     return damage, multiplier
 
 
