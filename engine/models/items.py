@@ -617,25 +617,24 @@ class LifeOrb(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,0])
 
-    _HEALTH_LOSS = 2  # 2 HP per second
-    _DAMAGE_BUFF = 4
+    _HEALTH_LOSS = 2.0  # 2 HP per second
+    _DAMAGE_BUFF = 0.10  # 10% damage increase per level
 
-    def pre_battle_action(self, **context: T.Dict):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         more damage
         """
-        attacker: BattleCard = context['current_team1']
-        before = attacker.a_iv
-        after = attacker.a_iv + self._DAMAGE_BUFF * self.level
-        attacker.a_iv = after
-        event = Event(
-            -1,
-            "LifeOrb pre_battle",
-            f'{attacker.name.name} ATK {before} -> {after}'
-        )
-        return [event]
+        holder = self.get_item_holder_from_context(context)
+        before = holder.attack
+        holder.modifiers[Stats.ATK.value] += self._DAMAGE_BUFF * self.level * before
+        after = holder.attack
+        if logger is not None:
+            logger(
+                "LifeOrb pre_battle",
+                f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
+            )
 
-    def on_tick_action(self, **context: T.Dict) -> T.List[Event]:
+    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Dict) -> T.List[Event]:
         """
         lose health per tick
         """
@@ -643,8 +642,11 @@ class LifeOrb(CombinedItem):
         before = holder.health
         after = holder.health - per_second(self._HEALTH_LOSS) * self.level
         holder.health = after
-        event = Event(-1, "LifeOrb on_tick", f'{holder.name.name} HP: {before} -> {after}')
-        return [event]
+        if logger is not None:
+            logger(
+                "LifeOrb on_tick",
+                f"{holder.name.name} HP: {before:.1f} -> {after:.1f}"
+            )
 
 
 class LightClay(CombinedItem):
@@ -655,26 +657,22 @@ class LightClay(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
-    def pre_battle_action(self, **context: T.Dict) -> T.List[Event]:
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Dict):
         """
         give shields to teammates 
         """
         holder = self.get_item_holder_from_context(context)
         team_cards = self.get_team_cards_of_holder(context)
-        events: T.List[Event] = []
         shields_to_give = self.level
         while shields_to_give > 0:
             for card in team_cards:
                 card.bonus_shield += 1
                 shields_to_give -= 1
-                events.append(
-                    Event(
-                        -1,
+                if logger is not None:
+                    logger(
                         "LightClay pre_battle",
                         f"{holder.name.name} gives shield to {card.name.name}"
                     )
-                )
-        return events
 
 
 class CellBattery(CombinedItem):
@@ -744,6 +742,9 @@ class Metronome(CombinedItem):
         atk spd per tick 
         """
         holder = self.get_item_holder_from_context(context)
+        attacker = context['attacker']
+        if holder != attacker:
+            return
         team = self.get_team_of_holder(context)
         before = holder.modifiers[Stats.SPD]
         after = holder.modifiers[Stats.SPD] + self._SPEED_BONUS * self.level
