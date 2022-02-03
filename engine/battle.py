@@ -85,7 +85,13 @@ class BattleManager(Component):
             p2 = self.state.get_player_by_id(match.player2)
             res = self.battle(p1, p2)
             if debug:
+                print('BATTLE LOG')
                 print('\n'.join([repr(x) for x in res['events']]))
+                print('\n\n\n')
+                print('RENDER LOG')
+                print(res['render'])
+                #print('\n'.join([repr(x) for x in res['render']]))
+                print('\n\n\n')
 
             recipients = (p1, p2)
 

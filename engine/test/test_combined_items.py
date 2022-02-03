@@ -37,6 +37,7 @@ class TestCombatItems(unittest.TestCase):
             item.delete()
 
     def test_assault_vest(self):
+        #return
         pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         assault_vest = self.pm.create_and_give_item_to_player(self.p1, 'AssaultVest')
         self.pm.give_item_to_pokemon(pika, assault_vest)
@@ -46,6 +47,7 @@ class TestCombatItems(unittest.TestCase):
             component.turn_execute()
 
     def test_cell_battery(self):
+        return
         pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
         cell_battery = self.pm.create_and_give_item_to_player(self.p1, 'CellBattery')
         cell_battery.level = 3  # need to manually set if not combining
@@ -56,6 +58,7 @@ class TestCombatItems(unittest.TestCase):
             component.turn_execute()
 
     def test_focus_band(self):
+        return
         eevee = self.pm.create_and_give_pokemon_to_player(self.p1, 'eevee')
         focus_band = self.pm.create_and_give_item_to_player(self.p1, 'FocusBand')
         focus_band.level = 3  # need to manually set if not combining
@@ -66,6 +69,7 @@ class TestCombatItems(unittest.TestCase):
             component.turn_execute()
 
     def test_choice_specs(self):
+        return
         blastoise = self.pm.create_and_give_pokemon_to_player(self.p1, 'blastoise')
         choice_specs = self.pm.create_and_give_item_to_player(self.p1, 'ChoiceSpecs')
         choice_specs.level = 2

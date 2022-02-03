@@ -97,12 +97,12 @@ class Battler:
         self,
         battle_card: BattleCard,
         index: int,
-        team: str,
+        team: int,
         nickname: T.Optional[str]
     ):
         self.battlecard = battle_card # so it knows what kind of pokemon it is
         self.battlecard.bonus_shield = 1
-        self.team = team
+        self.team = str(team)
         self.nickname = nickname or battle_card.name
 
         # initialize stats. ignoring iv for now
@@ -296,7 +296,9 @@ def battle(
     """
     # start a new logger for each battle
     logger = EventLogger()
+    null_logger = EventLogger()  # do not log...
     render = RenderLogger()
+    null_render = RenderLogger()  # ...
     # TODO(albert): should this be cards or live?
     global execute_hook
     execute_hook = HookExecutor(team1_cards, team2_cards, logger=logger)
@@ -319,7 +321,8 @@ def battle(
         "team1damagetaken": [],
         "team2damagedealt": [],
         "team2damagetaken": [],
-        "events": []
+        "events": [],
+        "render": [],
     }
     t1_dmg_dealt = []
     t1_dmg_taken = []
@@ -334,10 +337,10 @@ def battle(
     bench2 = []
 
     for index, x in enumerate(team1_live):
-        bench1.append(Battler(x, index, 'team 1', nickname=gamemaster.get_nickname(x.name)))
+        bench1.append(Battler(x, index, 1, nickname=gamemaster.get_nickname(x.name)))
         logger("join_party", f"{x} joined team 1")
     for index, x in enumerate(team2_live):
-        bench2.append(Battler(x, index, 'team 2', nickname=gamemaster.get_nickname(x.name)))
+        bench2.append(Battler(x, index, 2, nickname=gamemaster.get_nickname(x.name)))
         logger("join_party", f"{x} joined team 2")
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
@@ -462,8 +465,8 @@ def battle(
                 if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
                     runtheblock = True
             if runtheblock:
-                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq, logger, render)
-                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq, logger, render)
+                dumdead2, firstattack = launch_attack(dummy1, dummy2, dumseq, null_logger, null_render)
+                dumdead1, secondattack = launch_attack(dummy2, dummy1, dumseq, null_logger, null_render)
                 wascharged1 = False
                 wascharged2 = False
                 if dummy1.battlecard.move_ch.name == firstattack or dummy1.battlecard.move_tm.name == firstattack:
@@ -588,10 +591,8 @@ def battle(
     output["team2damagedealt"] = t2_dmg_dealt
     output["team2damagetaken"] = t2_dmg_taken
 
-    for index, x in enumerate(sequence):
-        x.id = index
-
     output['events'] = logger.events
+    output['render'] = render.output
 
     return output
 
@@ -634,9 +635,6 @@ def launch_attack(
             )
             render("|-prepare|p" + str(attacker.team) + "a: " + attacker.nickname + "|Geomancy")
             render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
-
-
-
 
             #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
             if move == attacker.battlecard.move_tm.name:
@@ -803,7 +801,10 @@ def launch_attack(
                 "Health",
                 f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
             )
-            render("|-damage|p"+defender.team+"a: "+defender.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_health)))
+            render(
+                f"|-damage|p{defender.team}a: {defender.nickname}|{int(defender.hp)}"
+                f" \/ + {int(defender.battlecard.max_health)}"
+            )
 
 
             if defender.hp <= 0: # check if dead
