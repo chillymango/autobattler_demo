@@ -372,6 +372,9 @@ def battle(
 
     combat_rising_edge = False
 
+    team_1_active = False
+    team_2_active = False
+
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
         turnnumber += 1
         logger("Turn", str(turnnumber))
@@ -379,9 +382,13 @@ def battle(
         if not combat_rising_edge:            
             # announce current team members
             logger("team1_active", f"{current_team1.battlecard.name} is fighting for team 1")
-            render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.hp)) + r"\/" + str(int(current_team1.battlecard.max_health)))
+            if not team_1_active:
+                render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.hp)) + r"\/" + str(int(current_team1.battlecard.max_health)))
+                team_1_active = True
             logger("team2_active", f"{current_team2.battlecard.name} is fighting for team2")
-            render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.hp)) + r"\/" + str(int(current_team2.battlecard.max_health)))
+            if not team_2_active:
+                render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.hp)) + r"\/" + str(int(current_team2.battlecard.max_health)))
+                team_2_active = True
 
             # COMBAT ITEM HOOK: pre_combat_action
             execute_hook(CombatHook.PRE_COMBAT, current_team1, current_team2)
@@ -518,6 +525,8 @@ def battle(
                 f"team 2 {current_team2.battlecard.name.name} KOs team 1 {current_team1.battlecard.name.name}"
             )
             render("|faint|p1a: " + current_team1.nickname)
+            team_1_active = False
+
         if pokemon2_dead:
             combat_over = True
             current_team2.battlecard.status = 0
@@ -526,6 +535,7 @@ def battle(
                 f"team 1 {current_team1.battlecard.name.name} KOs team 2 {current_team2.battlecard.name.name}"
             )
             render("|faint|p2a: " + current_team2.nickname)
+            team_2_active = False
 
         if combat_over:
             combat_rising_edge = False
