@@ -30,6 +30,7 @@ if T.TYPE_CHECKING:
     # i am leaving a todo task to remove this circular dependency. Spaghetti codeeee
     from engine.batterulogico import Battler
     from engine.batterulogico import EventLogger
+    from engine.batterulogico import RenderLogger
     from engine.env import Environment
     from engine.items import ItemManager
     from engine.pokemon import EvolutionManager, PokemonFactory
@@ -632,7 +633,7 @@ class LifeOrb(CombinedItem):
     _HEALTH_LOSS = 2.0  # 2 HP per second
     _DAMAGE_BUFF = 0.10  # 10% damage increase per level
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         more damage
         """
@@ -645,8 +646,10 @@ class LifeOrb(CombinedItem):
                 "LifeOrb pre_battle",
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
+        if render is not None:
+            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|atk|1|[from] item: Life Orb")
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         lose health per tick
         """
@@ -659,6 +662,8 @@ class LifeOrb(CombinedItem):
                 "LifeOrb on_tick",
                 f"{holder.battlecard.name.name} HP: {before:.1f} -> {after:.1f}"
             )
+        if render is not None:
+            render("|-damage|p" + str(context.team)+ "b: " +holder.nickname+ "|"+after+r"\/"+str(holder.battlecard.max_health)+"|[from] item: Life Orb | [of] p" + str(context.team)+ "b: " +holder.nickname)
 
 
 class LightClay(CombinedItem):
@@ -669,7 +674,7 @@ class LightClay(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,0])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         give shields to teammates 
         """
@@ -685,6 +690,9 @@ class LightClay(CombinedItem):
                         "LightClay pre_battle",
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
+                if render:
+                    "|-start|p" + str(context.team)+"a: "+ card.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(context.team) + "a: " + holder.nickname
+
 
 
 class CellBattery(CombinedItem):
@@ -697,7 +705,7 @@ class CellBattery(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,1,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         energy per tick 
         """
@@ -723,7 +731,7 @@ class Leftovers(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         health per tick 
         """
@@ -737,6 +745,8 @@ class Leftovers(CombinedItem):
                 "LeftOvers on_tick",
                 f"team{team} {holder.battlecard.name.name} HP {before:.1f} -> {after:.1f}"
             )
+        if render:
+            render("|-heal|p"+str(context.team)+"a: "+holder.nickname+"|" + str(after) + r"\/" + str(holder.battlecard.max_health)+"|[from] item: Leftovers")
 
 
 class Metronome(CombinedItem):
@@ -748,7 +758,7 @@ class Metronome(CombinedItem):
     _SPEED_BONUS = 0.5
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,0,0,1])
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         atk spd per tick 
         """
@@ -765,6 +775,7 @@ class Metronome(CombinedItem):
                 "Metronome on_fast_move",
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
+            
 
 
 class FrozenHeart(CombinedItem):
@@ -777,7 +788,7 @@ class FrozenHeart(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _SPD_REDUCTION = 2.0
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         Reduce SPD of all opponents
         """
@@ -804,7 +815,7 @@ class IntimidatingIdol(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,1,0,0,0])
     ATK_DEBUFF = 3.0
 
-    def pre_combat_action(self, logger: "EventLogger" = None, **context: T.Any) -> T.List[Event]:
+    def pre_combat_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any) -> T.List[Event]:
         """
         debuff enemy attack 
         """
@@ -829,7 +840,7 @@ class IronBarb(CombinedItem):
     _DAMAGE = 2.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,1,0,0])
 
-    def on_enemy_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_enemy_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         deal damage
         """
@@ -857,7 +868,7 @@ class FocusBand(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [1,0,1,0,0])
 
-    def post_combat_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def post_combat_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         revive
         """
@@ -898,7 +909,7 @@ class ShellBell(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
-    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None, **context: T.Any):
+    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         Heal after dealing move damage
 
@@ -925,10 +936,10 @@ class ShellBell(CombinedItem):
                 f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
             )
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_fast_move", logger=logger, **context)
 
-    def on_charged_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_charged_move", logger=logger, **context)
 
 
@@ -940,7 +951,7 @@ class EjectButton(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,1,0])
 
-    def on_tick_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         check HP, then terminate the combat
         """
@@ -965,7 +976,7 @@ class ExpertBelt(CombinedItem):
     _MULTIPLIER = 0.1  # 10% extra damage per level
     stat_contribution: T.List[int] = Field(default_factory=lambda: [1,0,0,0,1])
 
-    def _on_damage(self, logger: "EventLogger" = None, **context: T.Any):
+    def _on_damage(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         attacker: Battler = context['attacker']
         holder = self.get_item_holder_from_context(context)
         if attacker.battlecard != holder.battlecard:
@@ -979,7 +990,7 @@ class ExpertBelt(CombinedItem):
                 f"{holder.nickname} Super Effective Additive Multiplier {before:.1f} -> {after:.1f}"
             )
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         check damage type, then boost power
         """
@@ -1008,7 +1019,7 @@ class AssaultVest(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _POWER_REDUCTION: int = 2
 
-    def on_enemy_charged_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_enemy_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         reduce power
         """
@@ -1038,7 +1049,7 @@ class QuickPowder(CombinedItem):
     _SPEED_STAT = 1.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,0,1,0,1])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         boost speed of team
         """
@@ -1063,7 +1074,7 @@ class ChoiceSpecs(CombinedItem):
     _ENG_GAIN = 1.0
     stat_contribution: T.List[int] = Field(default_factory=lambda:   [0,0,1,0,1])
 
-    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         change your fast move
         """
@@ -1077,7 +1088,7 @@ class ChoiceSpecs(CombinedItem):
                 f"team{team} move became {lock_on.name}"
             )
 
-    def on_fast_move_action(self, logger: "EventLogger" = None, **context: T.Any):
+    def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         energy onhit
         """
