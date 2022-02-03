@@ -371,11 +371,6 @@ spc:'Spc'};
 if(!this.boosts[boostStat]){
 return'1&times;&nbsp;'+boostStatTable[boostStat];
 }
-if(this.boosts[boostStat]>1){
-
-
-return''+String(this.boosts[boostStat]) + '&times'+'&nbsp;'+boostStatTable[boostStat];
-}
 return''+String(this.boosts[boostStat]) + '&times'+'&nbsp;'+boostStatTable[boostStat];
 };_proto.
 getWeightKg=function getWeightKg(serverPokemon){var _this$volatiles$autot;
@@ -383,9 +378,9 @@ var autotomizeFactor=((_this$volatiles$autot=this.volatiles.autotomize)==null?vo
 return Math.max(this.getSpecies(serverPokemon).weightkg-autotomizeFactor,0.1);
 };_proto.
 getBoostType=function getBoostType(boostStat){
-if(!this.boosts[boostStat])return'neutral';
-if(this.boosts[boostStat]>0)return'good';
-return'bad';
+if(this.boosts[boostStat]>1)return'good';
+if(this.boosts[boostStat]<1)return'bad';
+return'neutral';
 };_proto.
 clearVolatile=function clearVolatile(){
 this.ability=this.baseAbility;
@@ -1719,35 +1714,44 @@ if(!(_effect2.id==='weakarmor'&&_stat==='spe')){
 this.activateAbility(_ofpoke||_poke2,_effect2);
 }
 }
+if(amount > 1){
+
 this.scene.resultAnim(_poke2,_poke2.getBoost(_stat),'good');
 this.log(args,kwArgs);
 break;
+}
+if(amount < 1){
+
+    this.scene.resultAnim(_poke2,_poke2.getBoost(_stat),'bad');
+    this.log(args,kwArgs);
+    break;
+    }
+this.scene.resultAnim(_poke2,_poke2.getBoost(_stat),'neutral');
 }
 case'-unboost':{
 var _poke3=this.getPokemon(args[1]);
 var _stat2=args[2];
 if(this.gen===1&&_stat2==='spd')break;
 if(this.gen===1&&_stat2==='spa')_stat2='spc';
-var _amount=-args[3];
-if(_amount===0){
-this.scene.resultAnim(_poke3,'already '+_poke3.getBoost(_stat2),'neutral');
-this.log(args,kwArgs);
-break;
-}
-if(!_poke3.boosts[_stat2]){
-_poke3.boosts[_stat2]=0;
-}
+var _amount=parseFloat(args[3]);
+
 _poke3.boosts[_stat2]=_amount;
 
-if(!kwArgs.silent&&kwArgs.from){
-var _effect3=Dex.getEffect(kwArgs.from);
-var _ofpoke2=this.getPokemon(kwArgs.of);
-this.activateAbility(_ofpoke2||_poke3,_effect3);
-}
+if(_amount < 1){
 this.scene.resultAnim(_poke3,_poke3.getBoost(_stat2),'bad');
 this.log(args,kwArgs);
 break;
+
 }
+if(_amount > 1){
+this.scene.resultAnim(_poke3,_poke3.getBoost(_stat2),'good');
+this.log(args,kwArgs);
+break;
+
+}
+this.scene.resultAnim(_poke3,_poke3.getBoost(_stat2),'neutral');
+}
+
 case'-setboost':{
 var _poke4=this.getPokemon(args[1]);
 var _stat3=args[2];
