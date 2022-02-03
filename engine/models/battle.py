@@ -58,3 +58,12 @@ class BattleEvent(BaseModel):
     timestamp: float  # timestamp of the battle event
     category: str  # type of event (loosely typed for now)
     value: str  # message
+
+
+class BattleRenderLog(BaseModel):
+    """
+    Encapsulates an HTML document that can render a battle
+    """
+
+    success: bool = True  # TODO: de-conflate
+    render: str

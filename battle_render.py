@@ -37,13 +37,10 @@ async def check_if_view_has_text(view: QtWebEngineWidgets.QWebEngineView):
         else:
             print('I was not found')
 
-    try:
-        while True:
-            await asyncio.sleep(1.0)
-            view.findText("won", resultCallback=callback)
-            #view.findText("won")
-    except Exception as exc:
-        print(f'Exception in check view text: {repr(exc)}')
+    while True:
+        await asyncio.sleep(1.0)
+        view.findText("won", resultCallback=callback)
+
 
 win.show()
 loop.run_until_complete(check_if_view_has_text(view))

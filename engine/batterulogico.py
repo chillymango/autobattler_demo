@@ -826,7 +826,8 @@ def launch_attack(
             # COMBAT ITEM HOOK: on_fast_move_action
             # COMBAT ITEM HOOK: on_enemy_fast_move_action
             execute_hook(
-                CombatHook.ON_FAST_MOVE, attacker,
+                CombatHook.ON_FAST_MOVE,
+                attacker,
                 defender,
                 move=move,
                 attacker=attacker,

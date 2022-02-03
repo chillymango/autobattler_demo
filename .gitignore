@@ -8,3 +8,4 @@ battle_engine/src/js/battle/Battle.js
 battle_engine/src/js/battle/pvpoke_Battle.py
 battle_engine/src/js/battle/Battle.js
 battle_engine/src/js/battle/Battle.js
+*.html

@@ -141,6 +141,7 @@ class Environment:
         Perform game environment initialization
         """
         self.state.load_containers()
+        self.state.reset_battle_ack()
         for component in self.components:
             component.initialize()
         self.state.phase = GamePhase.READY_TO_START
@@ -228,7 +229,23 @@ class Environment:
             self.log('Running TURN_EXECUTE')
             for component in self.components:
                 component.turn_execute()
-            self.state.phase = GamePhase.TURN_CLEANUP
+            self.state.phase = GamePhase.TURN_RENDER
+            return
+        if self.state.phase == GamePhase.TURN_RENDER:
+            # implement a max timeout on render acknowledgement
+            # battles cannot take longer than 45 seconds
+            if self.state.battle_ack:
+                self.state.reset_battle_ack()
+                self.state.phase = GamePhase.TURN_CLEANUP
+            elif self.state.t_phase_elapsed == 0:
+                self.state.t_phase_duration = 45.0
+                self.state.t_phase_elapsed += 0.05
+            elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
+                self.state.t_phase_elapsed = 0
+                self.state.phase = GamePhase.TURN_CLEANUP
+            else:
+                self.state.t_phase_elapsed += 0.05
+                time.sleep(0.05)
             return
         if self.state.phase == GamePhase.TURN_CLEANUP:
             self.log('Running TURN_CLEANUP')

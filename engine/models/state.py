@@ -8,6 +8,7 @@ import typing as T
 from pydantic import BaseModel, PrivateAttr, StrBytes
 from engine.models.association import Association, PlayerRoster, PlayerShop, PokemonHeldItem
 from engine.models.association import PlayerInventory
+from engine.models.battle import BattleRenderLog
 from engine.models.hero import Hero
 from engine.models.items import Item
 from engine.models.phase import GamePhase
@@ -76,6 +77,13 @@ class State(BaseModel):
 
     # Turn Weather
     weather: WeatherType = WeatherType.NONE
+
+    # Battle Renderers
+    _battle_render_logs: T.Dict[Player, BattleRenderLog] = PrivateAttr(default_factory=dict)
+
+    # Polling Channels (e.g heartbeat, battle render acknowledge)
+    _battle_render_ack: T.Dict[Player, bool] = PrivateAttr(default_factory=dict)
+    _heartbeat_ack: T.Dict[Player, bool] = PrivateAttr(default_factory=dict)
 
     def load_containers(self):
         self.shop_window_raw = {p.id: PlayerShop.get_shop(p) for p in self.players}
@@ -233,3 +241,23 @@ class State(BaseModel):
     @property
     def time_left_in_turn(self):
         return self.t_phase_duration - self.t_phase_elapsed
+
+    def render_battle_for_player(self, player: Player):
+        """
+        Return an HTML battle render representation
+        """
+        return self._battle_render_logs[player]
+
+    def reset_battle_ack(self):
+        """
+        Reset Battle Render Acknowledgement
+        """
+        for p in self.players:
+            self._battle_render_ack[p] = False
+
+    @property
+    def battle_ack(self):
+        """
+        Returns True if all players have acknowledged.
+        """
+        return all(self._battle_render_ack.values())

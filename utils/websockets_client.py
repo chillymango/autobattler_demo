@@ -11,9 +11,10 @@ import typing as T
 import aiohttp
 from engine.models.items import CombinedItem
 
+from engine.models.battle import BattleRenderLog
 from engine.models.party import PartyConfig
 from server.api.base import ReportingResponse
-from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, UpdatePartyConfig, UseHeroPower, UseItem, UseItemRequest
+from server.api.websocket import AddToTeam, CombineItems, GiveItemToPokemon, MoveToParty, MoveToStorage, ReleaseFromParty, ReleaseFromStorage, RemoveItemFromPokemon, RenderBattle, UpdatePartyConfig, UseHeroPower, UseItem, UseItemRequest
 from server.api.websocket import CatchShop
 from server.api.websocket import RemoveFromTeam
 from server.api.websocket import RollShop
@@ -41,7 +42,12 @@ class WebSocketClient:
     async def disconnect(self):
         self.client = await self.client.close()
 
-    async def send_request(self, endpoint: str, request: "BaseModel", response_type: ReportingResponse):
+    async def send_request(
+        self,
+        endpoint: str,
+        request: "BaseModel",
+        response_type: ReportingResponse
+    ):
         """
         Issue a request. Record exceptions.
 
@@ -58,12 +64,19 @@ class WebSocketClient:
             response = response_type.parse_raw(json.loads(raw))
             if not response.success:
                 raise RuntimeError(f"Websocket remote error: {response.message}")
+            return response
         except Exception as exc:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback)
             print(f'Encountered exception in WebSocket client: {repr(exc)}')
 
-    async def implement_api_client(self, api_class, context: GameContext, **kwargs):
+    async def implement_api_client(
+        self,
+        api_class,
+        context: GameContext,
+        response_type=ReportingResponse,
+        **kwargs
+    ):
         """
         Take an API class object and formulate the correct input for it.
 
@@ -71,7 +84,7 @@ class WebSocketClient:
         """
         request_type = api_class.REQUEST_TYPE
         request = request_type.from_game_context(context, **kwargs)
-        await self.send_request(api_class.__name__, request, response_type=ReportingResponse)
+        return await self.send_request(api_class.__name__, request, response_type=response_type)
 
     # oh fucking boy time to redo the API implementations
     # SHOP APIs
@@ -168,3 +181,11 @@ class WebSocketClient:
 
     async def use_hero_power(self, ctx: GameContext):
         await self.implement_api_client(UseHeroPower, ctx)
+
+    async def render_battle(self, ctx: GameContext):
+        print('RENDERING BATTLE')
+        return await self.implement_api_client(
+            RenderBattle,
+            ctx,
+            response_type=BattleRenderLog,
+        )

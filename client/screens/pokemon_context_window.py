@@ -9,7 +9,7 @@ from PyQt5 import uic
 from engine.models.pokemon import SHINY_STAT_MULT
 from engine.models.enums import PokemonType
 from engine.models.stats import Stats
-from engine.utils.battle_utils import atk_per_sec
+from engine.utils.gamemaster import gamemaster
 
 from utils.buttons import clear_button_image
 from utils.buttons import set_button_image
@@ -91,16 +91,10 @@ class Ui(QtWidgets.QMainWindow):
         sprite_manager: "SpriteManager" = self.env.sprite_manager
         pokemon_factory: "PokemonFactory" = self.env.pokemon_factory
 
-        battle_card = pokemon.battle_card
-        atk_base = battle_card.atk_
-        def_base = battle_card.def_
-        hp_base = battle_card.health
-
-        atk_ = atk_base + pokemon.modifiers[Stats.ATK]
-        def_ = def_base + pokemon.modifiers[Stats.DEF]
-        hp_ = hp_base + pokemon.modifiers[Stats.HP]
-        spd_ = battle_card.spd_ + pokemon.modifiers[Stats.SPD]
-        atk_per_sec_ = battle_card.atk_per_sec_for_spd_stat(spd_)
+        atk_ = pokemon.battle_card.attack
+        def_ = pokemon.battle_card.defense
+        hp_ = pokemon.battle_card.hitpoints
+        atk_per_sec = pokemon.battle_card.atk_per_sec
 
         self.atkStat.setText(str(int(atk_)))
         self.defStat.setText(str(int(def_)))
@@ -108,22 +102,22 @@ class Ui(QtWidgets.QMainWindow):
         self.spdStat.setText(str("{:.2f}".format(atk_per_sec)))
 
         # TODO: set modified colors if there are any
-        if pokemon.modifiers[Stats.ATK] or pokemon.battle_card.shiny:
+        if pokemon.battle_card.modifiers[Stats.ATK.value] or pokemon.battle_card.shiny:
             self.atkStat.setStyleSheet("color: green; font-weight: bold;")
         else:
             self.atkStat.setStyleSheet("color: black;")
 
-        if pokemon.modifiers[Stats.DEF] or pokemon.battle_card.shiny:
+        if pokemon.battle_card.modifiers[Stats.DEF.value] or pokemon.battle_card.shiny:
             self.defStat.setStyleSheet("color: green; font-weight: bold;")
         else:
             self.defStat.setStyleSheet("color: black;")
 
-        if pokemon.modifiers[Stats.HP] or pokemon.battle_card.shiny:
+        if pokemon.battle_card.modifiers[Stats.HP.value] or pokemon.battle_card.shiny:
             self.hpStat.setStyleSheet("color: green; font-weight: bold;")
         else:
             self.hpStat.setStyleSheet("color: black;")
 
-        if atk_per_sec_ > battle_card.atk_per_secL
+        if pokemon.battle_card.atk_spd_timer_cts < pokemon.battle_card.f_move_spd:
             self.spdStat.setStyleSheet("color: green; font-weight: bold;")
         else:
             self.spdStat.setStyleSheet("color: black;")
@@ -135,12 +129,15 @@ class Ui(QtWidgets.QMainWindow):
             secondary_type = primary_type
         self.set_type_icon(self.secondaryTypeIcon, secondary_type.name)
 
-        self.set_type_icon(self.fastMoveTypeIcon, pokemon.battle_card.f_move_type.name)
-        self.set_type_icon(self.chargeMoveTypeIcon, pokemon.battle_card.ch_move_type.name)
+        f_move_type_name = gamemaster.get_default_move_stats(pokemon.battle_card.move_f)['type']
+        ch_move_type_name = gamemaster.get_default_move_stats(pokemon.battle_card.move_ch)['type']
+        self.set_type_icon(self.fastMoveTypeIcon, f_move_type_name)
+        self.set_type_icon(self.chargeMoveTypeIcon, ch_move_type_name)
 
         # only set TM if enabled
         if pokemon.battle_card.tm_flag:
-            self.set_type_icon(self.tmMoveTypeIcon, pokemon.battle_card.tm_move_type.name)
+            tm_move_type_name = gamemaster.get_default_move_stats(pokemon.battle_card.move_tm)['type']
+            self.set_type_icon(self.tmMoveTypeIcon, tm_move_type_name)
         else:
             clear_button_image(self.tmMoveTypeIcon)
 

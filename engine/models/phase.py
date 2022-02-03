@@ -22,8 +22,9 @@ class GamePhase(Enum):
     TURN_PREPARE_TEAM = 4
     TURN_PREP = 5
     TURN_EXECUTE = 6
-    TURN_CLEANUP = 7
-    TURN_COMPLETE = 8
-    CLEANUP = 9
-    COMPLETED = 10
-    ERROR = 11
+    TURN_RENDER = 7
+    TURN_CLEANUP = 8
+    TURN_COMPLETE = 9
+    CLEANUP = 10
+    COMPLETED = 11
+    ERROR = 12

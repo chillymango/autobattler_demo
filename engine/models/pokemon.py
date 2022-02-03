@@ -155,7 +155,7 @@ class BattleCard(BaseModel):
         Since the game engine ticks at 100 timer counts a tick, the soft cap on effective attack
         speed is 10 attacks per second. That limit is enforced here.
         """
-        return max(self.f_move_spd + self.speed * 50, 100.0)
+        return max(self.f_move_spd - self.speed * 50, 100.0)
 
     def atk_per_sec_for_spd_stat(self, spd: int):
         """

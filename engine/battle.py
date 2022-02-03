@@ -152,8 +152,12 @@ class BattleManager(Component):
             with open(output_file_name, 'r') as file :
                 filedata = file.read()
             filedata = filedata.replace(' (Alolan)', '-Alola')
+
+            self.state._battle_render_logs[p1] = filedata
+            self.state._battle_render_logs[p2] = filedata
+
             with open(output_file_name, 'w') as file:
-                file.write(filedata)            
+                file.write(filedata)
 
             if losing_player is not None:
                 for player in losing_player:

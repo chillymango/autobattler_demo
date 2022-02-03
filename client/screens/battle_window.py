@@ -3,6 +3,7 @@ import functools
 import logging
 import os
 import sys
+import tempfile
 import traceback
 import typing as T
 import websockets
@@ -17,10 +18,12 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from client.client_env import ClientEnvironment, ClientState
 from client.screens.base import GameWindow
+from client.screens.battle_render import RenderWindow
 from client.screens.pokemon_context_window import Ui as PokedexWindow
 from client.screens.pokemon_item_window import Ui as PokeItemWindow
 
 from engine.match import Matchmaker
+from engine.models.battle import BattleRenderLog
 from engine.models.enums import PokemonType
 from engine.models.items import Item, ItemName, get_item_class_by_name
 from engine.models.hero import Hero, HeroGrade
@@ -78,6 +81,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         uic.loadUi('client/qtassets/battlewindow.ui', self)
 
         # declare child pages
+        self.render_window = None
         self.storage_window = None
         self.debug_window = None
         self.pokedex_window = PokedexWindow(self.env)
@@ -136,7 +140,6 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         NOTE: the query attributes and instancing mechanisms don't seem to work in the client.
         I am not totally sure why that's the case.
         """
-        print(self.state.party(self.player))
         return self.state.party(self.player)
 
     @property
@@ -610,6 +613,22 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
         # refresh references
         self.env.state = self.state = ClientState.parse_raw(data)
+
+        if self.state.phase == GamePhase.TURN_RENDER:
+            if self.render_window is None:
+                # pull the render file first
+                render_model: BattleRenderLog = await self.websocket.render_battle(self.context)
+                render_html = render_model.render
+                # TODO(albert/will): shouldn't use game directory as working directory for temp
+                _, output_path = tempfile.mkstemp(
+                    prefix="temp_battle_",
+                    dir=os.getcwd(),
+                    suffix='.html'
+                )
+                print(f'RENDERING FILE AT {output_path}')
+                with open(output_path, 'w+') as out:
+                    out.write(render_html)
+                self.render_window = RenderWindow(self, output_path)
 
         if not self._state_callback_rising_edge:
             self.render_player_stats(update_player=True)

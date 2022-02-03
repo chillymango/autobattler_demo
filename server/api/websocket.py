@@ -10,6 +10,7 @@ from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from pydantic import BaseModel
 from engine.hero import HeroManager
+from engine.models.battle import BattleRenderLog
 from engine.models.items import Item
 
 from engine.models.party import PartyConfig
@@ -64,7 +65,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # TODO: drop requests that are too time-different
 
             request_type = api.REQUEST_TYPE
-    
+
             # hydrate the request
             hydrated = request_type(**json.loads(payload))
     
@@ -477,6 +478,21 @@ class UseHeroPower(WebSocketCallback):
         if not hero_manager.use_hero_power(player):
             return ReportingResponse(success=False, message="Could not use Hero Power")
         return ReportingResponse(success=True)
+
+
+# BATTLE RENDER
+# using this WebSocket transfer instead of pubsub messaging
+
+class RenderBattle(WebSocketCallback):
+    """
+    Get the battle HTML for a player
+    """
+
+    @staticmethod
+    def callback(hydrated: WebSocketPlayerRequest):
+        game, user = get_request_context(hydrated)
+        player: Player = game.state.get_player_by_id(user.id)
+        return BattleRenderLog(render=game.state.render_battle_for_player(player))
 
 
 # NOTE: this should be at the bottom to do dynamic evaluation

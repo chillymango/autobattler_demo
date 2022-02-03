@@ -767,15 +767,15 @@ class Metronome(CombinedItem):
         if holder != attacker:
             return
         team = self.get_team_of_holder(context)
-        before = holder.modifiers[Stats.SPD]
-        after = holder.modifiers[Stats.SPD] + self._SPEED_BONUS * self.level
-        holder.modifiers[Stats.SPD] = after
+        before = holder.modifiers[Stats.SPD.value]
+        before = holder.speed
+        holder.modifiers[Stats.SPD.value] += self._SPEED_BONUS * self.level
+        after = holder.speed
         if logger:
             logger(
                 "Metronome on_fast_move",
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
-            
 
 
 class FrozenHeart(CombinedItem):
@@ -909,7 +909,13 @@ class ShellBell(CombinedItem):
 
     stat_contribution: T.List[int] = Field(default_factory=lambda:  [1,0,1,0,0])
 
-    def _on_damage_move_action(self, name: str, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+    def _on_damage_move_action(
+        self,
+        name: str,
+        logger: "EventLogger" = None,
+        render: "RenderLogger" = None,
+        **context: T.Any
+    ):
         """
         Heal after dealing move damage
 
@@ -917,12 +923,12 @@ class ShellBell(CombinedItem):
         """
         holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
-        move: Move = context['move']
-        if move == holder.move_f:
+        move: str = context['move']
+        if move == holder.move_f.name:
             damage = holder._move_f_damage
-        elif move == holder.move_ch:
+        elif move == holder.move_ch.name:
             damage = holder._move_ch_damage
-        elif move == holder.move_tm:
+        elif move == holder.move_tm.name:
             damage = holder._move_tm_damage
         else:
             raise Exception(f"Received unknown move {move.name}")
@@ -1057,7 +1063,7 @@ class QuickPowder(CombinedItem):
         for battler in team_battlers:
             card = battler.battlecard
             before = card.speed
-            card.modifiers[Stats.SPD.value] -= self.level * self._SPEED_STAT
+            card.modifiers[Stats.SPD.value] += self.level * self._SPEED_STAT
             after = card.speed
             if logger is not None:
                 logger(
