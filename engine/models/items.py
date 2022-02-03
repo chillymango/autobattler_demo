@@ -235,6 +235,17 @@ class CombatItem(PokemonItem):
             return context['current_team1']
         raise Exception("No enemies found? What's going on")
 
+    def get_enemy_team_cards(self, context: T.Dict) -> T.List["Battler"]:
+        """
+        Get a list of enemy team cards
+        """
+        team = self.get_enemy_team_from_context(context)
+        if team == 1:
+            return context['team1']
+        elif team == 2:
+            return context['team2']
+        raise Exception('Cannot find team???')
+
     def get_method(self, combat_hook: CombatHook) -> T.Callable:
         if combat_hook == CombatHook.PRE_BATTLE:
             return self.pre_battle_action
@@ -756,19 +767,32 @@ class Metronome(CombinedItem):
             )
 
 
-class ExpShare(CombinedItem):
+class FrozenHeart(CombinedItem):
     """
-    EXP Share
-    Provide bonus XP at end of battle
+    Frozen Heart
+
+    Reduces attack speed of all enemies
     """
 
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
+    _SPD_REDUCTION = 2.0
 
-    def post_battle_action(self, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None, **context: T.Any):
         """
-        xp post battle 
+        Reduce SPD of all opponents
         """
-        print('THIS ITEM DOESN\'T DO SHIT YET')
+        holder = self.get_item_holder_from_context(context).battlecard
+        enemy_team = self.get_enemy_team_cards(context)
+        for battler in enemy_team:
+            card = battler.battlecard
+            before = card.speed
+            card.modifiers[Stats.SPD.value] += self.level * self._SPD_REDUCTION
+            after = card.speed
+            if logger is not None:
+                logger(
+                    "FrozenHeart pre_battle",
+                    f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
+                )
 
 
 class IntimidatingIdol(CombinedItem):

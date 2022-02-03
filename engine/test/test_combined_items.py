@@ -123,3 +123,15 @@ class TestCombatItems(unittest.TestCase):
         res = battle_manager.battle(self.p1, self.p2)
         print('\n'.join([repr(x) for x in res['events']]))
         print(res['render'])
+
+    def test_frozen_heart(self):
+        spearow = self.pm.create_and_give_pokemon_to_player(self.p1, 'spearow')
+        frozen_heart = self.pm.create_and_give_item_to_player(self.p1, 'FrozenHeart')
+        frozen_heart.level = 30  # make it super obvious
+        self.pm.give_item_to_pokemon(spearow, frozen_heart)
+
+        # cool em off
+        for component in self.env.components:
+            component.turn_setup()
+        for component in self.env.components:
+            component.turn_execute()

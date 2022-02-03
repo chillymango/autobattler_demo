@@ -96,7 +96,7 @@ class ItemManager(Component):
         self.combined_item_schema[items.LightClay] = (items.Stats.DEF, items.Stats.DEF)
         self.combined_item_schema[items.CellBattery] = (items.Stats.ENG, items.Stats.ENG)
         self.combined_item_schema[items.Leftovers] = (items.Stats.HP, items.Stats.HP)
-        self.combined_item_schema[items.ExpShare] = (items.Stats.DEF, items.Stats.ENG)
+        self.combined_item_schema[items.FrozenHeart] = (items.Stats.DEF, items.Stats.ENG)
         self.combined_item_schema[items.IntimidatingIdol] = (items.Stats.ATK, items.Stats.DEF)
         self.combined_item_schema[items.IronBarb] = (items.Stats.DEF, items.Stats.HP)
         self.combined_item_schema[items.FocusBand] = (items.Stats.ATK, items.Stats.ENG)
