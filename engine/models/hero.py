@@ -63,7 +63,7 @@ NORMAL_HEROES: T.List[Hero] = [
     Hero(name='Lt. Surge', ability_name='Gorilla Warfare', _power = SurgeGorilla, showdown_avatar = 'ltsurge'),
     Hero(name='Misty', ability_name='Trust Fund', _power = MistyTrustFund, showdown_avatar = "misty"),
     Hero(name='Red', ability_name='Plot Armor', _power = RedCheater, showdown_avatar = 'red'),
-    Hero(name='Jessie and James', ability_name='Blast Off!!', _power = BlastOff, showdown_avatar = 'teamrocket​'),
+    Hero(name='Jessie and James', ability_name='Blast Off!!', _power = BlastOff, showdown_avatar = 'teamrocket'),
     Hero(name='Sabrina', ability_name='Clairvoyance', _power = SabrinaFuture, showdown_avatar = 'sabrina'), 
     Hero(name='Will', ability_name='Chunnibyou', _power = WillSac, showdown_avatar = 'will'),
 ]
