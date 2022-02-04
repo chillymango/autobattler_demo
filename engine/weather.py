@@ -28,6 +28,7 @@ class WeatherManager(Component):
             WeatherType.PARTLY_CLOUDY: [PokemonType.normal, PokemonType.rock],
             WeatherType.RAINY: [PokemonType.water, PokemonType.electric, PokemonType.bug],
             WeatherType.CLEAR: [PokemonType.grass, PokemonType.fire, PokemonType.ground],
+            WeatherType.CLOUDY: [PokemonType.fairy, PokemonType.fighting, PokemonType.poison]
         })
         self.weather_forecast = [x for x in WeatherType if x is not WeatherType.NONE] * 10
         random.shuffle(self.weather_forecast)

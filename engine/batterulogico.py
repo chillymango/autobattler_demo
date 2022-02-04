@@ -337,10 +337,12 @@ def battle(
     elif PokemonType.dark in bonus_types:
         weather = 'Foggy'
         #render_w = 'fog'
-
+    elif PokemonType.poison in bonus_types:
+        weather = 'Cloudy'
+        #render_w = 'cloudy'
     elif PokemonType.normal in bonus_types:
         weather = 'Partly Cloudy'
-        #render_w = 'pclouds'
+        #render_w = 'pcloudy'
     else:
         weather = 'Windy'
         render_w = 'deltastream'
