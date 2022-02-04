@@ -68,13 +68,14 @@ class BattleManager(Component):
 
         return cards
 
-    def battle(self, player1: Player, player2: Player):
+    def battle(self, player1: Player, player2: Player,):
         """
         Run a battle between two players using the batterulogico engine.
         """
         p1_cards = self.assemble_team_cards(player1)
         p2_cards = self.assemble_team_cards(player2)
-        return battle(p1_cards, p2_cards)
+        weather = self.state.weather
+        return battle(p1_cards, p2_cards, weather=weather)
 
     def turn_execute(self, debug: bool = True):
         """
