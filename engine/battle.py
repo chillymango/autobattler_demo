@@ -78,7 +78,7 @@ class BattleManager(Component):
         weather_manager: WeatherManager = self.env.weather_manager
         weather = self.state.weather
         bonus_types = weather_manager.weather_bonuses[weather]
-        return battle(p1_cards, p2_cards, weather=bonus_types)
+        return battle(p1_cards, p2_cards, bonus_types=bonus_types)
 
     def turn_execute(self, debug: bool = True):
         """
