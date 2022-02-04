@@ -31,6 +31,18 @@ class Queryable(BaseModel, metaclass=queryable_meta):
     """
     __slots__ = ['__weakref__']
 
+    def __gt__(self, other):
+        return int(UUID(other.id)) > int(UUID(self.id))
+
+    def __ge__(self, other):
+        return int(UUID(other.id)) >= int(UUID(self.id))
+
+    def __lt__(self, other):
+        return int(UUID(other.id)) < int(UUID(self.id))
+
+    def __le__(self, other):
+        return int(UUID(other.id)) <= int(UUID(self.id))
+
     def __hash__(self):
         return hash(self.id)
 

@@ -100,7 +100,7 @@ class PlayerRoster(OMAssociation):
 
         Returns a list of Pokemon in a roster for a player
         """
-        return [x.entity2 for x in cls.all(entity1=player)]
+        return sorted([x.entity2 for x in cls.all(entity1=player)])
 
 
 class PokemonHeldItem(OOAssociation):

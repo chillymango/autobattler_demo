@@ -188,7 +188,9 @@ class ItemManager(Component):
         combo_item.level = primary.level + secondary.level - 1
         combo_item.stat_contribution = [a+b for a,b in zip(primary.stat_contribution, secondary.stat_contribution )]
 
+        primary.consumed = True
         primary.delete()
+        secondary.consumed = True
         secondary.delete()
 
         return combo_item

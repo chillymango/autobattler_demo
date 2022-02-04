@@ -68,7 +68,12 @@ class PlayerManager(Component):
         Calculate what's in the player roster but not in player party
         """
         # some cringe below...
-        return list(set(self.player_roster(player)) - set(self.player_party(player)))
+        # NOTE: must be done in order otherwise we fuck up storage ordering
+        storage: T.List[str] = []
+        for poke in self.player_roster(player):
+            if poke not in self.player_party(player):
+                storage.append(poke)
+        return storage
 
     def player_team(self, player: Player) -> T.List[Pokemon]:
         """

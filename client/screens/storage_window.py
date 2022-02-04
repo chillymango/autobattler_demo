@@ -197,6 +197,7 @@ class Ui(QtWidgets.QDialog):
         storage_selected = self.storageView.selectedIndexes()
         for storage_member in storage_selected:
             idx = storage_member.row()
+            print(f'Releasing from storage {idx}')
             await self.websocket.release_from_storage(self.ctx, idx)
 
     def closeEvent(self, *args, **kwargs):
