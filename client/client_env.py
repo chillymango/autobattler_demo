@@ -4,7 +4,6 @@ Client loads a stripped down env to help with rendering results
 import typing as T
 
 from engine.env import Environment
-from engine.gamemaster import GameMaster
 from engine.match import CreepRoundManager
 from engine.match import Matchmaker
 from engine.models.base import Entity
@@ -85,7 +84,6 @@ class ClientEnvironment(Environment):
     @property
     def default_component_classes(self):
         return [
-            GameMaster,
             WeatherManager,
             PokemonFactory,
             Matchmaker,

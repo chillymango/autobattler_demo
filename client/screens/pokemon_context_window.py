@@ -16,7 +16,6 @@ from utils.buttons import set_button_image
 
 if T.TYPE_CHECKING:
     from engine.env import Environment
-    from engine.gamemaster import GameMaster
     from engine.models.pokemon import Pokemon
     from engine.pokemon import PokemonFactory
     from engine.sprites import SpriteManager

@@ -7,7 +7,6 @@ import typing as T
 from collections import defaultdict
 
 from engine.base import Component
-from engine.gamemaster import GameMaster
 from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.pokemon import BattleCard
 from engine.models.pokemon import EvolutionConfig
