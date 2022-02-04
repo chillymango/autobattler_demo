@@ -1473,11 +1473,25 @@ class SabrinaFuture(PassiveHeroPower):
         display these somehow
         """
 
-    def pre_battle_action(self, **context: T.Any):
-        """
-        amplify weather buff
-        """
-        pass
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+        
+        team_battlers = self.get_team_cards_of_holder(context)
+        weather = self._env.state.weather 
+        weather_manager: WeatherManager = self._env.weather_manager
+        bonus_types = weather_manager.weather_bonuses[weather]
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            if ((card.poke_type1 in bonus_types) | (card.poke_type2 in bonus_types) ):
+                card._move_ch_energy = (0.66*card._move_ch_energy )
+                card._move_tm_energy = (0.66*card._move_tm_energy )
+
+                if logger is not None:
+                    logger(
+                        'Sabrina pre_battle'
+                    )
+                if render:
+                    render("|-message|Sabrina's Hero Power activates!")
 
 
 class BlaineButton(ChargedHeroPower):
