@@ -647,7 +647,7 @@ class LifeOrb(CombinedItem):
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
         if render is not None:
-            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|atk|1|[from] item: Life Orb")
+            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|atk|"+ round(after/holder.atk_, 2)   +"|[from] item: Life Orb")
 
     def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
@@ -776,6 +776,10 @@ class Metronome(CombinedItem):
                 "Metronome on_fast_move",
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
+        if render:
+            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|spd|"+ round(after/100, 2)   +"|[from] item: Metronome")
+
+
 
 
 class FrozenHeart(CombinedItem):
@@ -804,6 +808,9 @@ class FrozenHeart(CombinedItem):
                     "FrozenHeart pre_battle",
                     f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
+            if render:
+                render("|-unboost|p" + str(context.team)+"a: "+ card.nickname + "|spd|" + + round(after/100, 2) +"[from] item: Frozen Heart| [of] p" + str(context.team) + "a: " + holder.nickname)
+
 
 
 class IntimidatingIdol(CombinedItem):
@@ -829,6 +836,8 @@ class IntimidatingIdol(CombinedItem):
                 "IntimidatingIdol pre_combat",
                 f"team{enemy_team} ATK {before:.0f} -> {after:.0f}"
             )
+            
+
 
 
 class IronBarb(CombinedItem):
@@ -857,6 +866,11 @@ class IronBarb(CombinedItem):
             logger(
                 "IronBarb on_enemy_fast_move",
                 f"team{enemy_team} HP {before} -> {after}"
+            )
+        if render:
+            render(
+            "|-damage|p" + enemy.team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + holder.team +"a: " + holder.nickname
+                
             )
 
 
@@ -897,6 +911,9 @@ class FocusBand(CombinedItem):
                 "FocusBand post_combat",
                 f"team{team} {holder.name.name} revived with {battler.hp} HP and {holder.energy} ENG"
             )
+        if render:
+            render("|-enditem|p" + context.team + "a: " + battler.nickname + "|Focus Sash")
+            render("|-damage|p" + context.team + "a:" + battler.nickname + "|" + str(int(battler.hp)) + r"\/" + str(int(holder.max_health)) )
 
 
 class ShellBell(CombinedItem):
@@ -921,6 +938,7 @@ class ShellBell(CombinedItem):
 
         NOTE(albert/will): this does pre-mitigation damage, which may be imbalanced...
         """
+        battler = self.get_item_holder_from_context(context)
         holder = self.get_item_holder_from_context(context).battlecard
         team = self.get_team_of_holder(context)
         move: str = context['move']
@@ -941,6 +959,8 @@ class ShellBell(CombinedItem):
                 f"ShellBell {name}",
                 f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
             )
+        if render:
+            render("|-heal|p" + context.team + "a: " + battler.nickname + "|" + str(int(after)) + r"\/" + holder.max_health + "|[from] item: Shell Bell")
 
     def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_fast_move", logger=logger, **context)
@@ -995,6 +1015,9 @@ class ExpertBelt(CombinedItem):
                 "ExpertBelt on_attack",
                 f"{holder.nickname} Super Effective Additive Multiplier {before:.1f} -> {after:.1f}"
             )
+        if render:
+            render("|-message|Expert Belt boosts the move's power!")
+
 
     def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
@@ -1044,6 +1067,9 @@ class AssaultVest(CombinedItem):
                 "AssaultVest on_enemy_charged_move",
                 f"team{enemy_team} {enemy.name.name} ATK {before:.1f} -> {after:.1f}"
             )
+        if render:
+            render("|-message|Assault Vest lowers the move's power!")
+
 
 
 class QuickPowder(CombinedItem):
@@ -1070,6 +1096,9 @@ class QuickPowder(CombinedItem):
                     'QuickPowder pre_battle',
                     f"{card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
+            if render:
+                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|spd|"+ round(after/100, 2)   +"|[from] item: Quick Powder")
+
 
 
 class ChoiceSpecs(CombinedItem):
