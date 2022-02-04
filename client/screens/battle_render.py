@@ -54,7 +54,6 @@ class RenderWindow(QtWidgets.QWidget):
     def on_battle_finish(self, finished: bool):
         if not finished:
             return
-        asyncio.ensure_future(self.websocket.finish_rendering_battle(self.parent.context))
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.close_wrapper)
         timer.setSingleShot(True)
@@ -70,5 +69,6 @@ class RenderWindow(QtWidgets.QWidget):
         self.close()
 
     def closeEvent(self, *args, **kwargs):
+        asyncio.ensure_future(self.websocket.finish_rendering_battle(self.parent.context))
         self.parent.render_window = None
         super().closeEvent(*args, **kwargs)

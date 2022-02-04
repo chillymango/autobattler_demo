@@ -1150,7 +1150,7 @@ def calculate_damage(attacker: Battler, move: Move, defender: Battler): # battle
     # add any attack multiplier from battle card
     multiplier += attacker.battlecard.multiplier
     #return multiplier*power*attacker_attack/defender_defense, multiplier
-    damage = math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3)# 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
+    damage = max(1, math.floor(power * (atkstat/defstat) * multiplier  * 0.5 * 1.3))   # 1.3 is bonusMultiplier. chargeMultiplier is how many circles you tap in minigame
     return damage, multiplier
 
 
