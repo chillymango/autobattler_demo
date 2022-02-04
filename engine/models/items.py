@@ -1280,7 +1280,7 @@ class Stone(InstantPokemonItem):
 
     def use(self):
         print("using stone")
-        self.stone_evo()
+        return self.stone_evo()
 
     def stone_evo(self):
         """

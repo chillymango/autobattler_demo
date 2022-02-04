@@ -287,6 +287,3 @@ class _EnvironmentProxy:
 
     def __init__(self):
         self.env: Environment = None
-
-
-current_env = _EnvironmentProxy()

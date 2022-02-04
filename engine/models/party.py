@@ -92,6 +92,8 @@ class PartyConfig(BaseModel):
         """
         Remove Pokemon from party by index
         """
+        if self.party[idx] in self.team:
+            self.team.remove(self.party[idx])
         self.party[idx] = None
 
     def remove_from_party(self, poke_id: str):

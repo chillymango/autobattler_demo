@@ -194,7 +194,7 @@ class BattleCard(BaseModel):
 
         return True
 
-    def set_tm_move(self, move):
+    def set_tm_move(self, move: Move):
         """
         Add a TM move to a Pokemon
 
@@ -203,7 +203,7 @@ class BattleCard(BaseModel):
         if self.tm_flag:
             return False
         self.tm_flag = True
-        self.move_tm = move.lower()
+        self.move_tm = move
         return True
 
     @classmethod

@@ -23,22 +23,27 @@ class TmManager(Component):
     Records Pokemon TM (Technical Machine) move modifications
     """
 
-    CONFIG_PATH = 'data/tm_movesets.txt'
+    #CONFIG_PATH = 'data/tm_movesets.txt'
+    CONFIG_PATH = 'data/default_movesets.txt'
 
     def initialize(self):
         """
         Load default TMs for all Pokemon
         """
         super().initialize()
-        with open(self.CONFIG_PATH, 'r') as tm_movesets_file:
-            tm_movesets_raw = tm_movesets_file.readlines()
+        with open(self.CONFIG_PATH, 'r') as movesets_file:
+            movesets_raw = movesets_file.readlines()
 
         self.tm_movesets = defaultdict(lambda: None)
-        for row in tm_movesets_raw:
-            pokemon, tm_move = row.split()
-            self.tm_movesets[pokemon] = tm_move.strip().upper()
+        for row in movesets_raw:
+            if row.startswith('#') or not row:
+                continue
+            battlecard_split = row.split(',')
+            pokemon = PokemonId[battlecard_split[0]]
+            tm_move = Move[battlecard_split[3]]
+            self.tm_movesets[pokemon] = tm_move
 
-    def get_tm_move(self, pokemon):
+    def get_tm_move(self, pokemon: PokemonId):
         """
         Get a TM move for a Pokemon
         """
@@ -146,8 +151,9 @@ class PokemonFactory(Component):
         if battle_card.shiny:
             evolved_card.make_shiny()
         if battle_card.tm_flag:
-            tm_move = self.env.tm_manager.get_tm_move(evolved_form)
+            tm_move: Move = self.env.tm_manager.get_tm_move(evolved_form)
             evolved_card.set_tm_move(tm_move)
+        evolved_card.modifiers[:] = battle_card.modifiers
         return evolved_card
 
     def get_nickname_by_pokemon_name(self, pokemon_name):
