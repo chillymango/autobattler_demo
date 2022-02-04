@@ -1189,6 +1189,7 @@ class JanineEject(CombatItem):
         self.consumed = True
         pass
 
+
 class DragonScale(InstantPokemonItem):
 
     def use(self) -> bool:
@@ -1290,6 +1291,7 @@ class CommonStone(Stone):
         # TODO: make choice evolution types more generic
         im: "ItemManager" = self._env.item_manager
         if self.holder is None:
+            print('Holder is none')
             raise Exception("No Pokemon found as a valid target")
         player = evo_manager.find_owner(self.holder)
 
@@ -1321,8 +1323,8 @@ class CommonStone(Stone):
                 evo_manager.evolve(self.holder)
                 shop_manager: "ShopManager" = self._env.shop_manager
                 shop_manager.check_shiny(player, self.holder.name.name)
-                return True
-    
+            return True
+
     def eve_volve(self, evo, pokemon, evo_name, player):
         print("evolving eevee with stone")
         pokemon_factory: PokemonFactory = self._env.pokemon_factory

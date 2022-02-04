@@ -52,6 +52,8 @@ class RenderWindow(QtWidgets.QWidget):
         self.show()
 
     def on_battle_finish(self, finished: bool):
+        if self.closing:
+            return
         if not finished:
             return
         timer = QtCore.QTimer(self)
@@ -61,8 +63,6 @@ class RenderWindow(QtWidgets.QWidget):
         self.closing = True
 
     def check_battle_render_state(self):
-        if self.closing:
-            return
         self.view.findText("won", resultCallback=self.on_battle_finish)
 
     def close_wrapper(self):

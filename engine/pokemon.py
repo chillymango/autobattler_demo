@@ -305,8 +305,7 @@ class EvolutionManager(Component):
         """
         player_manager: PlayerManager = self.env.player_manager
         owner_dict = {}
-        for player in self.env.state.players:
-            for poke_id in player_manager.player_roster(player):
-                owner_dict[poke_id] = player
+        for player in self.state.players:
+            for poke in player_manager.player_roster(player):
+                owner_dict[poke.id] = player
         return(owner_dict[pokemon.id])
-

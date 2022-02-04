@@ -380,6 +380,7 @@ class GiveItemToPokemon(WebSocketCallback):
         pokemon_id = hydrated.pokemon_id
         item = Item.get_by_id(item_id)
         pokemon = Pokemon.get_by_id(pokemon_id)
+        print(f'Giving item to {pokemon}')
         pm: PlayerManager = game.player_manager
         pm.give_item_to_pokemon(pokemon, item)
         return ReportingResponse(success=True)
