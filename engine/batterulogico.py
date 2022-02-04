@@ -65,6 +65,8 @@ from engine.models.combat_hooks import CombatHook
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 from engine.models.weather import WeatherType
 from engine.utils.gamemaster import gamemaster
+from engine.weather import WeatherManager
+from engine.models.enums import PokemonType
 
 if T.TYPE_CHECKING:
     from engine.models.items import CombatItem
@@ -272,7 +274,7 @@ execute_hook = None
 def battle(
     team1_cards: T.List[BattleCard],
     team2_cards: T.List[BattleCard],
-    weather: WeatherType = None
+    bonus_types: T.List[PokemonType],
 ):
     """
     Takes two arrays of battle cards and simulates combat between them.
@@ -292,7 +294,6 @@ def battle(
     #print(f'{team1_items=}')
     #print(f'{team2_items=}')
 
-    # TODO(albert/tone): calculate weather advantage
 
     stop_this = False
 
@@ -314,6 +315,37 @@ def battle(
     
     team1_live: T.List[BattleCard] = copy.copy(team1_cards) # create an instance of the team for the battle
     team2_live: T.List[BattleCard] = copy.copy(team2_cards)
+
+    for team in [team1_live, team2_live]:
+        for member in team:
+            if member._f_move_type in bonus_types:
+                member._move_f_damage += 1
+            if member._ch_move_type in bonus_types:
+                member._move_ch_damage += 10
+            if member._tm_move_type in bonus_types:
+                member._move_tm_damage += 10
+
+    if PokemonType.ice in bonus_types:
+        weather = 'Snowy'
+        render_w = 'hail'
+    elif PokemonType.fire in bonus_types:
+        weather = 'Sunny'
+        render_w = 'sunnyday'
+    elif PokemonType.water in bonus_types:
+        weather = 'Rainy'
+        render_w = 'raindance'
+    elif PokemonType.dark in bonus_types:
+        weather = 'Foggy'
+        #render_w = 'fog'
+
+    elif PokemonType.normal in bonus_types:
+        weather = 'Partly Cloudy'
+        #render_w = 'pclouds'
+    else:
+        weather = 'Windy'
+        render_w = 'deltastream'
+
+
 
     bench1 = []
     bench2 = []
@@ -368,6 +400,11 @@ def battle(
 
     team_1_active = False
     team_2_active = False
+
+    if render:
+        render("=weather|"+render_w)
+    if logger:
+        logger("The weather is " + weather)
 
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
         turnnumber += 1

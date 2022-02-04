@@ -17,6 +17,7 @@ from engine.models.player import Player
 from engine.models.pokemon import BattleCard, Pokemon
 from engine.models.stats import Stats
 import shutil
+from engine.weather import WeatherManager
 
 if T.TYPE_CHECKING:
     from engine.player import PlayerManager
@@ -74,8 +75,10 @@ class BattleManager(Component):
         """
         p1_cards = self.assemble_team_cards(player1)
         p2_cards = self.assemble_team_cards(player2)
+        weather_manager: WeatherManager = self.env.weather_manager
         weather = self.state.weather
-        return battle(p1_cards, p2_cards, weather=weather)
+        bonus_types = weather_manager.weather_bonuses[weather]
+        return battle(p1_cards, p2_cards, weather=bonus_types)
 
     def turn_execute(self, debug: bool = True):
         """
