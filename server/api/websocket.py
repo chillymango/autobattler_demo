@@ -504,6 +504,7 @@ class FinishedRenderingBattle(WebSocketCallback):
     def callback(hydrated: WebSocketPlayerRequest):
         game, user = get_request_context(hydrated)
         player: Player = game.state.get_player_by_id(user.id)
+        print(f'Battle ack by {player}')
         game.state.set_battle_ack(player)
         return ReportingResponse(success=True)
 

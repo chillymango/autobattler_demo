@@ -48,9 +48,9 @@ class BattleCard(BaseModel):
     f_move_spd: T.Optional[float] = None
     poke_type1: PokemonType = None
     poke_type2: PokemonType = None
-    f_move_type: PokemonType = None
-    ch_move_type: PokemonType = None
-    tm_move_type: PokemonType = None
+    _f_move_type: PokemonType = PrivateAttr(default=None)
+    _ch_move_type: PokemonType = PrivateAttr(default=None)
+    _tm_move_type: PokemonType = PrivateAttr(default=None)
     tm_flag: bool = False
     shiny: bool = False
     energy: float = 0
@@ -127,16 +127,16 @@ class BattleCard(BaseModel):
         move_tm_stats = gamemaster.get_default_move_stats(self.move_tm)
         if move_tm_stats is not None:
             self._move_tm_damage = kwargs.get('_move_tm_damage') or move_tm_stats["power"]
-            self.tm_move_type = kwargs.get('tm_move_type') or move_tm_stats["type"]
+            self._tm_move_type = kwargs.get('tm_move_type') or move_tm_stats["type"]
             self._move_tm_energy = kwargs.get("_move_tm_energy") or move_tm_stats["energy"]
         else:
             self._move_tm_damage = 0
-            self.tm_move_type = PokemonType.none
+            self._tm_move_type = PokemonType.none
             self._move_tm_energy = 0
 
         # move types
-        self.f_move_type = kwargs.get('f_move_type') or move_f_stats["type"]
-        self.ch_move_type = kwargs.get('ch_move_type') or move_ch_stats["type"]
+        self._f_move_type = kwargs.get('f_move_type') or move_f_stats["type"]
+        self._ch_move_type = kwargs.get('ch_move_type') or move_ch_stats["type"]
 
     def __hash__(self):
         return hash(self._id)

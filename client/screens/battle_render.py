@@ -51,18 +51,24 @@ class RenderWindow(QtWidgets.QWidget):
 
         self.show()
 
+    def on_battle_finish(self, finished: bool):
+        if not finished:
+            return
+        asyncio.ensure_future(self.websocket.finish_rendering_battle(self.parent.context))
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(self.close_wrapper)
+        timer.setSingleShot(True)
+        timer.start(self.POST_BATTLE_DURATION * 1000)
+        self.closing = True
+
     def check_battle_render_state(self):
         if self.closing:
             return
-
-        if self.view.findText("won"):
-            asyncio.ensure_future(self.websocket.finish_rendering_battle(self.parent.context))
-            timer = QtCore.QTimer(self)
-            timer.timeout.connect(self.close_wrapper)
-            timer.setSingleShot(True)
-            timer.start(self.POST_BATTLE_DURATION * 1000)
-            self.closing = True
+        self.view.findText("won", resultCallback=self.on_battle_finish)
 
     def close_wrapper(self):
-        self.parent.render_window = None
         self.close()
+
+    def closeEvent(self, *args, **kwargs):
+        self.parent.render_window = None
+        super().closeEvent(*args, **kwargs)

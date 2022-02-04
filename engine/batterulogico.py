@@ -956,12 +956,12 @@ def simulate1v1(attacker, defender):
 
 def analyze_type(attacker: Battler, defender: Battler, disabled=True): # >0 is good, <0 is bad
     # these lines pull the types of the moves
-    attacker_fast = attacker.battlecard.f_move_type
-    attacker_charged = attacker.battlecard.ch_move_type
-    attacker_tm = attacker.battlecard.tm_move_type
-    defender_fast = defender.battlecard.f_move_type
-    defender_charged = defender.battlecard.ch_move_type
-    defender_tm = defender.battlecard.tm_move_type
+    attacker_fast = attacker.battlecard._f_move_type
+    attacker_charged = attacker.battlecard._ch_move_type
+    attacker_tm = attacker.battlecard._tm_move_type
+    defender_fast = defender.battlecard._f_move_type
+    defender_charged = defender.battlecard._ch_move_type
+    defender_tm = defender.battlecard._tm_move_type
     
     attacker_type = [] # initialize the array of move types
     defender_type = []
@@ -1106,13 +1106,13 @@ def calculate_damage(attacker: Battler, move: Move, defender: Battler): # battle
     # attacker_attack = attacker.a_iv*pokedex[attacker.name.name]["baseStats"]["atk"] # defines which attack
     #attacker_attack = attacker.a
     if move == attacker.battlecard.move_f.name:
-        move_type = attacker.battlecard.f_move_type
+        move_type = attacker.battlecard._f_move_type
         power = attacker.battlecard._move_f_damage
     elif move == attacker.battlecard.move_ch.name:
-        move_type = attacker.battlecard.ch_move_type
+        move_type = attacker.battlecard._ch_move_type
         power = attacker.battlecard._move_ch_damage
     elif move == attacker.battlecard.move_tm.name:
-        move_type = attacker.battlecard.tm_move_type
+        move_type = attacker.battlecard._tm_move_type
         power = attacker.battlecard._move_tm_damage
 
     #defender_type = pokedex[defender.battlecard.name.name]["types"] # gives an array of strings that are the types
