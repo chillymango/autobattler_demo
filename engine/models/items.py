@@ -421,8 +421,8 @@ class InstantItemMixin:
         """
         if not self.can_use():
             return
-        self.use()
-        self.record_consumption()
+        if self.use():
+            self.record_consumption()
 
     def record_consumption(self):
         """
@@ -1118,6 +1118,7 @@ class TechnicalMachine(InstantPokemonItem):
         if card.tm_flag:
             raise Exception("Target already has TM move")
         self.holder.battle_card.tm_flag = True
+        return True
 
 
 #HERO POWER ITEMS
@@ -1161,24 +1162,29 @@ class JanineEject(CombatItem):
 
 class DragonScale(InstantPokemonItem):
 
-    def use(self):
+    def use(self) -> bool:
         if not isinstance(self.holder, Pokemon):
-            return
-        if self.holder.is_type('dragon'):
-            return
+            return False
 
-        self.holder.battle_card.poke_type2 = 'dragon' 
+        if self.holder.is_type(PokemonType.dragon):
+            return False
 
-        
+        self.holder.battle_card.poke_type2 = PokemonType.dragon
+
+        return True
+
+
 class RedCooking(InstantPokemonItem):
 
     def use(self):
         if not isinstance(self.holder, Pokemon):
-            return
+            return False
+
         if self.holder.battle_card.shiny == True:
-            return
+            return False
 
         self.holder.battle_card.shiny = True
+        return True
 
 
 # INSTANT ITEM
@@ -1191,6 +1197,7 @@ class RentalDitto(InstantPokemonItem):
         if not isinstance(self.holder, Pokemon):
             return
         self.ditto_clone()
+        return True
     
     def ditto_clone(self):
         player: "Player" = self.player
@@ -1209,7 +1216,7 @@ class RareCandy(InstantPokemonItem):
             raise Exception("No Pokemon found as a valid target")
 
         if not evo_manager.get_evolution(holder.name):
-            return
+            return False
         holder.add_xp(50)
         threshold = self.get_threshold(holder.name.name)
         if holder.xp >= threshold:
@@ -1220,9 +1227,8 @@ class RareCandy(InstantPokemonItem):
             self.evolve(holder)
             shop_manager: "ShopManager" = self.env.shop_manager
             shop_manager.check_shiny(self.player, holder.name.name)
-            self.consumed = True
 
-
+        return True
 
 
 class Stone(InstantPokemonItem):
@@ -1250,28 +1256,30 @@ class CommonStone(Stone):
 
         print('running stone evo')
         evo_manager: EvolutionManager = self._env.evolution_manager
+
         # handle eevee specially
         # TODO: make choice evolution types more generic
         im: "ItemManager" = self._env.item_manager
         if self.holder is None:
             raise Exception("No Pokemon found as a valid target")
         player = evo_manager.find_owner(self.holder)
-        #if eevee, evolve 
+
         if self.holder.name == PokemonId.eevee:
             if PokemonType.water in self._target_type:
-                self.eve_volve(evo = "vaporeon", pokemon = self.holder, evo_name = PokemonId.vaporeon, player = player)
-            elif PokemonType.fire in self._target_type:
-                self.eve_volve(evo = "flareon", pokemon = self.holder, evo_name = PokemonId.flareon, player = player)
-            elif PokemonType.electric in self._target_type:
-                self.eve_volve(evo = "jolteon", pokemon = self.holder, evo_name = PokemonId.jolteon, player = player)
-            return
+                return self.eve_volve(evo = "vaporeon", pokemon = self.holder, evo_name = PokemonId.vaporeon, player = player)
+            if PokemonType.fire in self._target_type:
+                return self.eve_volve(evo = "flareon", pokemon = self.holder, evo_name = PokemonId.flareon, player = player)
+            if PokemonType.electric in self._target_type:
+                return self.eve_volve(evo = "jolteon", pokemon = self.holder, evo_name = PokemonId.jolteon, player = player)
+            return False
+
         print('holder is not eevee')
         # try and evolve
         if not evo_manager.get_evolution(self.holder.name.name):
-            return
+            return False
         if (self.holder.is_type(PokemonType.dragon)) or (self.holder.name == PokemonId.magikarp):
             print('not compatable with stones')
-            return
+            return False
         if ((self.holder.battle_card.poke_type1 in self._target_type) or (self.holder.battle_card.poke_type2 in self._target_type)):
             print('holder qualifies for stone')
             self.holder.add_xp(150)
@@ -1284,7 +1292,7 @@ class CommonStone(Stone):
                 evo_manager.evolve(self.holder)
                 shop_manager: "ShopManager" = self._env.shop_manager
                 shop_manager.check_shiny(player, self.holder.name.name)
-                self.consumed = True
+                return True
     
     def eve_volve(self, evo, pokemon, evo_name, player):
         print("evolving eevee with stone")
@@ -1303,7 +1311,7 @@ class CommonStone(Stone):
         pokemon.battle_card = evolved_card
         shop_manager: "ShopManager" = self._env.shop_manager
         shop_manager.check_shiny(player, pokemon.name.name)
-        self.consumed = True
+        return True
 
 
 class FireStone(CommonStone):
@@ -1484,7 +1492,7 @@ class BlaineButton(ChargedHeroPower):
             print('no more rolls')
 
         return
-    
+
     def pre_battle_action(self, **context: T.Any):
         """
         buff team based on button 
@@ -1493,12 +1501,15 @@ class BlaineButton(ChargedHeroPower):
 
 
 class BlueSmell(PassiveHeroPower):
+
+    reroll_cost = 3.0
+
     def use(self, player: "Player" = None):
         # TODO: fix deferred import
         from engine.models.association import associate
         from engine.models.association import dissociate
         from engine.models.association import PlayerShop
-        if player.energy >= self.reroll_cost :
+        if player.energy >= self.reroll_cost:
             player.energy -= self.reroll_cost
             shop_manager: ShopManager = self._env.shop_manager
             bonus_shop = shop_manager.get_shop_by_turn_number(self, self._env.state.turn_number)
@@ -1542,6 +1553,7 @@ class ErikaGarden(PassiveHeroPower):
                     self.evolve(party_member)
                     shop_manager: "ShopManager" = self._env.shop_manager
                     shop_manager.shiny_checker(player, party_member.name)
+
 
 class BrunoBod(PassiveHeroPower):
     """
