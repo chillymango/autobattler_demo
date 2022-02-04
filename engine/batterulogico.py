@@ -377,11 +377,19 @@ def battle(
             # announce current team members
             logger("team1_active", f"{current_team1.battlecard.name} is fighting for team 1")
             if not team_1_active:
-                render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + "|" + str(int(current_team1.hp)) + r"\/" + str(int(current_team1.battlecard.max_health)))
+                if current_team1.battlecard.shiny == True:
+                    shiny_term = ", shiny|"
+                else:
+                    shiny_term = "|"
+                render("|switch|p1a: " + current_team1.nickname +  "|" + current_team1.nickname + shiny_term + str(int(current_team1.hp)) + r"\/" + str(int(current_team1.battlecard.max_health)))
                 team_1_active = True
             logger("team2_active", f"{current_team2.battlecard.name} is fighting for team2")
             if not team_2_active:
-                render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + "|" + str(int(current_team2.hp)) + r"\/" + str(int(current_team2.battlecard.max_health)))
+                if current_team2.battlecard.shiny == True:
+                    shiny_term = ", shiny|"
+                else:
+                    shiny_term = "|"
+                render("|switch|p2a: " + current_team2.nickname +  "|" + current_team2.nickname + shiny_term + str(int(current_team2.hp)) + r"\/" + str(int(current_team2.battlecard.max_health)))
                 team_2_active = True
 
             # COMBAT ITEM HOOK: pre_combat_action
