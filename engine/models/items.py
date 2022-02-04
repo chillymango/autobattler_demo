@@ -1155,15 +1155,27 @@ class BrockSolid(CombatItem):
 
     slotless = True
 
-    def pre_battle_action(self, logger: "EventLogger", **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         give shields to teammates 
         """
-        pass
+        holder = self.get_item_holder_from_context(context).battlecard
+        team_cards = self.get_team_cards_of_holder(context)
+        shields_to_give = 1
+        while shields_to_give > 0:
+            for card in team_cards:
+                card.battlecard.bonus_shield += 1
+                shields_to_give -= 1
+                if logger is not None:
+                    logger(
+                        "Brock Solid pre_battle",
+                        f"{holder.name.name} gives shield to {card.battlecard.name.name}"
+                    )
+                if render:
+                    "|-start|p" + str(context.team)+"a: "+ card.nickname + "|Shielded|[from] item: Brock Solid| [of] p" + str(context.team) + "a: " + holder.nickname
 
     def post_battle_action(self, **context: T.Any):
         """
-        remove shields 
         """
         self.consumed = True
         pass
@@ -1514,6 +1526,7 @@ class BlaineButton(ChargedHeroPower):
             self.counter += roll
             if self.counter > max:
                 self.bust = True
+                self.counter = -5
                 print('U busted')
             elif self.counter == max: 
                 self.jackpot = True
@@ -1524,12 +1537,41 @@ class BlaineButton(ChargedHeroPower):
 
         return
 
-    def pre_battle_action(self, **context: T.Any):
-        """
-        buff team based on button 
-        """
-        pass
 
+
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+        """
+        boost stats of team
+        """
+        team_battlers = self.get_team_cards_of_holder(context)
+        if render:
+            render("|-message|Blaine's Hero Power Activates!") 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            before = card.attack
+            card.modifiers[Stats.ATK.value] +=  self.counter*0.2
+            after = card.attack
+            if logger is not None:
+                logger(
+                    'BlaineBlaze pre_battle',
+                    f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
+                )
+            if render:
+                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            before = card.defense
+            card.modifiers[Stats.DEF.value] += self.counter*0.2
+            after = card.defense
+            if logger is not None:
+                logger(
+                    'BlaineBlaze pre_battle',
+                    f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
+                )
+            if render:
+                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 class BlueSmell(PassiveHeroPower):
 
@@ -1554,7 +1596,7 @@ class MistyTrustFund(PassiveHeroPower):
     
     def turn_setup(self, player: "Player" = None):
         """
-        if it's the correct turn grow your pokes
+        if it's the correct turn get cash
         """
         turn_divisor = 4
         income = 4
@@ -1716,11 +1758,41 @@ class LanceFetish(ComplexHeroPower):
             player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
             self.success = True
         
-    def pre_battle_action(self, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
-        if dragon, buff 
+        boost stats of dragons
         """
-        pass
+        team_battlers = self.get_team_cards_of_holder(context)
+        if render:
+            render("|-message|Lance's Hero Power Activates!") 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            if ((card.poke_type1 == PokemonType.dragon) | (card.poke_type2 == PokemonType.dragon) ) :
+                before = card.attack
+                card.modifiers[Stats.ATK.value] += 2
+                after = card.attack
+                if logger is not None:
+                    logger(
+                        'LanceFetish pre_battle',
+                        f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
+                    )
+                if render:
+                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            if ((card.poke_type1 == PokemonType.dragon) | (card.poke_type2 == PokemonType.dragon) ) :
+                before = card.defense
+                card.modifiers[Stats.DEF.value] += 2
+                after = card.defense
+                if logger is not None:
+                    logger(
+                        'LanceFetish pre_battle',
+                        f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
+                    )
+                if render:
+                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 
 class WillSac(PlayerHeroPower):
@@ -1766,11 +1838,49 @@ class KogaNinja(ComplexHeroPower):
         
 class SurgeGorilla(PassiveHeroPower):
 
-    def pre_battle_action(self, **context: T.Any):
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
-        check largest number of matching types, apply buff
+        check largest matching type, apply buff
         """
-        pass
+        team_battlers = self.get_team_cards_of_holder(context)
+        types = []
+        for battler in team_battlers:
+            if battler.poke_type1 != PokemonType.none:
+                types.append(battler.poke_type1)
+            if battler.poke_type2 != PokemonType.none:
+                types.append(battler.poke_type2)
+        best_type = max(types,key=types.count)
+
+        if render:
+            render("|-message|Lt. Surge's Hero Power Activates!") 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            if ((card.poke_type1 == best_type) | (card.poke_type2 == best_type) ) :
+                before = card.attack
+                card.modifiers[Stats.ATK.value] += 2
+                after = card.attack
+                if logger is not None:
+                    logger(
+                        'LanceFetish pre_battle',
+                        f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
+                    )
+                if render:
+                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+
+        for battler in team_battlers:
+            card = battler.battlecard
+            if ((card.poke_type1 == best_type) | (card.poke_type2 == best_type) ) :
+                before = card.defense
+                card.modifiers[Stats.DEF.value] += 2
+                after = card.defense
+                if logger is not None:
+                    logger(
+                        'LanceFetish pre_battle',
+                        f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
+                    )
+                if render:
+                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 
 class RedCheater(PassiveHeroPower):
