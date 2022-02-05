@@ -1,6 +1,7 @@
 """
 WebSockets for reactive buttons
 """
+import asyncio
 import json
 import sys
 import traceback
@@ -76,7 +77,8 @@ async def websocket_endpoint(websocket: WebSocket):
     
             # NOTE: this should happen synchronously
             response = callback(hydrated)
-            await websocket.send_json(response.json())
+            asyncio.ensure_future(websocket.send_json(response.json()))
+            #await websocket.send_json(response.json())
         except WebSocketDisconnect:
             print('Breaking WebSocket connection')
             break
