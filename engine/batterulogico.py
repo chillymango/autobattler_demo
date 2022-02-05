@@ -224,8 +224,8 @@ class HookExecutor:
         # other items are only active if the pokemon is currently in combat
         team_items = [None] * 3
         for idx, teammate in enumerate(team):
-            if active is not None and active.battlecard == teammate.battlecard:
-                team_items[idx] = teammate.battlecard.item
+            if teammate.battlecard == active.battlecard:
+                team_items[idx] = active.battlecard.item
             elif teammate.battlecard.item:
                 if teammate.battlecard.item.is_global:
                     team_items[idx] = teammate.battlecard.item
@@ -234,11 +234,21 @@ class HookExecutor:
 
         return team_items
 
+    def get_battler_team(self, battler: Battler) -> T.List[Battler]:
+        """
+        Get the team of a battler
+        """
+        if battler in self.team1:
+            return self.team1
+        elif battler in self.team2:
+            return self.team2
+        raise Exception("Battler not on either team")
+
     def __call__(
         self,
         hook: "CombatHook",
-        current_team1: Battler,
-        current_team2: Battler,
+        battler1: Battler,
+        battler2: Battler,
         **context: T.Dict
     ) -> None:
         """
@@ -246,28 +256,46 @@ class HookExecutor:
         """
         context = context or dict()
 
+        battler1_team = self.get_battler_team(battler1)
+        battler2_team = self.get_battler_team(battler2)
+
+
         # determine the active items
         # for pre / post-battle hooks, all item effects should always trigger by default
-        team1_items_list = self.get_active_team_items(self.team1, current_team1, hook)
-        team1_items = {self.team1[idx]: team1_items_list[idx] for idx in range(len(self.team1))}
-        team2_items_list = self.get_active_team_items(self.team2, current_team2, hook)
-        team2_items = {self.team2[idx]: team2_items_list[idx] for idx in range(len(self.team2))}
+        team1_items_list = self.get_active_team_items(battler1_team, battler1, hook)
+        team1_items = {battler1_team[idx]: team1_items_list[idx] for idx in range(len(battler1_team))}
+        team2_items_list = self.get_active_team_items(battler2_team, battler2, hook)
+        team2_items = {battler2_team[idx]: team2_items_list[idx] for idx in range(len(battler2_team))}
+
+        active_items = team1_items.copy()
+        active_items.update(team2_items)
 
         # run item callbacks
-        active_items: T.List[T.Optional[CombatItem]] = team1_items_list + team2_items_list
-        for item in active_items:
+        for item in active_items.values():
             if item is None:
                 continue
+            kwargs = dict()
+            if battler1_team == self.team1:
+                kwargs['current_team1'] = battler1
+                kwargs['team1_items'] = team1_items
+                kwargs['team1'] = self.team1
+                kwargs['current_team2'] = battler2
+                kwargs['team2_items'] = team2_items
+                kwargs['team2'] = self.team2
+            elif battler1_team == self.team2:
+                kwargs['current_team1'] = battler2
+                kwargs['team1_items'] = team2_items
+                kwargs['team1'] = self.team2
+                kwargs['current_team2'] = battler1
+                kwargs['team2_items'] = team1_items
+                kwargs['team2'] = self.team1
+            else:
+                raise Exception('omg')
+            context.update(kwargs)
             method = item.get_method(hook)
             method(
                 logger=self.logger,
                 render = self.render,
-                current_team1=current_team1,
-                current_team2=current_team2,
-                team1=self.team1,
-                team2=self.team2,
-                team1_items=team1_items,
-                team2_items=team2_items,
                 **context
             )
 
@@ -695,7 +723,7 @@ def launch_attack(
             )
             # print(attacker.name.name+' used '+move)
         logger(
-            "Attack",
+            "Charged Attack",
             f"{attacker.team} {attacker.battlecard.name.name} used {move} "
             f"on {defender.team} {defender.battlecard.name.name}"
         )
@@ -882,6 +910,7 @@ def launch_attack(
         # COMBAT ITEM HOOK: on_fast_move_action
         # COMBAT ITEM HOOK: on_enemy_fast_move_action
         if execute_hooks:
+            print(f'Executing hook where {attacker=} {defender=}')
             execute_hook(
                 CombatHook.ON_FAST_MOVE,
                 attacker,

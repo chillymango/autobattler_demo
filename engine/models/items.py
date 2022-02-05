@@ -840,8 +840,6 @@ class IntimidatingIdol(CombinedItem):
                 "IntimidatingIdol pre_combat",
                 f"team{enemy_team} ATK {before:.0f} -> {after:.0f}"
             )
-            
-
 
 
 class IronBarb(CombinedItem):
@@ -853,13 +851,13 @@ class IronBarb(CombinedItem):
     _DAMAGE = 2.0
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,1,0,0])
 
-    def on_enemy_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+    def on_enemy_fast_move_action(self, logger: "EventLogger" = None, render: "RenderLogger" = None, **context: T.Any):
         """
         deal damage
         """
         holder = self.get_item_holder_from_context(context)
         attacker = context['attacker']
-        #import IPython; IPython.embed()
+
         if holder == attacker:
             return
         enemy = self.get_active_enemy_from_context(context)
@@ -874,8 +872,7 @@ class IronBarb(CombinedItem):
             )
         if render:
             render(
-            "|-damage|p" + enemy_team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
-                
+                "|-damage|p" + enemy_team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
             )
 
 
