@@ -1667,7 +1667,8 @@ class MistyTrustFund(PassiveHeroPower):
         """
         turn_divisor = 4
         income = 4
-        if self._env.state.turn_number % turn_divisor:
+        countdown = self._env.state.turn_number % turn_divisor
+        if countdown == 0:
             player.balls += income
 
 
@@ -1678,7 +1679,8 @@ class ErikaGarden(PassiveHeroPower):
         if it's the correct turn grow your pokes
         """
         turn_divisor = 4
-        if self._env.state.turn_number % turn_divisor:
+        countdown = self._env.state.turn_number % turn_divisor
+        if countdown == 0:
             player_manager: PlayerManager = self._env.player_manager
             for party_member in player_manager.player_party(player):
                 if party_member is None or party_member.name not in self.evolution_config:
@@ -1705,7 +1707,7 @@ class BrunoBod(PassiveHeroPower):
         player.hitpoints = buffed_hp
 
 
-class BlastOff(PlayerHeroPower):
+class JanineJutsu(PlayerHeroPower):
     current_cost: int = 5
 
     def use(self, player: "Player" = None):
@@ -1788,19 +1790,19 @@ class GreensRocks(PlayerHeroPower):
             self.success = True
 
 
-class JanineJutsu(PlayerHeroPower):
-    
-    hp_cost: int = 2
-
-    def use(self, player: "Player" = None):
-        """
-        get a janine's button item 
-        """
-        if player.balls >= self.hp_cost :
-            player.balls -= self.hp_cost
-            player_manager: PlayerManager = self._env.player_manager
-            player_manager.create_and_give_item_to_player(player, item_name = "JanineEject")
-            self.success = True
+#class JanineJutsu(PlayerHeroPower):
+#    
+#    hp_cost: int = 2
+#
+#    def use(self, player: "Player" = None):
+#        """
+#        get a janine's button item 
+#        """
+#        if player.balls >= self.hp_cost :
+#            player.balls -= self.hp_cost
+#            player_manager: PlayerManager = self._env.player_manager
+#            player_manager.create_and_give_item_to_player(player, item_name = "JanineEject")
+#            self.success = True
 
 class LanceFetish(ComplexHeroPower):
     
@@ -1879,13 +1881,21 @@ class WillSac(PlayerHeroPower):
 class KogaNinja(ComplexHeroPower):
 
     hp_cost: int = 2
-    unseal_cost = 4
+    unseal_cost: int = 4
+    last_hp: int = 21
 
-    def post_battle_action(self, **context: T.Any):
-        """
-        if win, lower unseal cost
-        """
-        pass
+    def turn_setup(self):
+        player: "Player" = self.player
+        if self.last_hp == player.hitpoints:
+            self.unseal_cost -= 1
+            print("Koga's ult is charging..")
+        else:
+            print("Koga is too focused on defeat..")
+        self.success = False
+        self.used = False
+        self.last_hp = player.hitpoints
+
+
     
     def use(self, player: "Player" = None):
         if self.unseal_cost == 0:
@@ -1894,6 +1904,7 @@ class KogaNinja(ComplexHeroPower):
                 player_manager: PlayerManager = self._env.player_manager
                 eevees = ['jolteon', 'vaporeon', 'flareon']
                 player_manager.create_and_give_pokemon_to_player(player, random.choice(eevees))
+                self.success = True
 
         
 class SurgeGorilla(PassiveHeroPower):
@@ -1924,7 +1935,7 @@ class SurgeGorilla(PassiveHeroPower):
                 after = card.attack
                 if logger is not None:
                     logger(
-                        'LanceFetish pre_battle',
+                        'SurgeGorilla pre_battle',
                         f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
                     )
                 if render:
@@ -1938,7 +1949,7 @@ class SurgeGorilla(PassiveHeroPower):
                 after = card.defense
                 if logger is not None:
                     logger(
-                        'LanceFetish pre_battle',
+                        'SurgeGorilla pre_battle',
                         f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
                     )
                 if render:
