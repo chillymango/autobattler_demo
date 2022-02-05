@@ -242,6 +242,7 @@ class HookExecutor:
             return self.team1
         elif battler in self.team2:
             return self.team2
+
         raise Exception("Battler not on either team")
 
     def __call__(
@@ -256,9 +257,15 @@ class HookExecutor:
         """
         context = context or dict()
 
-        battler1_team = self.get_battler_team(battler1)
-        battler2_team = self.get_battler_team(battler2)
+        if battler1 is not None:
+            battler1_team = self.get_battler_team(battler1)
+        else:
+            battler1_team = []
 
+        if battler2 is not None:
+            battler2_team = self.get_battler_team(battler2)
+        else:
+            battler2_team = []
 
         # determine the active items
         # for pre / post-battle hooks, all item effects should always trigger by default
@@ -380,8 +387,6 @@ def battle(
     else:
         weather = 'Windy'
         render_w = 'deltastream'
-
-
 
     bench1 = []
     bench2 = []
