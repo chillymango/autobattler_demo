@@ -876,7 +876,7 @@ class IronBarb(CombinedItem):
             )
         if render:
             render(
-                "|-damage|p" + enemy_team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
+                "|-damage|p" + str(enemy_team) + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
             )
 
 
