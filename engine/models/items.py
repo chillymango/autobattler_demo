@@ -683,6 +683,7 @@ class LightClay(CombinedItem):
         give shields to teammates 
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        battler = self.get_item_holder_from_context(context)
         team = self.get_team_of_holder(context)
 
         team_cards = self.get_team_cards_of_holder(context)
@@ -697,7 +698,7 @@ class LightClay(CombinedItem):
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
                 if render:
-                    "|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(team) + "a: " + holder.nickname
+                    "|-start|p" + str(team)+"a: "+ battler.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(team) + "a: " + holder.nickname
 
 
 
