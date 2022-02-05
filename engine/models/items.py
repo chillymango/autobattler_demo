@@ -787,9 +787,9 @@ class Metronome(CombinedItem):
             render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spe|"+ str(round(after, 2))   +"|[from] item: Metronome")
 
 
-class FrozenHeart(CombinedItem):
+class NeverMeltIce(CombinedItem):
     """
-    Frozen Heart
+    NeverMeltIce
 
     Reduces attack speed of all enemies
     """
@@ -814,11 +814,11 @@ class FrozenHeart(CombinedItem):
             after = card.speed
             if logger is not None:
                 logger(
-                    "FrozenHeart pre_battle",
+                    "NeverMeltIce pre_battle",
                     f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-unboost|p" + str(team)+"a: "+ battler.nickname + "|spe|" +  str(round(after, 2)/100) +"|[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder_poke.nickname)
+                render("|-unboost|p" + str(team)+"a: "+ battler.nickname + "|spe|" +  str(round(after, 2)/100) +"|[from] item: NeverMeltIce| [of] p" + str(team) + "a: " + holder_poke.nickname)
 
 
 
@@ -982,6 +982,33 @@ class ShellBell(CombinedItem):
 
     def on_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_charged_move", logger=logger, render = render,**context)
+
+class FluffyTail(CombinedItem):
+    """
+    Fluffy Tail
+    Heal team on charged move
+    """
+    def on_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+        holder = self.get_item_holder_from_context(context).battlecard
+        battler = self.get_item_holder_from_context(context)
+        team = self.get_team_of_holder(context)
+
+        team_cards = self.get_team_cards_of_holder(context)
+
+        for card in team_cards:
+            if card.hp < 0:
+                card.hp = 0
+            card.hp += (0.05 * card.battlecard.max_health) * (1+self.level)
+            after = card.hp
+            if logger is not None:
+                logger(
+                    "Fluffy Tail on charged move",
+                    f"{holder.name.name} gives health to {card.battlecard.name.name}"
+                )
+            if render:
+                render("|-heal|p"+str(team[-1])+"a: "+card.nickname+"|" + str(round(after)) + r"\/" + str(round(card.battlecard.max_health))+"|[from] item: Fluffy Tail| [of]p"+ str(team) + "a: " + battler.nickname)
+
+
 
 
 class EjectButton(CombinedItem):
@@ -1680,21 +1707,12 @@ class BrunoBod(PassiveHeroPower):
 
 class BlastOff(PlayerHeroPower):
     current_cost: int = 5
-    immune: bool = False
-
-    def turn_setup(self, player: "Player" = None):
-        self.immune = False
 
     def use(self, player: "Player" = None):
         if player.balls >= self.current_cost :
             player.balls -= self.current_cost
             self.current_cost += 2
-            self.immune = True
-    def post_battle_action(self, **context: T.Any):
-        """
-        if lose and immune, don't take damage.
-        """
-        pass
+            player.immune = True
 
 
 

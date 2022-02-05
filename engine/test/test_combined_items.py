@@ -127,7 +127,7 @@ class TestCombatItems(unittest.TestCase):
 
     def test_frozen_heart(self):
         spearow = self.pm.create_and_give_pokemon_to_player(self.p1, 'spearow')
-        frozen_heart = self.pm.create_and_give_item_to_player(self.p1, 'FrozenHeart')
+        frozen_heart = self.pm.create_and_give_item_to_player(self.p1, 'NeverMeltIce')
         frozen_heart.level = 30  # make it super obvious
         self.pm.give_item_to_pokemon(spearow, frozen_heart)
 

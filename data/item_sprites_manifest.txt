@@ -28,6 +28,8 @@ Metronome    combineditems/metronome.png
 QuickPowder    combineditems/quick-powder.png
 ShellBell    combineditems/shell-bell.png
 FocusBand    combineditems/focus-band.png
+NeverMeltIce  combineditems/nevermeltice.png
+FluffyTail    combineditems/fluffy-tail.png
 
 BrockSolid     heropower/brock-solid.png
 DragonScale    heropower/dragon-scale.png

@@ -36,6 +36,7 @@ class Player(Entity):
     flute_charges: int = 0
     party_locked: bool = False
     team_locked: bool = False
+    immune: bool = False
 
     def __eq__(self, other):
         if not isinstance(other, Player):

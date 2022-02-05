@@ -174,12 +174,15 @@ class BattleManager(Component):
 
             if losing_player is not None:
                 for player in losing_player:
-                    if self.state.stage.stage <= 4:
-                        player.hitpoints -= 2
-                    elif self.state.stage.stage <= 7:
-                        player.hitpoints -= 4
+                    if not player.immune:
+                        if self.state.stage.stage <= 4:
+                            player.hitpoints -= 2
+                        elif self.state.stage.stage <= 7:
+                            player.hitpoints -= 4
+                        else:
+                            player.hitpoints -= 6
                     else:
-                        player.hitpoints -= 6
+                        player.immune = False
 
             stats = dict()
             team1 = self.get_team(p1)
