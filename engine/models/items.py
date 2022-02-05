@@ -1053,7 +1053,12 @@ class AssaultVest(CombinedItem):
     stat_contribution: T.List[int] = Field(default_factory=lambda: [0,1,0,0,1])
     _POWER_REDUCTION: int = 2
 
-    def on_enemy_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+    def on_enemy_charged_move_action(
+        self,
+        logger: "EventLogger" = None,
+        render: "RenderLogger" = None,
+        **context: T.Any
+    ):
         """
         reduce power
         """
@@ -1074,7 +1079,6 @@ class AssaultVest(CombinedItem):
             )
         if render:
             render("|-message|Assault Vest lowers the move's power!")
-
 
 
 class QuickPowder(CombinedItem):

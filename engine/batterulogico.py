@@ -302,7 +302,7 @@ class HookExecutor:
             method = item.get_method(hook)
             method(
                 logger=self.logger,
-                render = self.render,
+                render=self.render,
                 **context
             )
 
