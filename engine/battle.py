@@ -90,20 +90,29 @@ class BattleManager(Component):
             p2 = self.state.get_player_by_id(match.player2)
             res = self.battle(p1, p2)
 
-            creep_avatars = {"Preschooler":'preschooler', "Lass":'lass', "Hiker":'hiker',"Hex Maniac":'hexmaniac-gen3', 'Gentleman':'gentleman', 'Ace Trainer':'acetrainerf-gen4dp', 'Veteran':'veteran-gen4'}
+            creep_avatars = {
+                "Preschooler": 'preschooler',
+                "Lass": 'lass',
+                "Hiker": 'hiker',
+                "Hex Maniac":'hexmaniac-gen3',
+                'Gentleman':'gentleman',
+                'Ace Trainer':'acetrainerf-gen4dp',
+                'Veteran':'veteran-gen4'
+            }
 
-            if not p1.is_creep:
-                p1_nickname = self.state.player_hero[str(p1.id)].name
-                p1_avatar = self.state.player_hero[str(p1.id)].showdown_avatar
-            else:
+            if p1.is_creep:
                 p1_nickname = p1.name
                 p1_avatar = creep_avatars[p1_nickname]
-            if not p2.is_creep:
-                p2_nickname = self.state.player_hero[str(p2.id)].name
-                p2_avatar = self.state.player_hero[str(p2.id)].showdown_avatar
             else:
+                p1_nickname = self.state.player_hero[str(p1.id)].name
+                p1_avatar = self.state.player_hero[str(p1.id)].showdown_avatar
+            if p2.is_creep:
                 p2_nickname = p2.name
                 p2_avatar = creep_avatars[p2_nickname]
+            else:
+                p2_nickname = self.state.player_hero[str(p2.id)].name
+                p2_avatar = self.state.player_hero[str(p2.id)].showdown_avatar
+
 
             output_file_name = p1_nickname + "_" + p2_nickname + "_"+str(self.state.turn_number) + ".html"
             shutil.copyfile("battle_header.html", output_file_name)

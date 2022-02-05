@@ -402,9 +402,10 @@ def battle(
     team_2_active = False
 
     if render:
-        render("=weather|"+render_w)
+        #render("=weather|"+render_w)
+        pass
     if logger:
-        logger("The weather is " + weather)
+        logger("Weather", "The weather is " + weather)
 
     while (len(team1_live) > 0 and len(team2_live) > 0 and stop_this == False): # while there are pokemon alive for a team
         turnnumber += 1
