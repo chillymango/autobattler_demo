@@ -33,7 +33,7 @@ class BattleCard(BaseModel):
     name: PokemonId
     move_f: Move
     move_ch: Move
-    move_tm: Move
+    move_tm: T.Optional[Move] = None
     _move_f_damage: T.Optional[float] = PrivateAttr(default=None)
     _move_ch_damage: T.Optional[float] = PrivateAttr(default=None)
     _move_tm_damage: T.Optional[float] = PrivateAttr(default=None)
