@@ -1600,7 +1600,7 @@ class BlaineButton(ChargedHeroPower):
         else:
             print('no more rolls')
 
-        return
+        
 
 
 
@@ -1642,7 +1642,7 @@ class BlaineButton(ChargedHeroPower):
 
 class BlueSmell(PassiveHeroPower):
 
-    reroll_cost = 3.0
+    reroll_cost = 1.0
 
     def use(self, player: "Player" = None):
         # TODO: fix deferred import
@@ -1658,6 +1658,7 @@ class BlueSmell(PassiveHeroPower):
                     dissociate(PlayerShop, player, card)
             for rolled in bonus_shop.roll_shop():
                 associate(PlayerShop, player, ShopOffer(pokemon=PokemonId[rolled]))
+            self.success = True
 
 class MistyTrustFund(PassiveHeroPower):
     
@@ -1708,6 +1709,7 @@ class BrunoBod(PassiveHeroPower):
 
 
 class JanineJutsu(PlayerHeroPower):
+
     current_cost: int = 5
 
     def use(self, player: "Player" = None):
@@ -1876,6 +1878,29 @@ class WillSac(PlayerHeroPower):
             player.flute_charges += 1
             player.balls += 3
             self.success = True
+
+class RocketHeist(ComplexHeroPower):
+
+    cost: int = 1
+    success: bool = False
+    used: bool = False
+    stolen_poke: PokemonId 
+
+    def turn_setup(self):
+        player = self.player
+        if self.success:
+            player_manager: PlayerManager = self._env.player_manager
+            player_manager.create_and_give_pokemon_to_player(player, self.stolen_poke)
+        self.success = False
+        self.used = False
+    
+    def use(self, player: self, player: "Player" = None):
+        if player.balls > self.cost :
+            self.success = True
+    
+    def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
+        enemy_team = self.get_enemy_team_cards(context)
+        self.stolen_poke = enemy_team[0].name.name
 
 
 class KogaNinja(ComplexHeroPower):
