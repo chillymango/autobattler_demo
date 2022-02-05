@@ -7,6 +7,7 @@ Steps:
 First checks to see if the User object can be instantiated from cache.
     If it cannot, prompt the user to create one by using the user prompt window.
 """
+import argparse
 import asyncio
 import logging
 import os
@@ -30,6 +31,12 @@ from server.api.user import User
 logging_config.set_mode(LoggingModes.UVICORN, level=logging.WARNING)
 
 WindowTransition = namedtuple("WindowTransition", ["before", "after"])
+
+
+def get_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--user-config", default=None, help="a user config to load user info from")
+    return parser
 
 
 class WindowManager:
@@ -71,7 +78,7 @@ async def user_name_window():
     return user
 
 
-async def main() -> None:
+async def main(args: argparse.Namespace) -> None:
     """
     Application Entrypoint
     """
@@ -80,10 +87,13 @@ async def main() -> None:
         server_config = ServerConfig(bind='http://localhost:8000')
     else:
         server_config = ServerConfig.parse_filepath()
+    if args.user_config:
+        user = User.from_cache(path=args.user_config)
+    else:
+        user = await user_name_window()
+    print(f'Found User {user}')
     client = AsynchronousServerClient(bind=server_config.bind)
     window = LandingWindow(client, server_config)
-    user = await user_name_window()
-    print(f'Found User {user}')
     window.set_user(user)
     # TODO: what do i do here lol... the rest of the machine is probably self contained
     while True:
@@ -91,9 +101,11 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
     app = QtWidgets.QApplication(sys.argv)
     loop = QEventLoop(app)
     loop.set_debug(True)
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(main())
+    loop.run_until_complete(main(args))
     #loop.run_forever()

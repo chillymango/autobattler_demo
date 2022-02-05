@@ -13,6 +13,7 @@ from engine.models.items import Item
 from engine.models.player import Player
 from engine.models.pokemon import Pokemon
 from engine.player import PlayerManager
+from engine.test.base import BaseEnvironmentTest
 
 
 class TestCombatItems(unittest.TestCase):
@@ -135,6 +136,15 @@ class TestCombatItems(unittest.TestCase):
             component.turn_setup()
         for component in self.env.components:
             component.turn_execute()
+
+
+class TestMetronome(BaseEnvironmentTest):
+
+    def test_metronome_attack_speed(self):
+        self.create_pokemon_with_item(self.p1, 'dratini', 'Metronome', level=3)
+        self.create_pokemon_with_item(self.p2, 'sandshrew_alolan')
+        res = self.battle()
+        import IPython; IPython.embed()
 
 
 if __name__ == "__main__":

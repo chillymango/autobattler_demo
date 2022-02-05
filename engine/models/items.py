@@ -780,8 +780,6 @@ class Metronome(CombinedItem):
             render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|spd|"+ round(after/100, 2)   +"|[from] item: Metronome")
 
 
-
-
 class FrozenHeart(CombinedItem):
     """
     Frozen Heart

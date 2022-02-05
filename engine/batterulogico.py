@@ -128,6 +128,9 @@ class Battler:
 
         # should maybe do energy and shields also, because currently I'm just using the battle_card info, which ideally isn't changed because the object isn't meant for that
 
+    def __repr__(self):
+        return f"{self.battlecard.name} ({self.id}): HP={self.hp}"
+
 
 class EventLogger:
     """
@@ -554,9 +557,9 @@ def battle(
                         can_attack_1 = False
 
         if can_attack_1: # pokemon 1 attacks
-            pokemon2_dead = launch_attack(current_team1, current_team2, sequence, logger, render)[0]
+            pokemon2_dead = launch_attack(current_team1, current_team2, sequence, logger, render, execute_hooks=True)[0]
         if can_attack_2:
-            pokemon1_dead = launch_attack(current_team2, current_team1, sequence, logger, render)[0]
+            pokemon1_dead = launch_attack(current_team2, current_team1, sequence, logger, render, execute_hooks=True)[0]
 
         combat_over = False
         if pokemon1_dead:
@@ -647,6 +650,7 @@ def launch_attack(
     sequence: T.List[BattleEvent],
     logger: EventLogger,
     render: RenderLogger,
+    execute_hooks: bool = False
 ): # this is the bulk of battle logic. returns if damage was fatal. otherwise, directly changes battlecard data
     # THIS WILL CHANGE THE SEQUENCE BECAUSE OF POINTERS
 
@@ -663,11 +667,12 @@ def launch_attack(
         # print(attacker.name.name+' used '+attacker.move_f.name)
         fatal = True
         move = attacker.battlecard.move_f.name
-    else:
-        if move == attacker.battlecard.move_tm.name or move == attacker.battlecard.move_ch.name: # if the optimal move needs energy
-            # ON CHARGED MOVE COMBAT HOOKS: should run before damage calculations
 
-            # COMBAT ITEM HOOK: on_charged_move
+    if move == attacker.battlecard.move_tm.name or move == attacker.battlecard.move_ch.name: # if the optimal move needs energy
+        # ON CHARGED MOVE COMBAT HOOKS: should run before damage calculations
+
+        # COMBAT ITEM HOOK: on_charged_move
+        if execute_hooks:
             execute_hook(
                 CombatHook.ON_CHARGED_MOVE,
                 attacker,
@@ -686,193 +691,194 @@ def launch_attack(
                 defender=defender,
             )
             # print(attacker.name.name+' used '+move)
-            logger(
-                "Attack",
-                f"{attacker.team} {attacker.battlecard.name.name} used {move} "
-                f"on {defender.team} {defender.battlecard.name.name}"
-            )
-            render("|-prepare|p" + str(attacker.team) + "a: " + attacker.nickname + "|Geomancy")
+        logger(
+            "Attack",
+            f"{attacker.team} {attacker.battlecard.name.name} used {move} "
+            f"on {defender.team} {defender.battlecard.name.name}"
+        )
+        render("|-prepare|p" + str(attacker.team) + "a: " + attacker.nickname + "|Geomancy")
 
-            #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
-            if move == attacker.battlecard.move_tm.name:
-                attacker.battlecard.energy -= attacker.battlecard._move_tm_energy
-            elif move == attacker.battlecard.move_ch.name:
-                attacker.battlecard.energy -= attacker.battlecard._move_ch_energy
-            else:
-                raise Exception('what fuckin happened')
+        #attacker.battlecard.energy -= moves[move]["energy"] # decrement energy
+        if move == attacker.battlecard.move_tm.name:
+            attacker.battlecard.energy -= attacker.battlecard._move_tm_energy
+        elif move == attacker.battlecard.move_ch.name:
+            attacker.battlecard.energy -= attacker.battlecard._move_ch_energy
+        else:
+            raise Exception('what fuckin happened')
 
-            logger(
-                "Energy Use",
-                f"{attacker.team} {attacker.battlecard.name.name} "
-                f"has {attacker.battlecard.energy:.0f} energy left"
-            )
+        logger(
+            "Energy Use",
+            f"{attacker.team} {attacker.battlecard.name.name} "
+            f"has {attacker.battlecard.energy:.0f} energy left"
+        )
 
-            # idk about this, to simulate charged attack taking a while based on how it
-            # looks when pvpoke renders a quick fast attack after opponent charged          
-            attacker.timer = -500 # -= moves[move]["cooldown"] + 500 # an extra -500 to timer
-            damage = 1 # set to 1 because if you shield a charged attack its useless
-            effectiveness = -1 # how effective an attack was
-            proposed_damage, p_effectiveness = calculate_damage(attacker, move, defender)
+        # idk about this, to simulate charged attack taking a while based on how it
+        # looks when pvpoke renders a quick fast attack after opponent charged          
+        attacker.timer = -500 # -= moves[move]["cooldown"] + 500 # an extra -500 to timer
+        damage = 1 # set to 1 because if you shield a charged attack its useless
+        effectiveness = -1 # how effective an attack was
+        proposed_damage, p_effectiveness = calculate_damage(attacker, move, defender)
 
-            # check for shield
-            block = False
-            if defender.battlecard.bonus_shield > 0:
-                isweakbuff = False
-                block = True
-                try:
-                    if moves[move]["buffTarget"] == "opponent" and float(moves[move]["buffApplyChance"]) == 1:
-                        isweakbuff = True
-                    elif moves[move]["buffTarget"] == "self":
-                        isweakbuff = True
-                except:
-                    pass
-                if isweakbuff and not is_lethal(attacker, move, defender, defender.hp, sequence):
-                    fastDPT = calculate_damage(attacker, attacker.battlecard.move_f.name, defender)[0] / (moves[attacker.battlecard.move_f.name]["cooldown"] / 500)
-                    if proposed_damage < (defender.hp / 1.5) and (fastDPT) <= 1.5: # opposite of battle.js line 2251 ("if the defender can't afford")
-                        block = False
-                if block:
-                    defender.battlecard.bonus_shield -= 1 # if shield, decrement
-                    # print(defender.name.name+' used a shield')
-                    logger("Shield", f"{defender.team} {defender.battlecard.name.name} used a shield")
-                    render("|-singleturn|p"+defender.team+"a: "+defender.nickname +"|Protect")
-            if not block:
-                damage = proposed_damage
-                effectiveness = p_effectiveness
-            defender.hp -= damage # deal damage
-            defender.dmg_taken += damage
-            attacker.dmg_dealt += damage
-
-            hasbuff = False
-            buff = []
-            buff_target = ''
-            chance = 0
+        # check for shield
+        block = False
+        if defender.battlecard.bonus_shield > 0:
+            isweakbuff = False
+            block = True
             try:
-                buff = moves[move]["buffs"]
-                buff_target = moves[move]["buffTarget"]
-                chance = float(moves[move]["buffApplyChance"]) * 1000
-                hasbuff = True
+                if moves[move]["buffTarget"] == "opponent" and float(moves[move]["buffApplyChance"]) == 1:
+                    isweakbuff = True
+                elif moves[move]["buffTarget"] == "self":
+                    isweakbuff = True
             except:
                 pass
-            if hasbuff:
-                a_modifier = int(buff[0])
-                d_modifier = int(buff[1])
-                luck = randint(1, 1000)
-                # NOT TAKING INTO ACCOUNT MAXBUFFSTAGES YET. do with global setting for buffdivisor
-                if chance >= luck:
-                    if buff_target == "opponent":
-                        if a_modifier != 0:
-                            if a_modifier <0:
-                                logger(
-                                    "Attack Debuff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
-                                    
-                                )
-                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
-                            else:
-                                logger(
-                                    "Attack Buff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
-                                )
-                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
+            if isweakbuff and not is_lethal(attacker, move, defender, defender.hp, sequence):
+                fastDPT = calculate_damage(attacker, attacker.battlecard.move_f.name, defender)[0] / (moves[attacker.battlecard.move_f.name]["cooldown"] / 500)
+                if proposed_damage < (defender.hp / 1.5) and (fastDPT) <= 1.5: # opposite of battle.js line 2251 ("if the defender can't afford")
+                    block = False
+            if block:
+                defender.battlecard.bonus_shield -= 1 # if shield, decrement
+                # print(defender.name.name+' used a shield')
+                logger("Shield", f"{defender.team} {defender.battlecard.name.name} used a shield")
+                render("|-singleturn|p"+defender.team+"a: "+defender.nickname +"|Protect")
+        if not block:
+            damage = proposed_damage
+            effectiveness = p_effectiveness
+        defender.hp -= damage # deal damage
+        defender.dmg_taken += damage
+        attacker.dmg_dealt += damage
+
+        hasbuff = False
+        buff = []
+        buff_target = ''
+        chance = 0
+        try:
+            buff = moves[move]["buffs"]
+            buff_target = moves[move]["buffTarget"]
+            chance = float(moves[move]["buffApplyChance"]) * 1000
+            hasbuff = True
+        except:
+            pass
+        if hasbuff:
+            a_modifier = int(buff[0])
+            d_modifier = int(buff[1])
+            luck = randint(1, 1000)
+            # NOT TAKING INTO ACCOUNT MAXBUFFSTAGES YET. do with global setting for buffdivisor
+            if chance >= luck:
+                if buff_target == "opponent":
+                    if a_modifier != 0:
+                        if a_modifier <0:
+                            logger(
+                                "Attack Debuff",
+                                f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
                                 
-                            defender.am += a_modifier
-                        if d_modifier != 0:
-                            if d_modifier < 0:
-                                logger(
-                                    "Defense Debuff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
-                                )
-                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
+                            )
+                            render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
+                        else:
+                            logger(
+                                "Attack Buff",
+                                f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                            )
+                            render("|-boost|p"+defender.team+"a: "+defender.nickname+"|atk|"+str(a_modifier))
+                            
+                        defender.am += a_modifier
+                    if d_modifier != 0:
+                        if d_modifier < 0:
+                            logger(
+                                "Defense Debuff",
+                                f"{attacker.team} {attacker.battlecard.name.name} debuffed {defender.battlecard.name.name}"
+                            )
+                            render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
-                            else:
-                                logger(
-                                    "Defense Buff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
-                                )
-                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
+                        else:
+                            logger(
+                                "Defense Buff",
+                                f"{attacker.team} {attacker.battlecard.name.name} buffed {defender.battlecard.name.name}"
+                            )
+                            render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
-                            defender.dm += d_modifier
-                    elif buff_target == "self":
-                        if a_modifier != 0:
-                            if a_modifier > 0:
-                                logger(
-                                    "Attack Buff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} buffed its own attack"
-                                )
-                                render("|-boost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
+                        defender.dm += d_modifier
+                elif buff_target == "self":
+                    if a_modifier != 0:
+                        if a_modifier > 0:
+                            logger(
+                                "Attack Buff",
+                                f"{attacker.team} {attacker.battlecard.name.name} buffed its own attack"
+                            )
+                            render("|-boost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
 
-                            else:
-                                logger(
-                                    "Attack Debuff",
-                                    f"{attacker.team} {attacker.battlecard.name.name} debuffed its own attack"
-                                )
-                                render("|-unboost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
+                        else:
+                            logger(
+                                "Attack Debuff",
+                                f"{attacker.team} {attacker.battlecard.name.name} debuffed its own attack"
+                            )
+                            render("|-unboost|p"+attacker.team+"a: "+attacker.nickname+"|atk|"+str(a_modifier))
 
-                            attacker.am += a_modifier
-                        if d_modifier != 0:
-                            if d_modifier >0:
-                                logger(
-                                    "Defense Buff",
-                                    f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
-                                )
-                                render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
+                        attacker.am += a_modifier
+                    if d_modifier != 0:
+                        if d_modifier >0:
+                            logger(
+                                "Defense Buff",
+                                f"{defender.team} {defender.battlecard.name.name} buffed its own defense"
+                            )
+                            render("|-boost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
-                            else:
-                                logger(
-                                    "Defense Debuff",
-                                    f"{defender.team} {defender.battlecard.name.name} debuffed its own defense"
-                                )
-                                render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
+                        else:
+                            logger(
+                                "Defense Debuff",
+                                f"{defender.team} {defender.battlecard.name.name} debuffed its own defense"
+                            )
+                            render("|-unboost|p"+defender.team+"a: "+defender.nickname+"|def|"+str(d_modifier))
 
-                            attacker.dm += d_modifier
-            
-            # print(defender.name.name+' took '+str(damage)+' damage')
-            # if effectiveness > 1.6:
-            #     print('it was super effective')
-            # elif effectiveness > 1.3:
-            #     print('it was kind of effective')
-            # elif effectiveness < 0.4:
-            #     print('it was barely effective')
-            # elif effectiveness < 0.6:
-            #     print('it was not very effective')
+                        attacker.dm += d_modifier
+        
+        # print(defender.name.name+' took '+str(damage)+' damage')
+        # if effectiveness > 1.6:
+        #     print('it was super effective')
+        # elif effectiveness > 1.3:
+        #     print('it was kind of effective')
+        # elif effectiveness < 0.4:
+        #     print('it was barely effective')
+        # elif effectiveness < 0.6:
+        #     print('it was not very effective')
 
-            # TRY TO TURN THIS INTO A DIFFERENT FUNCTION? definitely, given that it's used in lethal function
-            how_was_it = ""
-            if effectiveness > 1.6:
-                how_was_it = 'it was super effective'
-            elif effectiveness > 1.3:
-                how_was_it = 'it was kind of effective'
-            elif effectiveness < 0.4:
-                how_was_it = 'it was barely effective'
-            elif effectiveness < 0.6:
-                how_was_it = 'it was not very effective'
-            logger(
-                "Charged Move Damage",
-                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
-            )
-            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
-            render("|upkeep")
+        # TRY TO TURN THIS INTO A DIFFERENT FUNCTION? definitely, given that it's used in lethal function
+        how_was_it = ""
+        if effectiveness > 1.6:
+            how_was_it = 'it was super effective'
+        elif effectiveness > 1.3:
+            how_was_it = 'it was kind of effective'
+        elif effectiveness < 0.4:
+            how_was_it = 'it was barely effective'
+        elif effectiveness < 0.6:
+            how_was_it = 'it was not very effective'
+        logger(
+            "Charged Move Damage",
+            f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+        )
+        render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
+        render("|upkeep")
 
-            if effectiveness > 1.3:
-                render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
-            elif effectiveness < 0.6:
-                render("|-resisted|p" + defender.team + "a: " + defender.nickname)
-            logger(
-                "Health",
-                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
-            )
-            render(
-                f"|-damage|p{defender.team}a: {defender.nickname}|{int(defender.hp)}"
-                f"\/{int(defender.battlecard.max_health)}"
-            )
+        if effectiveness > 1.3:
+            render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
+        elif effectiveness < 0.6:
+            render("|-resisted|p" + defender.team + "a: " + defender.nickname)
+        logger(
+            "Health",
+            f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} hp left"
+        )
+        render(
+            f"|-damage|p{defender.team}a: {defender.nickname}|{int(defender.hp)}"
+            f"\/{int(defender.battlecard.max_health)}"
+        )
 
 
-            if defender.hp <= 0: # check if dead
-                fatal = True
+        if defender.hp <= 0: # check if dead
+            fatal = True
 
-        elif move == attacker.battlecard.move_f.name: # if the optimal move was a fast move
-            # COMBAT ITEM HOOK: on_fast_move_action
-            # COMBAT ITEM HOOK: on_enemy_fast_move_action
+    elif move == attacker.battlecard.move_f.name: # if the optimal move was a fast move
+        # COMBAT ITEM HOOK: on_fast_move_action
+        # COMBAT ITEM HOOK: on_enemy_fast_move_action
+        if execute_hooks:
             execute_hook(
                 CombatHook.ON_FAST_MOVE,
                 attacker,
@@ -889,57 +895,57 @@ def launch_attack(
                 attacker=attacker,
                 defender=defender,
             )
-            # print(attacker.name.name+' used '+attacker.move_f.name)
-            logger(
-                "Fast Attack",
-                f"{attacker.team} {attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} "
-                f"on {defender.team} {defender.battlecard.name.name}"
-            )
-            render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
+        # print(attacker.name.name+' used '+attacker.move_f.name)
+        logger(
+            "Fast Attack",
+            f"{attacker.team} {attacker.battlecard.name.name} used {attacker.battlecard.move_f.name} "
+            f"on {defender.team} {defender.battlecard.name.name}"
+        )
+        render("|move|p" + str(attacker.team) + "a: " + attacker.nickname + "|" + render.move_name_cleaner(move) + "|p" + str(defender.team) + "a: " +defender.nickname)
 
-            #sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
-            attacker.battlecard.energy += attacker.battlecard._move_f_energy
-            logger(
-                "Attack Charge Up",
-                f"{attacker.team} {attacker.battlecard.name.name} now "
-                f"has {attacker.battlecard.energy:.0f} energy"
-            )
-            #sequence.append(Event(-1, '', attacker.battlecard.name.name+" needs "+str(moves[attacker.battlecard.move_ch.name]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
-            damage, effectiveness = calculate_damage(attacker, move, defender)
-            defender.hp -= damage
-            attacker.dmg_dealt += damage
-            defender.dmg_taken += damage
-            attacker.timer -= attacker.battlecard.atk_spd_timer_cts
+        #sequence.append(Event(-1, "attack", attacker.battlecard.name.name+" used "+attacker.battlecard.move_f.name+" on "+defender.battlecard.name.name))
+        attacker.battlecard.energy += attacker.battlecard._move_f_energy
+        logger(
+            "Attack Charge Up",
+            f"{attacker.team} {attacker.battlecard.name.name} now "
+            f"has {attacker.battlecard.energy:.0f} energy"
+        )
+        #sequence.append(Event(-1, '', attacker.battlecard.name.name+" needs "+str(moves[attacker.battlecard.move_ch.name]["energy"] - attacker.battlecard.energy)+" more energy to use a charged move"))
+        damage, effectiveness = calculate_damage(attacker, move, defender)
+        defender.hp -= damage
+        attacker.dmg_dealt += damage
+        defender.dmg_taken += damage
+        attacker.timer -= attacker.battlecard.atk_spd_timer_cts
 
-            # print(defender.name.name+' took '+str(damage)+' damage')
-            how_was_it = ""
-            if effectiveness > 1.6:
-                how_was_it = 'it was super effective'
-            elif effectiveness > 1.3:
-                how_was_it = 'it was kind of effective'
-            elif effectiveness < 0.4:
-                how_was_it = 'it was barely effective'
-            elif effectiveness < 0.6:
-                how_was_it = 'it was not very effective'
-            if effectiveness > 1.3:
-                render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
-            elif effectiveness < 0.6:
-                render("|-resisted|p" + defender.team + "a: " + defender.nickname)
+        # print(defender.name.name+' took '+str(damage)+' damage')
+        how_was_it = ""
+        if effectiveness > 1.6:
+            how_was_it = 'it was super effective'
+        elif effectiveness > 1.3:
+            how_was_it = 'it was kind of effective'
+        elif effectiveness < 0.4:
+            how_was_it = 'it was barely effective'
+        elif effectiveness < 0.6:
+            how_was_it = 'it was not very effective'
+        if effectiveness > 1.3:
+            render("|-supereffective|p" + defender.team + "a: " + defender.nickname)
+        elif effectiveness < 0.6:
+            render("|-resisted|p" + defender.team + "a: " + defender.nickname)
 
-            logger(
-                "Fast Attack Damage",
-                f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
-            )
-            render("|-damage|p"+defender.team+"a: "+defender.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_health)))
+        logger(
+            "Fast Attack Damage",
+            f"{defender.team} {defender.battlecard.name.name} took {damage:.0f} damage: {how_was_it}"
+        )
+        render("|-damage|p"+defender.team+"a: "+defender.nickname + "|" + str(int(defender.hp)) + r"\/" + str(int(defender.battlecard.max_health)))
 
-            logger(
-                "Health",
-                f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} HP left"
-            )
-            if defender.hp <= 0: # check if dead
-                fatal = True
-        else:
-            pass
+        logger(
+            "Health",
+            f"{defender.team} {defender.battlecard.name.name} has {defender.hp:.0f} HP left"
+        )
+        if defender.hp <= 0: # check if dead
+            fatal = True
+    else:
+        pass
 
     # flavor text
     '''
