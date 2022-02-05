@@ -149,11 +149,33 @@ class TestCombatItems(unittest.TestCase):
         for component in self.env.components:
             component.turn_execute()
 
+    def test_ironbarb(self):
+        magikarp = self.pm.create_and_give_pokemon_to_player(self.p1, 'magikarp')
+        ib = self.pm.create_and_give_item_to_player(self.p1, 'IronBarb')
+        ib.level = 3  # make it super obvious
+        self.pm.give_item_to_pokemon(magikarp, ib)
+
+        # cool em off
+        for component in self.env.components:
+            component.turn_setup()
+        for component in self.env.components:
+            component.turn_execute()
+
+
 class TestMetronome(BaseEnvironmentTest):
 
     def test_metronome_attack_speed(self):
         self.create_pokemon_with_item(self.p1, 'dratini', 'Metronome', level=3)
         self.create_pokemon_with_item(self.p2, 'sandshrew_alolan')
+        res = self.battle()
+        import IPython; IPython.embed()
+
+
+class TestIronBarb(BaseEnvironmentTest):
+
+    def test_iron_barb_damage(self):
+        self.create_pokemon_with_item(self.p1, 'dratini', 'IronBarb', level=3)
+        self.create_pokemon_with_item(self.p2, 'spearow')
         res = self.battle()
         import IPython; IPython.embed()
 
