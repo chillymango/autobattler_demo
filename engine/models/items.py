@@ -745,8 +745,7 @@ class Leftovers(CombinedItem):
                 "LeftOvers on_tick",
                 f"team{team} {holder.battlecard.name.name} HP {before:.1f} -> {after:.1f}"
             )
-        if render:
-            render("|-heal|p"+str(context.team)+"a: "+holder.nickname+"|" + str(after) + r"\/" + str(holder.battlecard.max_health)+"|[from] item: Leftovers")
+        render("|-heal|p"+str(team[-1])+"a: "+holder.nickname+"|" + str(round(after)) + r"\/" + str(round(holder.battlecard.max_health))+"|[from] item: Leftovers")
 
 
 class Metronome(CombinedItem):

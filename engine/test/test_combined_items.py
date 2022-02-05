@@ -137,6 +137,17 @@ class TestCombatItems(unittest.TestCase):
         for component in self.env.components:
             component.turn_execute()
 
+    def test_leftovers(self):
+        magikarp = self.pm.create_and_give_pokemon_to_player(self.p1, 'magikarp')
+        leftovers = self.pm.create_and_give_item_to_player(self.p1, 'Leftovers')
+        leftovers.level = 3  # make it super obvious
+        self.pm.give_item_to_pokemon(magikarp, leftovers)
+
+        # cool em off
+        for component in self.env.components:
+            component.turn_setup()
+        for component in self.env.components:
+            component.turn_execute()
 
 class TestMetronome(BaseEnvironmentTest):
 

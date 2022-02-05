@@ -194,10 +194,12 @@ class HookExecutor:
         team1: T.List[Battler],
         team2: T.List[Battler],
         logger: EventLogger = None,
+        render: RenderLogger = None,
     ):
         self.team1 = team1
         self.team2 = team2
         self.logger = logger
+        self.render = render
 
         self.team1_items = self.get_all_team_items(self.team1)
         self.team2_items = self.get_all_team_items(self.team2)
@@ -259,6 +261,7 @@ class HookExecutor:
             method = item.get_method(hook)
             method(
                 logger=self.logger,
+                render = self.render,
                 current_team1=current_team1,
                 current_team2=current_team2,
                 team1=self.team1,
@@ -364,7 +367,7 @@ def battle(
 
     # TODO(albert): should this be cards or live?
     global execute_hook
-    execute_hook = HookExecutor(bench1, bench2, logger=logger)
+    execute_hook = HookExecutor(bench1, bench2, logger=logger, render = render)
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
     bench1_permanent = bench1
