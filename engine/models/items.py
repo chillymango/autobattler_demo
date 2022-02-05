@@ -1894,7 +1894,7 @@ class RocketHeist(ComplexHeroPower):
         self.success = False
         self.used = False
     
-    def use(self, player: self, player: "Player" = None):
+    def use(self, player: "Player" = None):
         if player.balls > self.cost :
             self.success = True
     
