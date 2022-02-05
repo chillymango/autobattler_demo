@@ -53,7 +53,7 @@ class TestCombatItems(unittest.TestCase):
                 pass
 
     def test_assault_vest(self):
-        pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'pikachu')
+        pika = self.pm.create_and_give_pokemon_to_player(self.p1, 'diglett')
         assault_vest = self.pm.create_and_give_item_to_player(self.p1, 'AssaultVest')
         assault_vest.level = 3
         self.pm.give_item_to_pokemon(pika, assault_vest)
@@ -73,7 +73,7 @@ class TestCombatItems(unittest.TestCase):
             component.turn_execute()
 
     def test_focus_band(self):
-        eevee = self.pm.create_and_give_pokemon_to_player(self.p1, 'eevee')
+        eevee = self.pm.create_and_give_pokemon_to_player(self.p1, 'magikarp')
         focus_band = self.pm.create_and_give_item_to_player(self.p1, 'FocusBand')
         focus_band.level = 3  # need to manually set if not combining
         self.pm.give_item_to_pokemon(eevee, focus_band)

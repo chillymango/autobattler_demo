@@ -638,6 +638,7 @@ class LifeOrb(CombinedItem):
         more damage
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        battler = self.get_item_holder_from_context(context)
         team = self.get_team_of_holder(context)
         before = holder.attack
         holder.modifiers[Stats.ATK.value] += self._DAMAGE_BUFF * self.level * before
@@ -648,7 +649,7 @@ class LifeOrb(CombinedItem):
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
         if render is not None:
-            render("|-boost|p" + str(team)+ "b: " +holder.nickname+ "|atk|"+ round(after/holder.atk_, 2)   +"|[from] item: Life Orb")
+            render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|atk|"+ str(round(after/holder.atk_, 2))   +"|[from] item: Life Orb")
 
     def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
@@ -666,7 +667,7 @@ class LifeOrb(CombinedItem):
                 f"{holder.battlecard.name.name} HP: {before:.1f} -> {after:.1f}"
             )
         if render is not None:
-            render("|-damage|p" + str(team)+ "b: " +holder.nickname+ "|"+after+r"\/"+str(holder.battlecard.max_health)+"|[from] item: Life Orb | [of] p" + str(team)+ "b: " +holder.nickname)
+            render("|-damage|p" + str(team)+ "b: " +holder.nickname+ "|"+str(int(after))+r"\/"+str(int(holder.battlecard.max_health))+"|[from] item: Life Orb | [of] p" + str(team)+ "b: " +holder.nickname)
 
 
 class LightClay(CombinedItem):
@@ -767,6 +768,7 @@ class Metronome(CombinedItem):
         atk spd per tick 
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        battler = self.get_item_holder_from_context(context)
         attacker: BattleCard = context['attacker'].battlecard
         if holder != attacker:
             return
@@ -781,7 +783,7 @@ class Metronome(CombinedItem):
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
         if render:
-            render("|-boost|p" + str(team)+ "b: " +holder.nickname+ "|spd|"+ round(after, 2)   +"|[from] item: Metronome")
+            render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ str(round(after, 2))   +"|[from] item: Metronome")
 
 
 class FrozenHeart(CombinedItem):
@@ -799,6 +801,8 @@ class FrozenHeart(CombinedItem):
         Reduce SPD of all opponents
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        holder_poke = self.get_item_holder_from_context(context)
+
         enemy_team = self.get_enemy_team_cards(context)
         for battler in enemy_team:
             card = battler.battlecard
@@ -813,7 +817,7 @@ class FrozenHeart(CombinedItem):
                     f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-unboost|p" + str(team)+"a: "+ card.nickname + "|spd|" + + round(after, 2) +"[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder.nickname)
+                render("|-unboost|p" + str(team)+"a: "+ battler.nickname + "|spd|" +  str(round(after, 2)/100) +"|[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder_poke.nickname)
 
 
 
@@ -916,8 +920,8 @@ class FocusBand(CombinedItem):
                 f"team{team} {holder.name.name} revived with {battler.hp} HP and {holder.energy} ENG"
             )
         if render:
-            render("|-enditem|p" + team + "a: " + battler.nickname + "|Focus Sash")
-            render("|-damage|p" + team + "a:" + battler.nickname + "|" + str(int(battler.hp)) + r"\/" + str(int(holder.max_health)) )
+            render("|-enditem|p" + str(team) + "a: " + battler.nickname + "|Focus Sash")
+            render("|-damage|p" + str(team) + "a:" + battler.nickname + "|" + str(int(battler.hp)) + r"\/" + str(int(holder.max_health)) )
 
 
 class ShellBell(CombinedItem):
@@ -1028,11 +1032,11 @@ class ExpertBelt(CombinedItem):
         """
         self._on_damage(logger=logger, render = render,**context)
 
-    def on_charged_move_action(self, logger: "EventLogger", **context: T.Any):
+    def on_charged_move_action(self, logger: "EventLogger", render: "RenderLogger" = None, **context: T.Any):
         """
         check damage type, then boost power
         """
-        self._on_damage(logger=logger,  render = render,**context)
+        self._on_damage(logger=logger,  render = render ,**context)
 
     def post_combat_action(self, **context: T.Any):
         """
