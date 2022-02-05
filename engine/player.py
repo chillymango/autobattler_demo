@@ -132,6 +132,8 @@ class PlayerManager(Component):
 
         TODO: implement phase checks to ensure that these ops don't happen during combat
         """
+        if item is None:
+            return
         print(f'Trying to give {item} to {pokemon}')
         player = PlayerRoster.all(entity2=pokemon)[0].entity1
 
@@ -142,7 +144,7 @@ class PlayerManager(Component):
         if isinstance(item, InstantPokemonItem):
             print(f'Using {item} as instant')
             try:
-                item.holder = pokemon
+                item.set_pokemon_target(pokemon)
                 item.immediate_action()
             except Exception:
                 item.holder = None

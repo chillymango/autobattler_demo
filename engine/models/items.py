@@ -1349,6 +1349,7 @@ class CommonStone(Stone):
                 shop_manager: "ShopManager" = self._env.shop_manager
                 shop_manager.check_shiny(player, self.holder.name.name)
             return True
+        return False
 
     def eve_volve(self, evo, pokemon, evo_name, player):
         print("evolving eevee with stone")
