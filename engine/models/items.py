@@ -1108,7 +1108,7 @@ class QuickPowder(CombinedItem):
                     f"{card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ round(after, 2)   +"|[from] item: Quick Powder")
+                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ str(round(after, 2) /100 ) +"|[from] item: Quick Powder")
 
 
 
