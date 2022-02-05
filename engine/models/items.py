@@ -963,14 +963,13 @@ class ShellBell(CombinedItem):
                 f"ShellBell {name}",
                 f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
             )
-        if render:
-            render("|-heal|p" + team + "a: " + battler.nickname + "|" + str(int(after)) + r"\/" + holder.max_health + "|[from] item: Shell Bell")
+        render("|-heal|p" + str(team) + "a: " + battler.nickname + "|" + str(int(after)) + r"\/" + str(int(holder.max_health)) + "|[from] item: Shell Bell")
 
     def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
-        self._on_damage_move_action("on_fast_move", logger=logger, **context)
+        self._on_damage_move_action("on_fast_move", logger=logger, render = render,**context)
 
     def on_charged_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
-        self._on_damage_move_action("on_charged_move", logger=logger, **context)
+        self._on_damage_move_action("on_charged_move", logger=logger, render = render,**context)
 
 
 class EjectButton(CombinedItem):
@@ -1027,13 +1026,13 @@ class ExpertBelt(CombinedItem):
         """
         check damage type, then boost power
         """
-        self._on_damage(logger=logger, **context)
+        self._on_damage(logger=logger, render = render,**context)
 
     def on_charged_move_action(self, logger: "EventLogger", **context: T.Any):
         """
         check damage type, then boost power
         """
-        self._on_damage(logger=logger, **context)
+        self._on_damage(logger=logger,  render = render,**context)
 
     def post_combat_action(self, **context: T.Any):
         """

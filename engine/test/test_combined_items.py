@@ -171,10 +171,10 @@ class TestMetronome(BaseEnvironmentTest):
         import IPython; IPython.embed()
 
 
-class TestIronBarb(BaseEnvironmentTest):
+class TestShellBell(BaseEnvironmentTest):
 
-    def test_iron_barb_damage(self):
-        self.create_pokemon_with_item(self.p1, 'dratini', 'IronBarb', level=3)
+    def test_item(self):
+        self.create_pokemon_with_item(self.p1, 'dratini', 'ShellBell', level=3)
         self.create_pokemon_with_item(self.p2, 'spearow')
         res = self.battle()
         import IPython; IPython.embed()
