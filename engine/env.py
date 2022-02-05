@@ -235,12 +235,15 @@ class Environment:
             # implement a max timeout on render acknowledgement
             # battles cannot take longer than 60 seconds
             if self.state.battle_ack:
+                print('BATTLE ACK RECEIVED')
                 self.state.reset_battle_ack()
                 self.state.phase = GamePhase.TURN_CLEANUP
             elif self.state.t_phase_elapsed == 0:
                 self.state.t_phase_duration = 60.0
                 self.state.t_phase_elapsed += 0.05
             elif self.state.t_phase_duration - self.state.t_phase_elapsed < 0:
+                print('BATTLE ACK TIMEOUT')
+                self.state.reset_battle_ack()
                 self.state.t_phase_elapsed = 0
                 self.state.phase = GamePhase.TURN_CLEANUP
             else:

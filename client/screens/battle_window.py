@@ -90,6 +90,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.pubsub_client = PubSubClient()
         self.state: ClientState = None
 
+        self.turns_rendered: T.Dict[int, bool] = dict()
+
         if self.DEBUG:
             self.debug_window = DebugWindow(self, self.env)
 
@@ -615,7 +617,8 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
         self.env.state = self.state = ClientState.parse_raw(data)
 
         if self.state.phase == GamePhase.TURN_RENDER:
-            if self.render_window is None:
+            if not self.turns_rendered.get(self.state.turn_number, False):
+                self.turns_rendered[self.state.turn_number] = True
                 # pull the render file first
                 render_model: BattleRenderLog = await self.websocket.render_battle(self.context)
                 render_html = render_model.render
