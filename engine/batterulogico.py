@@ -443,7 +443,7 @@ def battle(
     team_2_active = False
 
     if render:
-        #render("=weather|"+render_w)
+        render("=weather|"+render_w)
         pass
     if logger:
         logger("Weather", "The weather is " + weather)

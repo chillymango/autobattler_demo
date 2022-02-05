@@ -784,7 +784,7 @@ class Metronome(CombinedItem):
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
         if render:
-            render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ str(round(after, 2))   +"|[from] item: Metronome")
+            render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spe|"+ str(round(after, 2))   +"|[from] item: Metronome")
 
 
 class FrozenHeart(CombinedItem):
@@ -818,7 +818,7 @@ class FrozenHeart(CombinedItem):
                     f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-unboost|p" + str(team)+"a: "+ battler.nickname + "|spd|" +  str(round(after, 2)/100) +"|[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder_poke.nickname)
+                render("|-unboost|p" + str(team)+"a: "+ battler.nickname + "|spe|" +  str(round(after, 2)/100) +"|[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder_poke.nickname)
 
 
 
@@ -1118,7 +1118,7 @@ class QuickPowder(CombinedItem):
                     f"{card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ str(round(after, 2) /100 ) +"|[from] item: Quick Powder")
+                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spe|"+ str(round(after, 2) /100 ) +"|[from] item: Quick Powder")
 
 
 
