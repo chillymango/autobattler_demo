@@ -638,6 +638,7 @@ class LifeOrb(CombinedItem):
         more damage
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        team = self.get_team_of_holder(context)
         before = holder.attack
         holder.modifiers[Stats.ATK.value] += self._DAMAGE_BUFF * self.level * before
         after = holder.attack
@@ -647,13 +648,15 @@ class LifeOrb(CombinedItem):
                 f"{holder.name.name} ATK {before:.1f} -> {after:.1f}"
             )
         if render is not None:
-            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|atk|"+ round(after/holder.atk_, 2)   +"|[from] item: Life Orb")
+            render("|-boost|p" + str(team)+ "b: " +holder.nickname+ "|atk|"+ round(after/holder.atk_, 2)   +"|[from] item: Life Orb")
 
     def on_tick_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         lose health per tick
         """
         holder = self.get_item_holder_from_context(context)
+        team = self.get_team_of_holder(context)
+
         before = holder.hp
         after = holder.hp - per_second(self._HEALTH_LOSS) * self.level
         holder.hp = after
@@ -663,7 +666,7 @@ class LifeOrb(CombinedItem):
                 f"{holder.battlecard.name.name} HP: {before:.1f} -> {after:.1f}"
             )
         if render is not None:
-            render("|-damage|p" + str(context.team)+ "b: " +holder.nickname+ "|"+after+r"\/"+str(holder.battlecard.max_health)+"|[from] item: Life Orb | [of] p" + str(context.team)+ "b: " +holder.nickname)
+            render("|-damage|p" + str(team)+ "b: " +holder.nickname+ "|"+after+r"\/"+str(holder.battlecard.max_health)+"|[from] item: Life Orb | [of] p" + str(team)+ "b: " +holder.nickname)
 
 
 class LightClay(CombinedItem):
@@ -679,6 +682,8 @@ class LightClay(CombinedItem):
         give shields to teammates 
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        team = self.get_team_of_holder(context)
+
         team_cards = self.get_team_cards_of_holder(context)
         shields_to_give = self.level
         while shields_to_give > 0:
@@ -691,7 +696,7 @@ class LightClay(CombinedItem):
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
                 if render:
-                    "|-start|p" + str(context.team)+"a: "+ card.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(context.team) + "a: " + holder.nickname
+                    "|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(team) + "a: " + holder.nickname
 
 
 
@@ -776,7 +781,7 @@ class Metronome(CombinedItem):
                 f"team{team} {holder.name.name} SPD {before:.1f} -> {after:.1f}"
             )
         if render:
-            render("|-boost|p" + str(context.team)+ "b: " +holder.nickname+ "|spd|"+ round(after/100, 2)   +"|[from] item: Metronome")
+            render("|-boost|p" + str(team)+ "b: " +holder.nickname+ "|spd|"+ round(after, 2)   +"|[from] item: Metronome")
 
 
 class FrozenHeart(CombinedItem):
@@ -797,6 +802,8 @@ class FrozenHeart(CombinedItem):
         enemy_team = self.get_enemy_team_cards(context)
         for battler in enemy_team:
             card = battler.battlecard
+            team = self.get_team_of_holder(context)
+
             before = card.speed
             card.modifiers[Stats.SPD.value] += self.level * self._SPD_REDUCTION
             after = card.speed
@@ -806,7 +813,7 @@ class FrozenHeart(CombinedItem):
                     f"{holder.name.name} reduced {card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-unboost|p" + str(context.team)+"a: "+ card.nickname + "|spd|" + + round(after/100, 2) +"[from] item: Frozen Heart| [of] p" + str(context.team) + "a: " + holder.nickname)
+                render("|-unboost|p" + str(team)+"a: "+ card.nickname + "|spd|" + + round(after, 2) +"[from] item: Frozen Heart| [of] p" + str(team) + "a: " + holder.nickname)
 
 
 
@@ -867,7 +874,7 @@ class IronBarb(CombinedItem):
             )
         if render:
             render(
-            "|-damage|p" + enemy.team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + holder.team +"a: " + holder.nickname
+            "|-damage|p" + enemy_team + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
                 
             )
 
@@ -910,8 +917,8 @@ class FocusBand(CombinedItem):
                 f"team{team} {holder.name.name} revived with {battler.hp} HP and {holder.energy} ENG"
             )
         if render:
-            render("|-enditem|p" + context.team + "a: " + battler.nickname + "|Focus Sash")
-            render("|-damage|p" + context.team + "a:" + battler.nickname + "|" + str(int(battler.hp)) + r"\/" + str(int(holder.max_health)) )
+            render("|-enditem|p" + team + "a: " + battler.nickname + "|Focus Sash")
+            render("|-damage|p" + team + "a:" + battler.nickname + "|" + str(int(battler.hp)) + r"\/" + str(int(holder.max_health)) )
 
 
 class ShellBell(CombinedItem):
@@ -958,7 +965,7 @@ class ShellBell(CombinedItem):
                 f"team{team} {holder.name.name} HP {before:.1f} -> {after:.1f}"
             )
         if render:
-            render("|-heal|p" + context.team + "a: " + battler.nickname + "|" + str(int(after)) + r"\/" + holder.max_health + "|[from] item: Shell Bell")
+            render("|-heal|p" + team + "a: " + battler.nickname + "|" + str(int(after)) + r"\/" + holder.max_health + "|[from] item: Shell Bell")
 
     def on_fast_move_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         self._on_damage_move_action("on_fast_move", logger=logger, **context)
@@ -1084,6 +1091,8 @@ class QuickPowder(CombinedItem):
         boost speed of team
         """
         team_battlers = self.get_team_cards_of_holder(context)
+        team = self.get_team_of_holder(context)
+
         for battler in team_battlers:
             card = battler.battlecard
             before = card.speed
@@ -1095,7 +1104,7 @@ class QuickPowder(CombinedItem):
                     f"{card.name.name} SPD {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|spd|"+ round(after/100, 2)   +"|[from] item: Quick Powder")
+                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|spd|"+ round(after, 2)   +"|[from] item: Quick Powder")
 
 
 
@@ -1159,7 +1168,9 @@ class BrockSolid(CombatItem):
         """
         holder = self.get_item_holder_from_context(context).battlecard
         team_cards = self.get_team_cards_of_holder(context)
-        shields_to_give = 1
+        shields_to_give = 2
+        team = self.get_team_of_holder(context)
+
         while shields_to_give > 0:
             for card in team_cards:
                 card.battlecard.bonus_shield += 1
@@ -1170,7 +1181,7 @@ class BrockSolid(CombatItem):
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
                 if render:
-                    "|-start|p" + str(context.team)+"a: "+ card.nickname + "|Shielded|[from] item: Brock Solid| [of] p" + str(context.team) + "a: " + holder.nickname
+                    "|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Brock Solid| [of] p" + str(team) + "a: " + holder.nickname
 
     def post_battle_action(self, **context: T.Any):
         """
@@ -1562,6 +1573,8 @@ class BlaineButton(ChargedHeroPower):
         for battler in team_battlers:
             card = battler.battlecard
             before = card.attack
+            team = self.get_team_of_holder(context)
+
             card.modifiers[Stats.ATK.value] +=  self.counter*0.2
             after = card.attack
             if logger is not None:
@@ -1570,7 +1583,7 @@ class BlaineButton(ChargedHeroPower):
                     f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
 
         for battler in team_battlers:
             card = battler.battlecard
@@ -1583,7 +1596,7 @@ class BlaineButton(ChargedHeroPower):
                     f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
                 )
             if render:
-                render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
+                render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 class BlueSmell(PassiveHeroPower):
 
@@ -1779,6 +1792,8 @@ class LanceFetish(ComplexHeroPower):
             render("|-message|Lance's Hero Power Activates!") 
 
         for battler in team_battlers:
+            team = self.get_team_of_holder(context)
+
             card = battler.battlecard
             if ((card.poke_type1 == PokemonType.dragon) | (card.poke_type2 == PokemonType.dragon) ) :
                 before = card.attack
@@ -1790,7 +1805,7 @@ class LanceFetish(ComplexHeroPower):
                         f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
                     )
                 if render:
-                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+                    render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
 
         for battler in team_battlers:
             card = battler.battlecard
@@ -1804,7 +1819,7 @@ class LanceFetish(ComplexHeroPower):
                         f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
                     )
                 if render:
-                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
+                    render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 
 class WillSac(PlayerHeroPower):
@@ -1867,6 +1882,8 @@ class SurgeGorilla(PassiveHeroPower):
             render("|-message|Lt. Surge's Hero Power Activates!") 
 
         for battler in team_battlers:
+            team = self.get_team_of_holder(context)
+
             card = battler.battlecard
             if ((card.poke_type1 == best_type) | (card.poke_type2 == best_type) ) :
                 before = card.attack
@@ -1878,7 +1895,7 @@ class SurgeGorilla(PassiveHeroPower):
                         f"{card.name.name} ATK {before:.1f} -> {after:.1f}"
                     )
                 if render:
-                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
+                    render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|atk|"+ round(after/card.atk_, 2) ) 
 
         for battler in team_battlers:
             card = battler.battlecard
@@ -1892,7 +1909,7 @@ class SurgeGorilla(PassiveHeroPower):
                         f"{card.name.name} DEF {before:.1f} -> {after:.1f}"
                     )
                 if render:
-                    render("|-boost|p" + str(context.team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
+                    render("|-boost|p" + str(team)+ "b: " +battler.nickname+ "|def|"+ round(after/card.def_, 2) ) 
 
 
 class RedCheater(PassiveHeroPower):
