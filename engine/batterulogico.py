@@ -184,7 +184,7 @@ class RenderLogger:
 
     @staticmethod
     def move_name_cleaner(name: str):
-        return name.replace('_', '').replace(' ', '').title()
+        return name.replace(' ', '').replace('_', ' ').title()
 
 
 class HookExecutor:
