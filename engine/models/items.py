@@ -852,6 +852,7 @@ class IronBarb(CombinedItem):
         """
         holder = self.get_item_holder_from_context(context)
         attacker = context['attacker']
+        #import IPython; IPython.embed()
         if holder == attacker:
             return
         enemy = self.get_active_enemy_from_context(context)
