@@ -698,7 +698,7 @@ class LightClay(CombinedItem):
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
                 if render:
-                    "|-start|p" + str(team)+"a: "+ battler.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(team) + "a: " + holder.nickname
+                    render("|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Light Clay| [of] p" + str(team) + "a: " + battler.nickname)
 
 
 
@@ -835,7 +835,11 @@ class IntimidatingIdol(CombinedItem):
         """
         debuff enemy attack 
         """
+        team = self.get_team_of_holder(context)
+        holder_poke = self.get_item_holder_from_context(context)
+
         enemy = self.get_active_enemy_from_context(context).battlecard
+        enemy_poke = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.attack
         enemy.modifiers[Stats.ATK.value] -= self.level * self.ATK_DEBUFF
@@ -845,6 +849,9 @@ class IntimidatingIdol(CombinedItem):
                 "IntimidatingIdol pre_combat",
                 f"team{enemy_team} ATK {before:.0f} -> {after:.0f}"
             )
+        if render:
+                render("|-unboost|p" + str(enemy_team)+"a: "+ enemy_poke.nickname +  "|atk|"+ str(round(after/enemy_poke.battlecard.atk_, 2)) +"|[from] item: Intimidating Idol| [of] p" + str(team) + "a: " + holder_poke.nickname)
+
 
 
 class IronBarb(CombinedItem):
@@ -868,6 +875,8 @@ class IronBarb(CombinedItem):
         enemy = self.get_active_enemy_from_context(context)
         enemy_team = self.get_enemy_team_from_context(context)
         before = enemy.hp
+        team = self.get_team_of_holder(context)
+
         after = enemy.hp - self._DAMAGE * self.level
         enemy.hp = after
         if logger:
@@ -877,7 +886,7 @@ class IronBarb(CombinedItem):
             )
         if render:
             render(
-                "|-damage|p" + str(enemy_team) + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(enemy_team)) +"a: " + holder.nickname
+                "|-damage|p" + str(enemy_team) + "a:" + enemy.nickname + "|" + str(int(after)) + r"\/" + str(int(enemy.battlecard.max_health)) + "|[from] item: Iron Barb|[of] p" + str(3-int(team)) +"a: " + holder.nickname
             )
 
 
