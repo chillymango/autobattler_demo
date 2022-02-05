@@ -1077,7 +1077,7 @@ class AssaultVest(CombinedItem):
                 "AssaultVest on_enemy_charged_move",
                 f"team{enemy_team} {enemy.name.name} ATK {before:.1f} -> {after:.1f}"
             )
-        if render:
+        if render is not None:
             render("|-message|Assault Vest lowers the move's power!")
 
 
