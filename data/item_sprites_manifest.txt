@@ -27,6 +27,7 @@ LightClay    combineditems/light-clay.png
 Metronome    combineditems/metronome.png
 QuickPowder    combineditems/quick-powder.png
 ShellBell    combineditems/shell-bell.png
+FocusBand    combineditems/focus-band.png
 
 BrockSolid     heropower/brock-solid.png
 DragonScale    heropower/dragon-scale.png
