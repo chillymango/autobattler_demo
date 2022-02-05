@@ -78,7 +78,6 @@ async def websocket_endpoint(websocket: WebSocket):
             # NOTE: this should happen synchronously
             response = callback(hydrated)
             asyncio.ensure_future(websocket.send_json(response.json()))
-            #await websocket.send_json(response.json())
         except WebSocketDisconnect:
             print('Breaking WebSocket connection')
             break

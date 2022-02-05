@@ -135,3 +135,7 @@ class TestCombatItems(unittest.TestCase):
             component.turn_setup()
         for component in self.env.components:
             component.turn_execute()
+
+
+if __name__ == "__main__":
+    unittest.main()

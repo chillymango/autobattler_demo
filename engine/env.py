@@ -132,6 +132,9 @@ class Environment:
         if player not in self.state.players:
             raise ValueError("Player {} not in game players".format(player))
         self.state.players.remove(player)
+        for match in self.state.current_matches:
+            if match.has_player(player.id):
+                self.state.current_matches.remove(match)
 
     def initialize(self):
         """

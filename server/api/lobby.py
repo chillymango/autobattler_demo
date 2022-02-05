@@ -220,6 +220,8 @@ async def start_game(request: StartGameRequest):
                 except GameOver:
                     print('Game over man')
                     break
+                except Exception as exc:
+                    print(f'Encountered exception in game loop:\n{repr(exc)}')
             game.cleanup()
             ALL_GAMES.pop(game.id)
 
