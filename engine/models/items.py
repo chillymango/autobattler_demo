@@ -1713,10 +1713,12 @@ class JanineJutsu(PlayerHeroPower):
     current_cost: int = 5
 
     def use(self, player: "Player" = None):
-        if player.balls >= self.current_cost :
-            player.balls -= self.current_cost
-            self.current_cost += 2
-            player.immune = True
+        if player.balls >= self.current_cost:
+            if player.immune != True:
+                player.balls -= self.current_cost
+                self.current_cost += 2
+                player.immune = True
+                self.success = True
 
 
 
