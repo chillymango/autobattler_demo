@@ -50,3 +50,4 @@ MoonStone      stones/moon-stone.png
 HardStone      stones/hard-stone.png
 ThunderStone      stones/thunder-stone.png
 RareCandy      stones/rare-candy.png
+DuskStone       stones/dusk-stone.png
