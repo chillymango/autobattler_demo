@@ -44,6 +44,7 @@ def build_basic_item_schedule(blocklisted_items: T.List[str] = None):
         items.Shard,
         items.CommonStone,
         items.TechnicalMachine,
+        items.RareCandy
     )
     for itype in item_types:
         children = itype.__subclasses__()
