@@ -1813,6 +1813,11 @@ class LanceFetish(ComplexHeroPower):
     
     hp_cost: int = 2
 
+    def turn_setup(self):
+        self.success = False
+        self.used = False
+    
+
     def use(self, player: "Player" = None):
         """
         get a dragon scale item 
