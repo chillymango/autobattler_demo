@@ -366,28 +366,6 @@ def battle(
             if member._tm_move_type in bonus_types:
                 member._move_tm_damage += 10
 
-    if PokemonType.ice in bonus_types:
-        weather = 'Snowy'
-        render_w = 'hail'
-    elif PokemonType.fire in bonus_types:
-        weather = 'Sunny'
-        render_w = 'sunnyday'
-    elif PokemonType.water in bonus_types:
-        weather = 'Rainy'
-        render_w = 'raindance'
-    elif PokemonType.dark in bonus_types:
-        weather = 'Foggy'
-        #render_w = 'fog'
-    elif PokemonType.poison in bonus_types:
-        weather = 'Cloudy'
-        #render_w = 'cloudy'
-    elif PokemonType.normal in bonus_types:
-        weather = 'Partly Cloudy'
-        #render_w = 'pcloudy'
-    else:
-        weather = 'Windy'
-        render_w = 'deltastream'
-
     bench1 = []
     bench2 = []
 
@@ -443,7 +421,28 @@ def battle(
     team_2_active = False
 
     if render:
-        render("=weather|"+render_w)
+        if PokemonType.ice in bonus_types:
+            weather = 'Snowy'
+            render_w = 'hail'
+        elif PokemonType.fire in bonus_types:
+            weather = 'Sunny'
+            render_w = 'sunnyday'
+        elif PokemonType.water in bonus_types:
+            weather = 'Rainy'
+            render_w = 'raindance'
+        elif PokemonType.dark in bonus_types:
+            weather = 'Foggy'
+            render_w = 'fog'
+        elif PokemonType.poison in bonus_types:
+            weather = 'Cloudy'
+            render_w = 'cloudy'
+        elif PokemonType.normal in bonus_types:
+            weather = 'Partly Cloudy'
+            render_w = 'pcloudy'
+        else:
+            weather = 'Windy'
+            render_w = 'deltastream'
+        render("|-weather|" +render_w)
         pass
     if logger:
         logger("Weather", "The weather is " + weather)

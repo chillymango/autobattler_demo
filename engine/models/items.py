@@ -1208,6 +1208,7 @@ class BrockSolid(CombatItem):
         give shields to teammates 
         """
         holder = self.get_item_holder_from_context(context).battlecard
+        poke = self.get_item_holder_from_context(context)
         team_cards = self.get_team_cards_of_holder(context)
         shields_to_give = 2
         team = self.get_team_of_holder(context)
@@ -1222,7 +1223,7 @@ class BrockSolid(CombatItem):
                         f"{holder.name.name} gives shield to {card.battlecard.name.name}"
                     )
                 if render:
-                    "|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Brock Solid| [of] p" + str(team) + "a: " + holder.nickname
+                    render("|-start|p" + str(team)+"a: "+ card.nickname + "|Shielded|[from] item: Brock Solid| [of] p" + str(team) + "a: " + poke.nickname)
 
     def post_battle_action(self, **context: T.Any):
         """
@@ -1709,10 +1710,12 @@ class JanineJutsu(PlayerHeroPower):
     current_cost: int = 5
 
     def use(self, player: "Player" = None):
-        if player.balls >= self.current_cost :
-            player.balls -= self.current_cost
-            self.current_cost += 2
-            player.immune = True
+        if player.balls >= self.current_cost:
+            if player.immune != True:
+                player.balls -= self.current_cost
+                self.current_cost += 2
+                player.immune = True
+                self.success = True
 
 
 
@@ -1806,6 +1809,11 @@ class LanceFetish(ComplexHeroPower):
     
     hp_cost: int = 2
 
+    def turn_setup(self):
+        self.success = False
+        self.used = False
+    
+
     def use(self, player: "Player" = None):
         """
         get a dragon scale item 
@@ -1880,7 +1888,7 @@ class RocketHeist(ComplexHeroPower):
     cost: int = 1
     success: bool = False
     used: bool = False
-    stolen_poke: PokemonId 
+    stolen_poke: PokemonId = None
 
     def turn_setup(self):
         player = self.player
