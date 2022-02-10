@@ -408,8 +408,8 @@ def battle(
     # # bench1 = [team1_live[1], team1_live[2]] # creates the initial bench for the team
     # # bench2 = [team2_live[1], team2_live[2]]
     
-    team1_switches = 5 # max number of switches the team can make
-    team2_switches = 5
+    team1_switches = 0 # max number of switches the team can make
+    team2_switches = 0
     turnnumber = 0
 
     # COMBAT ITEM HOOK: pre_battle_action
