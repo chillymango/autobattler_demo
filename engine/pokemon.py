@@ -253,9 +253,9 @@ class EvolutionManager(Component):
         """
         Look up the evolution XP threshold of a Pokemon by name
         """
-        if pokemon_name not in self.evolution_config:
+        if pokemon_name.name not in self.evolution_config:
             return None
-        return self.evolution_config[pokemon_name].turns_to_evolve * self.XP_PER_TURN
+        return self.evolution_config[pokemon_name.name].turns_to_evolve * self.XP_PER_TURN
 
     def evolve(self, pokemon: Pokemon, choice: str = None):
         """
