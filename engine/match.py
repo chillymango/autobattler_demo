@@ -3,6 +3,7 @@ Matchmaker
 
 The class in this module is responsible for creating pairs for matches.
 """
+import random
 import typing as T
 from collections import defaultdict
 from itertools import combinations
@@ -73,6 +74,10 @@ class CreepRoundManager(Component):
             # create a new instance of the creep round pokemon
             poke = pokemon_factory.create_PVEpokemon_by_name(pokemon.name.name)
             player_manager.give_pokemon_to_player(creep_player, poke)
+
+        # configure team with 3 random Pokemon
+        for idx in random.sample(range(6), 3):
+            creep_player.party_config.add_to_team_by_idx(idx)
         return creep_player
 
     def remove_creeps(self):

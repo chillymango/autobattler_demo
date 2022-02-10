@@ -47,6 +47,8 @@ class GameMaster:
         """
         Get all default stats for a Move
         """
+        if move is None:
+            return None
         for spec in self.gamemaster_dict['moves']:
             if spec['moveId'] == move.name:
                 return spec
