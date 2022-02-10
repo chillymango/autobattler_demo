@@ -191,6 +191,8 @@ class PlayerManager(Component):
         """
         print(f'Releasing {pokemon} from {player}')
         dissociate(PlayerRoster, player, pokemon)
+        if PokemonHeldItem.get_held_item(pokemon):
+            self.remove_item_from_pokemon(pokemon)
         self.state._pokemon_registry.remove(pokemon)
         player.party_config.remove_from_party(pokemon.id)
         player.party_config.remove_from_team(pokemon.id)
