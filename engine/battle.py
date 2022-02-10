@@ -165,6 +165,8 @@ class BattleManager(Component):
             with open(output_file_name, 'r') as file :
                 filedata = file.read()
             filedata = filedata.replace(' (Alolan)', '-Alola')
+            filedata = filedata.replace(' Female', '-F')
+            filedata = filedata.replace(' Male', '-M')
 
             self.state._battle_render_logs[p1] = filedata
             self.state._battle_render_logs[p2] = filedata
