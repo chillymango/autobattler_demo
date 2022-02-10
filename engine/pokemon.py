@@ -150,7 +150,7 @@ class PokemonFactory(Component):
         if battle_card.shiny:
             evolved_card.make_shiny()
         if battle_card.tm_flag:
-            tm_move: Move = self.env.tm_manager.get_tm_move(evolved_form)
+            tm_move: Move = self.env.tm_manager.get_tm_move(evolved_form.name)
             evolved_card.set_tm_move(tm_move)
         evolved_card.modifiers[:] = battle_card.modifiers
         return evolved_card

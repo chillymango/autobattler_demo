@@ -278,7 +278,7 @@ class ShopManager(Component):
                 max_bonus_shield = max(mp.battle_card.bonus_shield, max_bonus_shield)
                 player_manager.release_pokemon(player, mp)
             shiny_poke = poke_factory.create_pokemon_by_name(card)
-            shiny_poke.battle_card.shiny = True
+            shiny_poke.battle_card.make_shiny()
             shiny_poke.xp = max_xp
             shiny_poke.battle_card.tm_flag = max_tm_flag
             shiny_poke.battle_card.bonus_shield = max_bonus_shield

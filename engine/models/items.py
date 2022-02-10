@@ -1276,7 +1276,7 @@ class RedCooking(InstantPokemonItem):
         if self.holder.battle_card.shiny == True:
             return False
 
-        self.holder.battle_card.shiny = True
+        self.holder.battle_card.make_shiny()
         return True
 
 
