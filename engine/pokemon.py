@@ -231,6 +231,8 @@ class EvolutionManager(Component):
         """
         Look up the evolution of a Pokemon by name
         """
+        if not isinstance(pokemon_name, PokemonId):
+            raise Exception('fuckin what')
         if pokemon_name.name not in self.evolution_config:
             return None
         return self.evolution_config[pokemon_name.name].evolved_form
@@ -312,16 +314,7 @@ class EvolutionManager(Component):
             for party_member in player_manager.player_party(player):
                 if party_member is None or party_member.name.name not in self.evolution_config:
                     continue
-                party_member.add_xp(self.XP_PER_TURN)
-                threshold = self.get_threshold(party_member.name.name)
-                if party_member.xp >= threshold:
-                    print(
-                        'Party member {} XP exceeds threshold ({} >= {})'
-                        .format(party_member.name.name, party_member.xp, threshold)
-                    )
-                    self.evolve(party_member)
-                    shop_manager: "ShopManager" = self.env.shop_manager
-                    shop_manager.check_shiny(player, party_member.name.name)
+                self.add_xp(party_member, self.XP_PER_TURN)
 
     def find_owner(self, pokemon: Pokemon):
         """

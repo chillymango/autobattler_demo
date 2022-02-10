@@ -1353,24 +1353,15 @@ class CommonStone(Stone):
 
         print('holder is not eevee')
         # try and evolve
-        if not evo_manager.get_evolution(self.holder.name.name):
+        if not evo_manager.get_evolution(self.holder.name):
+            print(f'No evolution for {self.holder.name}')
             return False
         if (self.holder.is_type(PokemonType.dragon)) or (self.holder.name == PokemonId.magikarp):
             print('not compatable with stones')
             return False
         if ((self.holder.battle_card.poke_type1 in self._target_type) or (self.holder.battle_card.poke_type2 in self._target_type)):
             print('holder qualifies for stone')
-            self.holder.add_xp(150)
-            threshold = evo_manager.get_threshold(self.holder.name.name)
-            if self.holder.xp >= threshold:
-                print(
-                    'Party member {} XP exceeds threshold ({} >= {})'
-                    .format(self.holder.name.name, self.holder.xp, threshold)
-                )
-                evo_manager.evolve(self.holder)
-                shop_manager: "ShopManager" = self._env.shop_manager
-                shop_manager.check_shiny(player, self.holder.name.name)
-            return True
+            return evo_manager.add_xp(self.holder, 150)
         return False
 
     def eve_volve(self, evo, pokemon, evo_name, player):
@@ -1454,11 +1445,11 @@ class PokeFlute(PersistentPlayerItem):
         """
         Give a player an extra PokeFlute charge when turn starts
         """
-        if not self.player:
+        if not self.holder:
             return
         if self.uses_left > 0:
             self.uses_left -= 1
-            player: "Player" = self.player
+            player: "Player" = self.holder
             player.flute_charges += 1
 
     def turn_cleanup(self):
