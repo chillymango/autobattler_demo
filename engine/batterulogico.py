@@ -357,8 +357,8 @@ def battle(
     t2_dmg_taken = []
     sequence = []
     
-    team1_live: T.List[BattleCard] = copy.copy(team1_cards) # create an instance of the team for the battle
-    team2_live: T.List[BattleCard] = copy.copy(team2_cards)
+    team1_live: T.List[BattleCard] = copy.deepcopy(team1_cards) # create an instance of the team for the battle
+    team2_live: T.List[BattleCard] = copy.deepcopy(team2_cards)
 
     for team in [team1_live, team2_live]:
         for member in team:
@@ -523,9 +523,9 @@ def battle(
         pokemon1_dead = False # at the resolution of a turn, will decide if pokemon is switched   
         pokemon2_dead = False
 
-        dummy1 = copy.copy(current_team1)
-        dummy2 = copy.copy(current_team2)
-        dumseq = [] # copy.copy(sequence)
+        dummy1 = copy.deepcopy(current_team1)
+        dummy2 = copy.deepcopy(current_team2)
+        dumseq = [] # copy.deepcopy(sequence)
         dumdead1 = False
         dumdead2 = False
         if can_attack_1 and can_attack_2 and dummy1.timer >= 500 and dummy2.timer >=500:
@@ -537,13 +537,13 @@ def battle(
                 # COULD USE IF_LEGAL IN CHOOSE OPTIMAL MOVE FUNCTION, or just take the code out of there
 # the problem here is is_lethal changes the values, because I initially coded it as just a check, but turned it into a move
 # would need to change the is_lethal function, correct the part in the battle loop. get rid of these deep copies then                
-                dummy1_2 = copy.copy(dummy1)
-                dummy2_2 = copy.copy(dummy2)
+                dummy1_2 = copy.deepcopy(dummy1)
+                dummy2_2 = copy.deepcopy(dummy2)
                 if is_lethal(dummy1_2, x, dummy2_2, dummy2_2.hp, dumseq):
                     runtheblock = True
             for x in secondset:
-                dummy1_2 = copy.copy(dummy1)
-                dummy2_2 = copy.copy(dummy2)
+                dummy1_2 = copy.deepcopy(dummy1)
+                dummy2_2 = copy.deepcopy(dummy2)
                 if is_lethal(dummy2_2, x, dummy1_2, dummy1_2.hp, dumseq):
                     runtheblock = True
             if runtheblock:
