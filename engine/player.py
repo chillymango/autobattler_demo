@@ -194,6 +194,7 @@ class PlayerManager(Component):
         self.state._pokemon_registry.remove(pokemon)
         player.party_config.remove_from_party(pokemon.id)
         player.party_config.remove_from_team(pokemon.id)
+        player.balls += 1
         pokemon.delete()
 
     def combine_player_items(self, player: Player, primary: Item, secondary: Item):

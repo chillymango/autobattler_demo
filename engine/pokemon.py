@@ -244,6 +244,7 @@ class EvolutionManager(Component):
         Return True if action was successful and False if not.
         """
         if not self.get_evolution(pokemon.name):
+            print(f'No evolution for {pokemon.name}')
             return False
         pokemon.xp += xp
         if pokemon.xp >= self.get_threshold(pokemon.name):

@@ -82,7 +82,7 @@ async def main(args: argparse.Namespace) -> None:
     """
     Application Entrypoint
     """
-    if os.environ.get('DEVELOPMENT'):
+    if int(os.environ.get('DEVELOPMENT', 0)):
         print('Using DEV server config')
         server_config = ServerConfig(bind='http://localhost:8000')
     else:
