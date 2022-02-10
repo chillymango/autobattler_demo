@@ -1600,10 +1600,6 @@ class BlaineButton(ChargedHeroPower):
         else:
             print('no more rolls')
 
-        
-
-
-
     def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         boost stats of team
