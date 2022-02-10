@@ -1465,8 +1465,6 @@ class PokeFlute(PersistentPlayerItem):
 
 class MasterBall(InstantPlayerItem):
 
-    ball_count: int = 0
-
     def use(self, player: "Player" = None):
         """
         Add a masterball
@@ -1476,7 +1474,7 @@ class MasterBall(InstantPlayerItem):
         if not self.holder:
             raise Exception("Cannot use a MasterBall on a null player")
 
-        self.holder.master_balls += self.ball_count
+        self.holder.master_balls += self.level
         print('yay this worked')
         return True
 

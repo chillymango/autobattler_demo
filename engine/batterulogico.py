@@ -255,6 +255,9 @@ class HookExecutor:
         """
         Run combat item execution
         """
+        if battler1 is None or battler2 is None:
+            return
+
         context = context or dict()
 
         if battler1 is not None:
@@ -631,9 +634,6 @@ def battle(
             if current_team1 == None:
                 stop_this = True
             team1_live.pop(0)
-
-    # COMBAT ITEM HOOK: post_battle_action
-    execute_hook(CombatHook.POST_BATTLE, current_team1, current_team2)
 
     # closing messages
     survivor1 = len(team1_live) # how many pokemon left on the team
