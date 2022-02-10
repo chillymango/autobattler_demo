@@ -1006,7 +1006,7 @@ class FluffyTail(CombinedItem):
                     f"{holder.name.name} gives health to {card.battlecard.name.name}"
                 )
             if render:
-                render("|-heal|p"+str(team[-1])+"a: "+card.nickname+"|" + str(round(after)) + r"\/" + str(round(card.battlecard.max_health))+"|[from] item: Fluffy Tail| [of]p"+ str(team) + "a: " + battler.nickname)
+                render("|-heal|p"+str(team)+"a: "+card.nickname+"|" + str(round(after)) + r"\/" + str(round(card.battlecard.max_health))+"|[from] item: Fluffy Tail| [of]p"+ str(team) + "a: " + battler.nickname)
 
 
 
