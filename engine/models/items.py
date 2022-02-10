@@ -1300,28 +1300,12 @@ class RentalDitto(InstantPokemonItem):
 
 class RareCandy(InstantPokemonItem):
     def use(self):
-        evo_manager: EvolutionManager = self._env.evolution_manager
-        # handle eevee specially
-        # TODO: make choice evolution types more generic
-        im: "ItemManager" = self._env.item_manager
-        holder = im.get_pokemon_item_holder(self)
-        if holder is None:
-            raise Exception("No Pokemon found as a valid target")
-
-        if not evo_manager.get_evolution(holder.name):
+        if self.holder is None:
             return False
-        holder.add_xp(50)
-        threshold = self.get_threshold(holder.name.name)
-        if holder.xp >= threshold:
-            print(
-                'Party member {} XP exceeds threshold ({} >= {})'
-                .format(holder.name.name, holder.xp, threshold)
-            )
-            self.evolve(holder)
-            shop_manager: "ShopManager" = self.env.shop_manager
-            shop_manager.check_shiny(self.player, holder.name.name)
 
-        return True
+        evo_manager: EvolutionManager = self._env.evolution_manager
+        # TODO: handle eevee specially
+        return evo_manager.add_xp(self.holder, 50)
 
 
 class Stone(InstantPokemonItem):
@@ -1497,11 +1481,13 @@ class MasterBall(InstantPlayerItem):
         Add a masterball
         """
         if player is not None:
-            self.player = player
-        if not self.player:
+            self.holder = player
+        if not self.holder:
             raise Exception("Cannot use a MasterBall on a null player")
 
-        self.player.master_balls += self.ball_count
+        self.holder.master_balls += self.ball_count
+        print('yay this worked')
+        return True
 
     @classmethod
     def level1_masterball(cls, env: "Environment"):

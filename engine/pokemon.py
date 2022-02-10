@@ -227,21 +227,35 @@ class EvolutionManager(Component):
             turns = int(turns)
             self.evolution_config[base] = EvolutionConfig(evolved, turns)
 
-    def get_evolution(self, pokemon_name):
+    def get_evolution(self, pokemon_name: PokemonId):
         """
         Look up the evolution of a Pokemon by name
         """
-        if pokemon_name not in self.evolution_config:
+        if pokemon_name.name not in self.evolution_config:
             return None
-        return self.evolution_config[pokemon_name].evolved_form
+        return self.evolution_config[pokemon_name.name].evolved_form
 
-    def get_threshold(self, pokemon_name):
+    def add_xp(self, pokemon: Pokemon, xp: float) -> bool:
+        """
+        Add experience points to a Pokemon and initiate evolution if min XP is reached.
+
+        Return True if action was successful and False if not.
+        """
+        if not self.get_evolution(pokemon.name):
+            return False
+        pokemon.xp += xp
+        if pokemon.xp >= self.get_threshold(pokemon.name):
+            self.evolve(pokemon)  # default to no-choice
+
+        return True
+
+    def get_threshold(self, pokemon_name: PokemonId):
         """
         Look up the evolution XP threshold of a Pokemon by name
         """
-        if pokemon_name not in self.evolution_config:
+        if pokemon_name.name not in self.evolution_config:
             return None
-        return self.evolution_config[pokemon_name].turns_to_evolve * self.XP_PER_TURN
+        return self.evolution_config[pokemon_name.name].turns_to_evolve * self.XP_PER_TURN
 
     def evolve(self, pokemon: Pokemon, choice: str = None):
         """
@@ -255,7 +269,7 @@ class EvolutionManager(Component):
         * update nickname if it's default nickname, otherwise retain nickname
         """
         # check evolution
-        evolved_form = self.get_evolution(pokemon.name.name)
+        evolved_form = self.get_evolution(pokemon.name)
         if evolved_form is None:
             return
 
@@ -265,7 +279,7 @@ class EvolutionManager(Component):
             return
 
         # deduct XP threshold
-        threshold = self.get_threshold(pokemon.name.name)
+        threshold = self.get_threshold(pokemon.name)
         pokemon.xp -= threshold
 
         # get battle card
@@ -281,6 +295,11 @@ class EvolutionManager(Component):
         # update name and battle card
         pokemon.name = PokemonId[evolved_form]
         pokemon.battle_card = evolved_card
+
+        # check shiny
+        shop_manager: "ShopManager" = self.env.shop_manager
+        player = self.find_owner(pokemon)
+        shop_manager.check_shiny(player, pokemon.name.name)
 
     def turn_cleanup(self):
         """
@@ -303,7 +322,7 @@ class EvolutionManager(Component):
                     self.evolve(party_member)
                     shop_manager: "ShopManager" = self.env.shop_manager
                     shop_manager.check_shiny(player, party_member.name.name)
-    
+
     def find_owner(self, pokemon: Pokemon):
         """
         figure out who the owner of a pokemon is

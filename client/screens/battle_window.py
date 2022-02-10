@@ -571,7 +571,7 @@ class Ui(QtWidgets.QMainWindow, GameWindow):
 
             # render XP
             current_xp = party_member.xp
-            max_xp = evo_manager.get_threshold(party_member.name.name) or 0
+            max_xp = evo_manager.get_threshold(party_member.name) or 0
             self.partyXp[idx].setValue(current_xp)
             self.partyXp[idx].setMaximum(max_xp)
 
