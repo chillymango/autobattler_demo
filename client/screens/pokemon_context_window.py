@@ -6,7 +6,6 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from engine.models.pokemon import SHINY_STAT_MULT
 from engine.models.enums import PokemonType
 from engine.models.stats import Stats
 from engine.utils.gamemaster import gamemaster

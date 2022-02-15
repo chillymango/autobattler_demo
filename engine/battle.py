@@ -75,10 +75,18 @@ class BattleManager(Component):
         """
         p1_cards = self.assemble_team_cards(player1)
         p2_cards = self.assemble_team_cards(player2)
+        p1_hero = self.state.player_hero[player1]._power
+        p2_hero = self.state.player_hero[player2]._power
         weather_manager: WeatherManager = self.env.weather_manager
         weather = self.state.weather
         bonus_types = weather_manager.weather_bonuses[weather]
-        return battle(p1_cards, p2_cards, bonus_types=bonus_types)
+        return battle(
+            p1_cards,
+            p2_cards,
+            bonus_types=bonus_types,
+            team1_hero=[p1_hero],
+            team2_hero=[p2_hero],
+        )
 
     def turn_execute(self, debug: bool = True):
         """

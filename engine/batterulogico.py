@@ -62,6 +62,7 @@ import os.path
 from engine.models.enums import Move, PokemonId
 from engine.models.battle import BattleEvent, Event
 from engine.models.combat_hooks import CombatHook
+from engine.models.items import ComplexHeroPower
 from engine.models.pokemon import SHINY_STAT_MULT, BattleCard
 from engine.models.weather import WeatherType
 from engine.utils.gamemaster import gamemaster
@@ -193,6 +194,8 @@ class HookExecutor:
         self,
         team1: T.List[Battler],
         team2: T.List[Battler],
+        team1_hero_items: T.List[ComplexHeroPower],
+        team2_hero_items: T.List[ComplexHeroPower],
         logger: EventLogger = None,
         render: RenderLogger = None,
     ):
@@ -201,8 +204,8 @@ class HookExecutor:
         self.logger = logger
         self.render = render
 
-        self.team1_items = self.get_all_team_items(self.team1)
-        self.team2_items = self.get_all_team_items(self.team2)
+        self.team1_items = self.get_all_team_items(self.team1) + team1_hero_items
+        self.team2_items = self.get_all_team_items(self.team2) + team2_hero_items
 
     def get_all_team_items(self, team: T.List[Battler]):
         """
@@ -319,12 +322,17 @@ def battle(
     team1_cards: T.List[BattleCard],
     team2_cards: T.List[BattleCard],
     bonus_types: T.List[PokemonType],
+    team1_hero: T.List[ComplexHeroPower] = None,
+    team2_hero: T.List[ComplexHeroPower] = None,
 ):
     """
     Takes two arrays of battle cards and simulates combat between them.
 
     The original battle cards are shallow-copied and modified during the battle.
     """
+    team1_hero = team1_hero or []
+    team2_hero = team2_hero or []
+
     # start a new logger for each battle
     logger = EventLogger()
     null_logger = EventLogger()  # do not log...
@@ -383,7 +391,14 @@ def battle(
 
     # TODO(albert): should this be cards or live?
     global execute_hook
-    execute_hook = HookExecutor(bench1, bench2, logger=logger, render = render)
+    execute_hook = HookExecutor(
+        bench1,
+        bench2,
+        team1_hero_items=team1_hero,
+        team2_hero_items=team2_hero,
+        logger=logger,
+        render=render,
+    )
 
     # because I pop off the benches, and that leads to index problem when putting pokemon back at the end
     bench1_permanent = bench1

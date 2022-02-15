@@ -20,9 +20,6 @@ from engine.models.battle import Event
 from engine.models.combat_hooks import CombatHook
 from engine.models.enums import Move, PokemonId, PokemonType
 from engine.models.shop import ShopOffer
-from engine.models.player import Player
-from engine.models.pokemon import BattleCard
-from engine.models.pokemon import Pokemon
 
 from utils.strings import camel_case_to_snake_case, crunch_spaces 
 if T.TYPE_CHECKING:
@@ -34,6 +31,9 @@ if T.TYPE_CHECKING:
     from engine.env import Environment
     from engine.items import ItemManager
     from engine.pokemon import EvolutionManager, PokemonFactory
+    from engine.models.player import Player
+    from engine.models.pokemon import BattleCard
+    from engine.models.pokemon import Pokemon
     from engine.player import PlayerManager
     from engine.shop import ShopManager
 
@@ -1787,7 +1787,6 @@ class LanceFetish(ComplexHeroPower):
     def turn_setup(self):
         self.success = False
         self.used = False
-    
 
     def use(self, player: "Player" = None):
         """
@@ -1798,7 +1797,7 @@ class LanceFetish(ComplexHeroPower):
             player_manager: PlayerManager = self._env.player_manager
             player_manager.create_and_give_item_to_player(player, item_name = "DragonScale")
             self.success = True
-        
+
     def pre_battle_action(self, logger: "EventLogger" = None,render: "RenderLogger" = None, **context: T.Any):
         """
         boost stats of dragons

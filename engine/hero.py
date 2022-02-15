@@ -52,3 +52,6 @@ class HeroManager(Component):
         except Exception as exc:
             print(repr(exc))
             return False
+
+    def turn_execute(self):
+        super().turn_execute()
